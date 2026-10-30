@@ -1,16 +1,16 @@
 # Status: osoba C
-Faza: F0
+Faza: F1
 
 ## Gotovo (spojeno u main)
-- ništa još
+- C0.1 Expo šablon (PR #2): Expo SDK 58, Expo Router, TS, `web.output: "single"`, tačne verzije + lock
 
 ## U radu
-- C0.1 Expo šablon: gotovo na grani `c/expo-template`, čeka PR
-  - Expo SDK 58, Expo Router, TS, `web.output: "single"`, tačne verzije + lock
-  - `expo export --platform web`: ~75 s prvi put (hladan keš), ~5,5 s posle (podatak za C1.2)
+- C1.1 Spike A: gotovo na grani `c/spike-a`, čeka PR i potvrdu B za D-005
+  - selektori rade, ali builder mora da piše `role="button"` / `role="list"` / `role="listitem"`
+  - primer i skripta: `templates/spike-a/` (`npx tsx templates/spike-a/check.ts`)
 
 ## Mockovi koje koristim
 - nema
 
 ## Blokira me
-- ništa
+- ništa (B treba da pogleda D-005: obavezan `role` u ugovoru za buildera)

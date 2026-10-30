@@ -66,10 +66,10 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 **Cilj:** dokazati da Playwright nalazi RN elemente na Expo web verziji istim selektorima kao na webu.
 **Šta:** jedan ručno napisan Expo ekran: `TextInput` sa `accessibilityLabel="Pretraga"`, dugme (`Pressable` + `Text`), lista od par stavki. Mala Playwright skripta proveri `getByLabel("Pretraga")`, `getByRole("button", { name })`, `getByText`, i `role="listitem"`.
 **Gotovo kada:**
-- [ ] rezultat za svaki selektor zapisan u `docs/decisions.md` (radi / ne radi / kako)
-- [ ] ako nešto **ne radi**: odmah poruka timu → prelazimo na `testID` ugovor (B menja kompajler)
-- [ ] usput zabeleženo: šta se desi na dev serveru kad jedan ekran ima grešku (ruši li ceo Metro)
-- [ ] usput zabeleženo: radi li `expo export --platform android` bez uređaja (za kapiju 6)
+- [x] rezultat za svaki selektor zapisan u `docs/decisions.md` (radi / ne radi / kako)
+- [x] ako nešto **ne radi**: odmah poruka timu → prelazimo na `testID` ugovor (B menja kompajler) — nije potrebno: sve radi uz `role`, poruka timu o obaveznom `role` (D-005)
+- [x] usput zabeleženo: šta se desi na dev serveru kad jedan ekran ima grešku (ruši li ceo Metro)
+- [x] usput zabeleženo: radi li `expo export --platform android` bez uređaja (za kapiju 6)
 **PR:** `c/spike-a` (samo `docs/decisions.md` i primer)
 
 ### C1.2 Merenje exporta
