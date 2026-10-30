@@ -17,7 +17,7 @@ import { loadMockFixture, MockRunner, type MockFixture } from "../core/runner"
 import { board, initializeRuntime, join } from "../core/runtime"
 import { createInitialState } from "../core/state"
 import { readTests } from "../scenarios"
-import { createTester } from "./tester"
+import { createTester, type TesterDeps } from "./tester"
 
 // All tests that need the runtime live in this file: Mozaik allows one runtime per process.
 
@@ -71,6 +71,9 @@ const fixture: MockFixture = {
   "tester:u-existing": [saveCall(save("u-existing")), { text: "Added the missing obligation." }],
   "tester:u-busy": [saveCall(search("u-busy")), { text: "Done." }],
   "tester:u-cancel": [call("aria_snapshot", { path: "/narudzbine" }), saveCall(search("u-cancel")), { text: "Done." }],
+  // A save, then a slow aria_snapshot during which the task is cancelled or runs out of time.
+  "tester:u-cancel-late": [saveCall(search("u-cancel-late")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
+  "tester:u-own-limit": [saveCall(search("u-own-limit")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
   "tester:u-blank": [saveCall(search("u-blank")), { text: "Done." }],
   "tester:u-blank-down": [saveCall(search("u-blank-down")), { text: "Done." }],
 }
@@ -96,6 +99,8 @@ class TestsReady extends SituationSpecification {
 const todomvcReplies = loadMockFixture(fileURLToPath(new URL("./mocks/todomvc/tester.json", import.meta.url)))
 const runner = new RecordingRunner({ ...fixture, ...todomvcReplies })
 const ready: string[] = []
+// Whether board().coverage already had the unit when its tests.ready arrived (the Gatekeeper reads it then).
+const coverageAtReady = new Map<string, boolean>()
 const validated: string[] = []
 const blanks: string[] = []
 let runDir = ""
@@ -108,10 +113,10 @@ const fakeValidate: ValidateScenario = async (_original, blank, scenario) => {
 }
 
 let count = 0
-function newTester(blankUrl: string | (() => Promise<string>) = "http://blank.test") {
+function newTester(overrides: Partial<TesterDeps> = {}) {
   const tester = createTester(`tester-${++count}`, {
     originalUrl: "http://original.test",
-    blankUrl,
+    blankUrl: "http://blank.test",
     validateScenario: fakeValidate,
     extractInteractive: async () => [
       { role: "searchbox", name: "Pretraga" },
@@ -119,6 +124,7 @@ function newTester(blankUrl: string | (() => Promise<string>) = "http://blank.te
       { role: "button", name: "Info" },
     ],
     ariaSnapshot: async (_url, route) => `- searchbox "Pretraga"\n- button "Sačuvaj"\n# snapshot of ${route}`,
+    ...overrides,
   })
   join(tester.participant)
   return tester
@@ -140,7 +146,7 @@ const logLines = () =>
 beforeAll(() => {
   runDir = mkdtempSync(path.join(tmpdir(), "wemora-tester-"))
   initLog(runDir)
-  const ids = ["u-full", "u-partial", "u-none", "u-existing", "u-busy", "u-cancel", "u-blank", "u-blank-down"]
+  const ids = ["u-full", "u-partial", "u-none", "u-existing", "u-busy", "u-cancel", "u-cancel-late", "u-own-limit", "u-blank", "u-blank-down"]
   const plan: Plan = {
     units: [
       ...ids.map((id) => unit(id)),
@@ -170,7 +176,13 @@ beforeAll(() => {
       handlers: [
         {
           specification: new TestsReady(),
-          processor: { apply: ({ event }) => void ready.push((event.payload as { unitId: string }).unitId) },
+          processor: {
+            apply: ({ event }) => {
+              const { unitId } = event.payload as { unitId: string }
+              ready.push(unitId)
+              coverageAtReady.set(unitId, board().coverage[unitId] !== undefined)
+            },
+          },
         },
       ],
     }),
@@ -187,6 +199,22 @@ describe("tester agent", () => {
     expect(readTests(runDir, "u-full").map((s) => s.id)).toEqual(["u-full-search", "u-full-save"])
     expect(board().tests["u-full"]?.map((s) => s.id)).toEqual(["u-full-search", "u-full-save"])
     expect(ready.filter((u) => u === "u-full")).toHaveLength(1)
+  })
+
+  it("puts the coverage on the board before tests.ready, so the Gatekeeper can compute the status", () => {
+    expect(coverageAtReady.get("u-full")).toBe(true)
+    expect(board().coverage["u-full"]).toEqual({
+      unitId: "u-full",
+      obligations: { covered: ["search", "save"], missing: [] },
+      elements: {
+        covered: [
+          { role: "searchbox", name: "Pretraga" },
+          { role: "button", name: "Sačuvaj" },
+        ],
+        missing: [],
+        notPortable: [{ role: "button", name: "Info" }],
+      },
+    })
   })
 
   it("tells the model why a scenario was refused, and what is still missing after a save", () => {
@@ -248,11 +276,45 @@ describe("tester agent", () => {
     expect(ready).not.toContain("u-cancel")
   })
 
+  it("after a cancel from outside sends no tests.ready, but keeps what it saved for the next tester (D-016)", async () => {
+    let tester: ReturnType<typeof newTester> | undefined
+    tester = newTester({
+      // The Conductor's timeout lands while the model is still working.
+      ariaSnapshot: async () => {
+        tester?.cancel("timeout: no tests.ready within 10 min")
+        return "- searchbox \"Pretraga\""
+      },
+    })
+    tester.assign({ unitId: "u-cancel-late" })
+    await untilIdle(tester)
+    expect(readTests(runDir, "u-cancel-late").map((s) => s.id)).toEqual(["u-cancel-late-search"])
+    expect(ready).not.toContain("u-cancel-late")
+    expect(logLines().some((l) => l.event === "tester.cancelled" && l.data?.unitId === "u-cancel-late")).toBe(true)
+  })
+
+  it("ends at its own time limit and sends tests.ready with what it saved (D-016)", async () => {
+    const tester = newTester({
+      unitTimeoutMs: 300,
+      ariaSnapshot: async () => {
+        await new Promise((r) => setTimeout(r, 600))
+        return "- searchbox \"Pretraga\""
+      },
+    })
+    tester.assign({ unitId: "u-own-limit" })
+    await untilIdle(tester)
+    expect(ready.filter((u) => u === "u-own-limit")).toHaveLength(1)
+    expect(coverageAtReady.get("u-own-limit")).toBe(true)
+    const finished = logLines().find((l) => l.event === "tester.finished" && l.data?.unitId === "u-own-limit")
+    expect(JSON.stringify(finished)).toContain("tester time limit")
+  })
+
   it("takes the blank screen URL from a function (blankApp in a run) and validates against it", async () => {
     let calls = 0
-    const tester = newTester(async () => {
-      calls++
-      return "http://scaffold-placeholder.test"
+    const tester = newTester({
+      blankUrl: async () => {
+        calls++
+        return "http://scaffold-placeholder.test"
+      },
     })
     tester.assign({ unitId: "u-blank" })
     await untilIdle(tester)
@@ -262,8 +324,10 @@ describe("tester agent", () => {
   })
 
   it("stops the task before asking the model when the blank screen cannot be served", async () => {
-    const tester = newTester(async () => {
-      throw new Error("web export failed")
+    const tester = newTester({
+      blankUrl: async () => {
+        throw new Error("web export failed")
+      },
     })
     tester.assign({ unitId: "u-blank-down" })
     await untilIdle(tester)
