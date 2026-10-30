@@ -7,15 +7,16 @@ Faza: F1
 - C1.2 Merenje exporta (PR #9): statički web export svuda (D-006)
 - C1.3 `scaffold()` (PR #15): ruta po ekranu iz `routeMap`, prazni ekrani, `node_modules` kao link na šablon
 - C1.5 `promote`, `rollback`, `serveApp` (PR #18): putanja aplikacije iz rasporeda foldera, prethodno stanje u memoriji, export u privremeni folder
+- C1.6 `computeStatus` (PR #19); **za A:** `roundsExhausted` ne menja status
+- `serveApp` koristi B-ov `serveStatic` (PR #21)
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- `serveApp` sada koristi B-ov `serveStatic` (grana `c/use-b-serve`), umesto svog servera
-- C1.6 `computeStatus`: spojeno (PR #19)
-  - redosled: nema testova → `unproven`; neki test ne prolazi (ili nema rezultat) → `failed`; pokrivenost nepoznata/nepotpuna → `partial`; inače `proven`
-  - **za A:** `roundsExhausted` iz `StatusInput` ne menja status (test koji pada je `failed` i pre poslednje runde); može da se ukloni iz ugovora ili da dobije drugo značenje
-- Kapija G1: ostaje samo zajednički test sa B (B-ov scenario preko mog `serveApp()` nad ručnim RN ekranom)
-- sledeće: F2 (C2.1 promptovi)
+- Kapija G1, zajednički test sa B: gotovo na grani `c/g1-joint-test`, čeka PR
+  - `src/gatekeeper/g1.test.ts`: scaffold Recepti → ručni ekran liste za kupovinu prolazi kapije 1–4 → promote → `serveApp` → B-ov `add-item.json` preko `runScenarios` (390×844) prolazi; nad praznim ekranom pada
+  - nađen i popravljen bug (D-009): zajednički Metro keš je davao aplikaciju bez ruta; sada svaka aplikacija ima svoj keš (`templates/expo/metro.config.js`)
+  - `npm test` sada traje ~2,5 min (jedan hladan export)
+- sledeće: F2 (C2.1 promptovi), posle kapije G1
 
 ## Za C2.3 (`checkDraft`), da se ne zaboravi
 - ugovor `checkDraft(unitId, draftDir, tests)` ne prosleđuje rundu, `appDir`, `Unit.sources` ni namerne razlike

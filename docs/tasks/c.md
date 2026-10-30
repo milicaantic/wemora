@@ -119,7 +119,7 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 - [x] Spike A odlučen i zapisan
 - [x] `scaffold()` nad mock planom za Recepte pravi aplikaciju koja se servira
 - [x] ručno napisan dobar ekran prolazi sve 4 kapije; loš pada na tačnoj
-- [ ] **prvi zajednički test sa B:** B-ov scenario pušten preko mog `serveApp()` nad ručno napisanim RN ekranom prolazi
+- [x] **prvi zajednički test sa B:** B-ov scenario pušten preko mog `serveApp()` nad ručno napisanim RN ekranom prolazi
 - [x] `docs/status/c.md` ažuriran
 
 > **Ovde prvi put vidiš mobilnu aplikaciju u browseru** (ručni ekran preko `serveApp`). Mozaik još ne vidiš — tvoj F1 je namerno bez njega.
