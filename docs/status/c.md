@@ -18,7 +18,7 @@ Faza: F2
   - `src/agents/builder.ts`: `createBuilder(id)` → `AgentHandle<BuildTask>`; nacrt u `output/<run>/staging/<builderId>/<unitId>/`; svež kontekst po rundi; alati `read_source`, `read_app` (app sa primenjenim nacrtom), `write_file` (OwnershipGuard), `check_draft` (kapije 1–4, samo poruke), `submit_draft`
   - ako model ne pozove `submit_draft`, nacrt se ipak predaje kad se petlja završi (da Conductor ne čeka timeout)
   - `gatekeeper/index.ts` sada izvozi `runGates` (za `check_draft`)
-  - **za A (A12):** MockRunner primeri u `src/agents/mocks/builder.todomvc.json`: `builder:todo-list:1` (fali labela „New Todo Input“), `builder:todo-list:2` (popravka), `builder` (rezervni); ključ `todo-list` preimenovati ako lažni arhitekta koristi drugi ID
+  - **za A (A12):** MockRunner primeri u `src/agents/mocks/todomvc/builder.json`: `builder:todo-list:1` (fali labela „New Todo Input“), `builder:todo-list:2` (popravka), `builder` (rezervni); ključ `todo-list` preimenovati ako lažni arhitekta koristi drugi ID
   - **za A:** `OwnershipGuard` prima jedan prefiks; jedinica `layout` po PD3 treba i `app/_layout.tsx`. Predlog: `new OwnershipGuard(["shared/layout/", "app/_layout.tsx"])`. Do tada `layout` piše samo u `shared/layout/`.
 - sledeće: C2.3 `checkDraft` (čeka `contracts/f1` od A: `unit`, `round`, `webDir`)
 
