@@ -11,20 +11,23 @@ Poslednja izmena: 2026-10-30
 - `scenarios/index.ts` izvozi `serveStatic` (C ga koristi u `serveApp`)
 - potvrde D-001, D-002, D-003, D-005, D-007 i D-008 u `docs/decisions.md`
 
-## Gotovo, čeka PR (grana `b/tester`)
-- B8 `agents/tester.ts`: `createTester(id, deps)` vraća `AgentHandle<TestTask>`; zasebna `createAgent` instanca, svež kontekst po zadatku (`runTask` iz `_shared`), model `MODELS.default`, `maxOutputTokens` 4000, `CancelGuard` za timeout. `deps`: `originalUrl` i `blankUrl` (ugovor ih još nema, Q8), a `validateScenario`/`extractInteractive`/`ariaSnapshot` mogu da se zamene u testovima.
-  - Alati: `aria_snapshot(path)`, `try_scenario(scenario)`, `save_scenario(scenario)`. Pre browsera se proverava da li scenario pripada jedinici (tačan `unitId`, postojeća obaveza, jedinstven `id`, bez `notPortable` elemenata u `steps` i `setup`). Scenario koji je prošao `try_scenario` se ne validira ponovo. Putanju `tests/<unitId>.json` pravi kod (upis preko privremenog fajla); upisuje se i `board.tests[unitId]`. Posle čuvanja model dobija šta još fali (obaveze i elementi, preko `computeCoverage`).
-  - Drugi tester (posle timeouta) nastavlja od već sačuvanih scenarija.
-  - `prompts/tester.md`: DSL, tri pravila validacije, „prvi red liste“, `setup` preko UI-ja, bez `notPortable`, `hiddenBehind` se ignoriše.
-- Domen za testera u `scenarios/tester.ts` (izvoz kroz `index.ts`): `scenarioProblem`, `testerBrief`, `coverageNote`, `readTests`/`writeTests`/`testsFile`; i `ariaSnapshot` u `interactive.ts`.
-- Testovi: `scenarios/tester.test.ts` (8), `agents/tester.test.ts` (9, pravi Mozaik runtime + `MockRunner`, bez browsera i mreže). Ceo repo: 325 testova.
-- **Nije probano sa pravim modelom** (Haiku 5.5): prompt i JSON šema alata za model (`toModelSchema(ScenarioSchema)`) provereni su samo kroz `MockRunner`.
+- B8 (PR #31): agent tester (`agents/tester.ts`, `prompts/tester.md`) i njegov domen (`scenarios/tester.ts`, `ariaSnapshot`). Alati `aria_snapshot`, `try_scenario`, `save_scenario`; čuvaju se samo validni scenariji u `tests/<unitId>.json` i `board.tests`. **Nije probano sa pravim modelom**, samo kroz `MockRunner`.
 
-## Odluke u B8 (čekaju potvrdu tima)
+## Gotovo, čeka PR (grana `b/tester-blank`)
+- B9 `scenarios/blank.ts`: `blankApp(appDir, serve)` daje prazan ekran za pravilo 2 u pravom prolazu: placeholder aplikaciju iz `scaffold()`, izvezenu C-ovim `serveApp`. Export se radi **jednom**, na prvi `url()`, i taj snimak se servira do `close()`. `serveApp` se prosleđuje kao parametar, jer `gatekeeper/` već uvozi `scenarios/` (inače bi bio kružni uvoz). Neuspeo export se ne pamti, pa sledeći zadatak pokušava ponovo.
+- Tester: `deps.blankUrl` je string **ili** funkcija (`blankApp(...).url`); razrešava se na početku zadatka. Ako prazan ekran ne može da se napravi, zadatak staje pre modela (`tester.failed`, bez testova i bez događaja).
+- **Zašto prazan ekran ostaje prazan i posle promocija (Q4 rešen bez novog foldera):** `serveApp` servira statički export napravljen u trenutku poziva (D-006), a Conductor pokreće testere odmah posle `scaffold()`, pre nego što ijedan builder radi. Prvi zadatak testera zato izvozi netaknut placeholder.
+- Ručno provereno (C-ov `scaffold` nad `plan.manual.json` za Recepte + `blankApp` + C-ov `serveApp`, export 10 s): sva 3 ručna scenarija prihvaćena nad pokrenutim Receptima; posle upisa pravog ekrana u `app/` (kao promocija) `url()` vraća isti URL bez novog exporta, a scenario se i dalje prihvata (prazan ekran i dalje pada).
+- Testovi: `blank.test.ts` (3), u `agents/tester.test.ts` 2 nova (ukupno 11). Ceo repo: 341 test.
+- `mocks/blank/` ostaje samo za unit testove.
+
+## Odluke u B8 i B9 (čekaju potvrdu tima)
+- **B9, ograničenje:** placeholder je potpuno prazan (nema ni zajedničkih delova kao što je meni), pa pravilo 2 **ne odbija** scenario koji proverava samo tekst iz zajedničkog dela aplikacije (npr. naslov „Recepti“ iz bočnog menija). Kriterijum iz b.md B9 („scenario koji proverava samo zajednički naslov biva odbijen“) zato nije ispunjen. Takav scenario sprečava samo prompt („ne proveravaj naslov ili meni koji imaju svi ekrani“). Bolji prazan ekran (aplikacija sa promovisanim zajedničkim jedinicama) ne postoji kad testeri kreću, jer talas 0 tada tek počinje.
+- **Za A (CLI, A11):** `const blank = blankApp(path.join(runDir, "app"), serveApp)`, tester kao `(id) => createTester(id, { originalUrl, blankUrl: blank.url })`, i `blank.close()` na kraju prolaza.
 - **`tests.ready` (b.md Q10):** šalje se jednom, **na kraju petlje**, ako je sačuvan bar jedan scenario, i kad nisu pokrivene sve obaveze (status ekrana tada postaje `partial`). Bez ijednog scenarija se ništa ne šalje (u log ide `tests.none`), pa jedinicu posle timeouta dobija drugi tester. Ovo se razlikuje od b.md B8 kriterijuma 4 („tek kad su sve obaveze pokrivene“), jer bi inače ekran bez pune pokrivenosti ostao zauvek bez testova.
 - **Rute sa parametrima** (`/recepti/:id`): `extractInteractive` ne može da otvori rutu sa `:id`, pa tester za takav ekran ne dobija listu elemenata (samo obaveze); u promptu piše da otvori rutu sa pravom vrednošću.
 - **Usklađeno sa Conductor-om (A10, PR #30)** po pravilima iz `agents/_shared/handle.ts`: fabrika `createTester(id, deps)` (CLI vezuje `deps`), `name: id`, bez `join`, `emit` sa sopstvenog učesnika, tabla i fajl pre događaja, jedan `assign` = jedan zadatak, greške uhvaćene u `assign`. Build i 336 testova prolaze zajedno.
-- **Za A (CLI, A11):** CLI mora da veže `(id) => createTester(id, { originalUrl, blankUrl })`, a za to mora da pokrene original i prazan ekran (Q8).
+- **Za A (CLI, A11):** CLI mora da pokrene original (Q8); prazan ekran daje `blankApp` (B9, gore).
 - **Za A (A13, timeouti):** Conductor oslobađa testera samo na `tests.ready`. Tester koji ne sačuva nijedan scenario ne šalje ništa (po pravilu „Conductor čeka“), pa ostaje zauzet u Conductor-u. U F2 postoji samo 1 tester (`FIXED_TEAM`), pa bi stalo testiranje svih ostalih ekrana dok A13 ne doda timeout. Predlog za A13: posle isteka osloboditi testera i dati jedinicu drugom.
 
 ## Urađeno ručno (F1, bez PR-a)
@@ -46,9 +49,8 @@ Poslednja izmena: 2026-10-30
 - ništa
 
 ## Sledeće
-- B9: prazan ekran iz C-ovog scaffolda kao `blankUrl` (dogovor sa A i C ko pokreće `serveApp` nad scaffoldom)
 - B10: MockRunner odgovori testera za TodoMVC (A12; mesto fajla po P13)
-- ponoviti B7 sa C-ovim `serveApp()`
+- ponoviti B7 sa C-ovim `serveApp()` (prazan ekran je u B9 već proveren preko `serveApp`)
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
