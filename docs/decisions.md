@@ -79,3 +79,26 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Sa `CI=1` Metro **ne prati izmene fajlova**: novi fajl se ne vidi bez ponovnog pokretanja. Bitno za C1.2/C1.5 ako se koristi dev server.
 - **`expo export --platform android` radi bez uređaja i emulatora** (~16 s sa toplim kešom, ~88 s prvi put). Kapija 6 je izvodljiva.
 - Web export šablona + ovog ekrana: ~71 s prvi put (hladan keš).
+
+## D-006: Gatekeeper koristi statički web export, ne Metro dev server
+- Datum: 2026-10-30
+- Ko: C
+- Status: prihvaćeno (C, po pravilu iz `docs/tasks/c.md` C1.2: ispod ~30 s → statički export svuda)
+- Odluka: Gatekeeper (kapija 5, regresija), `serveApp` i `verify` koriste `npx expo export --platform web` (`web.output: "single"`) i serviraju izlazni folder kao statičke fajlove. Metro dev server se ne koristi.
+- Zašto: izmereno skriptom `templates/spike-a/measure.ts` (Node 22, 3 kruga po slučaju):
+
+  | Ekrana | Slučaj | Prosek | Min–max |
+  |---|---|---|---|
+  | 1 | hladno (`--clear`) | 50,0 s | 44,9–53,9 s |
+  | 1 | toplo, bez izmena | 5,4 s | 5,2–5,8 s |
+  | 1 | toplo, izmenjen jedan ekran | 6,3 s | 5,9–6,4 s |
+  | 5 | hladno (`--clear`) | 52,4 s | 46,8–63,3 s |
+  | 5 | toplo, bez izmena | 5,6 s | 4,9–6,7 s |
+  | 5 | toplo, izmenjen jedan ekran | 6,2 s | 6,0–6,5 s |
+  | 1 | nov folder, postojeći keš | ~12 s | jedno merenje |
+
+  Realan slučaj za Gatekeeper (izmenjen jedan ekran) je ~6 s i ne raste sa brojem ekrana. Dev server ima i dodatne mane (D-005): sa `CI=1` ne vidi nove fajlove, a sintaksna greška u jednom ekranu obori sve ekrane.
+- Posledice:
+  - `serveApp` (C1.5): export + mali statički server sa SPA rezervom (nepoznata putanja → `index.html`), primer u `templates/spike-a/check.ts`.
+  - Prvi export u prolazu traje ~50 s (hladan keš). Keš je zajednički za sve foldere, pa ga treba „zagrejati“ jednom na početku prolaza, npr. odmah posle `scaffold()`.
+  - Nikad ne pozivati export sa `--clear` u Gatekeeperu.

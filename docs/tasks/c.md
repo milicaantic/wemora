@@ -74,8 +74,8 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 
 ### C1.2 Merenje exporta
 **Gotovo kada:**
-- [ ] izmereno koliko traje `expo export --platform web` za šablon
-- [ ] odluka u `docs/decisions.md`: ako je preko ~30 s → Gatekeeper koristi Metro dev server nad `app/`, a statički export samo `verify`; inače statički export svuda
+- [x] izmereno koliko traje `expo export --platform web` za šablon
+- [x] odluka u `docs/decisions.md`: ako je preko ~30 s → Gatekeeper koristi Metro dev server nad `app/`, a statički export samo `verify`; inače statički export svuda
 
 ### C1.3 `scaffold/`
 **Cilj:** `scaffold(plan, outDir)` iz plana napravi Expo aplikaciju sa praznim ekranima.
