@@ -14,7 +14,7 @@ Ovaj dokument kaže ko šta radi, kojim redom i kada se kod spaja i proverava. �
 
 | Osoba | Uloga | Folderi (samo ona menja) | Javne funkcije koje drugi koriste |
 |---|---|---|---|
-| **A** | Orkestracija i Mozaik | `src/contracts/` (vodi), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.sh` | `runtime` (`runLoop`, `sendEvent`, `join`, `leave`), `MigrationState`, `BudgetedRunner`, `MockRunner`, `log()`, `config`, `freshContext()`, `OwnershipGuard` |
+| **A** | Orkestracija i Mozaik | `src/contracts/` (vodi), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.ts` | `runtime` (`runLoop`, `sendEvent`, `join`, `leave`), `MigrationState`, `BudgetedRunner`, `MockRunner`, `log()`, `config`, `freshContext()`, `OwnershipGuard` |
 | **B** | Testovi i dokaz | `src/scenarios/`, `src/verify/`, `src/agents/tester.ts`, `scripts/sabotage.ts` | `runScenarios()`, `validateScenario()`, `extractInteractive()`, `computeCoverage()`, `verify()`, `sabotage()` |
 | **C** | Gatekeeper i mobilna aplikacija | `src/gatekeeper/`, `src/scaffold/`, `templates/expo/`, `src/agents/builder.ts`, `src/agents/gatekeeperParticipant.ts` | `scaffold()`, `checkDraft()`, `promote()`, `rollback()`, `serveApp()`, `computeStatus()` |
 | **D** | Ulaz, izlaz i integracija | `src/analysis/`, `src/report/`, `examples/`, `src/agents/analyzer.ts`, `src/agents/architect.ts`, `README.md`, `runs/` | `parseApp()` → `ParsedApp`, `validatePlan()`, `buildReport()` |
@@ -84,7 +84,7 @@ Ako je nešto od ovoga već urađeno, samo proverite da kapija G0 prolazi i pre�
 ### A
 1. Push kostura repoa: `package.json` sa svim zavisnostima, `tsconfig.json` (strict, ESM), `.gitignore`, `.env.example`, `vitest` konfiguracija.
 2. `src/contracts/` sa svim tipovima i zod šemama iz dogovora.
-3. `scripts/check-layers.sh` i ubacivanje u `npm run build`. Pravila iz `architecture.md` §2: domen ne sme da uvozi `@mozaik-ai/core`, `agents/`, `orchestration/` ni `core/runtime.ts`; drugi domen samo preko njegovog `index.ts`; u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` smeju da uvoze Mozaik.
+3. `scripts/check-layers.ts` (D-004) i ubacivanje u `npm run build`. Pravila iz `architecture.md` §2: domen ne sme da zavisi od `@mozaik-ai/core`, `agents/` ni `orchestration/`, ni direktno ni preko drugih fajlova; drugi domen samo preko njegovog `index.ts`; u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` smeju da uvoze Mozaik.
 4. Prazni `index.ts` u svakom folderu, sa potpisima funkcija koje bacaju `"not implemented"`.
 
 ### B, C, D (dok A radi korake 1–4)
@@ -95,7 +95,7 @@ Ako je nešto od ovoga već urađeno, samo proverite da kapija G0 prolazi i pre�
 ### Kapija G0 — proverava A
 - [ ] `git clone` + `npm ci` + `npm run build` prolazi na čistom klonu
 - [ ] `npm test` se pokreće (može 0 testova)
-- [ ] `check-layers.sh` pada ako se u `src/scenarios/` privremeno doda `import "@mozaik-ai/core"` (proverite, pa vratite)
+- [ ] `check-layers.ts` (`npm run build`) pada ako se u `src/scenarios/` privremeno doda `import "@mozaik-ai/core"` (proverite, pa vratite)
 - [ ] `templates/expo/` pravi web export
 - [ ] svi su povukli `main` i napravili svoju granu za F1
 
@@ -149,7 +149,7 @@ Niko ne čeka nikoga. Svako radi nad mockovima i ručno napisanim primerima.
 
 ### D — test aplikacije, parser i izveštaj
 1. **`examples/recepti/`:** 5 ekrana, **namerno samo za desktop** (bočni meni, široka tabela, lista i detalj jedan pored drugog, hover info, omiljeni u `localStorage`). Pristupačna imena na svim poljima i dugmadima. Podaci iz `examples/mock-api/` preko `VITE_API_URL`.
-2. **`analysis/`:** `parseApp(webDir)` → `ParsedApp`: rute iz React Routera, fajlovi po ruti, upotreba web API-ja, veličina u tokenima (procena), i podela ruta na N delova za analizatore (N daje Conductor). Nepodržan ulaz (Next.js) → jasna greška.
+2. **`analysis/`:** `parseApp(webDir)` → `ParsedApp`: rute iz React Routera, fajlovi po ruti, upotreba web API-ja, veličina u tokenima (procena). Podelu ruta na N delova za analizatore pravi posebna funkcija `splitParts(parsed, n)`; N daje Conductor (D-010). Nepodržan ulaz (Next.js) → jasna greška.
 3. **`analysis/validatePlan.ts`:** `validatePlan(plan, parsed)`: svaka ruta iz parsera je u planu, svaki izvorni fajl pripada najviše jednoj jedinici, `dependsOn` pokazuju na postojeće jedinice; vraća listu grešaka (prazna = ok).
 4. **`report/`:** `buildReport(runDir)` iz ručno napisanog fixture-a (`report/mocks/run/`): matrica ekran × scenario, statusi u 4 boje, pokrivenost, namerne razlike. Vremenska osa i trošak mogu u F3.
 5. **`README.md`:** kostur sa koracima pokretanja (dopunjuje se u svakoj fazi).

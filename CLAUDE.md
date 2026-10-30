@@ -24,7 +24,7 @@ Ako se zadatak ne slaže sa `docs/architecture.md` ili `src/contracts/`, **stani
 ```
 
 - Sloj sme da uvozi samo iz slojeva ispod sebe.
-- **Domen (sloj 2) ne sme da uvozi `@mozaik-ai/core`, `agents/` ni `orchestration/`.** To proverava `scripts/check-layers.sh` u `npm run build`. Zbog ovog pravila `verify` radi bez API ključa.
+- **Domen (sloj 2) ne sme da uvozi `@mozaik-ai/core`, `agents/` ni `orchestration/`, ni direktno ni preko drugih fajlova** (iz `core/` sme samo `config.ts` i `log.ts`). To proverava `scripts/check-layers.ts` u `npm run build`. Zbog ovog pravila `verify` radi bez API ključa.
 - Agenti (sloj 3) sadrže samo prompt, alate i reakcije na događaje. Pravi posao rade funkcije iz domena.
 - Domenski moduli se pozivaju samo preko svog `index.ts` i tipova iz `src/contracts/`.
 
@@ -32,7 +32,7 @@ Ako se zadatak ne slaže sa `docs/architecture.md` ili `src/contracts/`, **stani
 
 | Ko | Folderi |
 |---|---|
-| A | `src/contracts/` (vodi), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.sh` |
+| A | `src/contracts/` (vodi), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.ts` |
 | B | `src/scenarios/`, `src/verify/`, `src/agents/tester.ts`, `scripts/sabotage.ts` |
 | C | `src/gatekeeper/`, `src/scaffold/`, `templates/expo/`, `src/agents/builder.ts`, `src/agents/gatekeeperParticipant.ts` |
 | D | `src/analysis/`, `src/report/`, `examples/`, `src/agents/analyzer.ts`, `src/agents/architect.ts`, `README.md`, `runs/` |
