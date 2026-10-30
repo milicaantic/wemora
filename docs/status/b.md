@@ -13,13 +13,17 @@ Poslednja izmena: 2026-10-30
 
 - B8 (PR #31): agent tester (`agents/tester.ts`, `prompts/tester.md`) i njegov domen (`scenarios/tester.ts`, `ariaSnapshot`). Alati `aria_snapshot`, `try_scenario`, `save_scenario`; čuvaju se samo validni scenariji u `tests/<unitId>.json` i `board.tests`. **Nije probano sa pravim modelom**, samo kroz `MockRunner`.
 
-## Gotovo, čeka PR (grana `b/tester-blank`)
-- B9 `scenarios/blank.ts`: `blankApp(appDir, serve)` daje prazan ekran za pravilo 2 u pravom prolazu: placeholder aplikaciju iz `scaffold()`, izvezenu C-ovim `serveApp`. Export se radi **jednom**, na prvi `url()`, i taj snimak se servira do `close()`. `serveApp` se prosleđuje kao parametar, jer `gatekeeper/` već uvozi `scenarios/` (inače bi bio kružni uvoz). Neuspeo export se ne pamti, pa sledeći zadatak pokušava ponovo.
-- Tester: `deps.blankUrl` je string **ili** funkcija (`blankApp(...).url`); razrešava se na početku zadatka. Ako prazan ekran ne može da se napravi, zadatak staje pre modela (`tester.failed`, bez testova i bez događaja).
-- **Zašto prazan ekran ostaje prazan i posle promocija (Q4 rešen bez novog foldera):** `serveApp` servira statički export napravljen u trenutku poziva (D-006), a Conductor pokreće testere odmah posle `scaffold()`, pre nego što ijedan builder radi. Prvi zadatak testera zato izvozi netaknut placeholder.
-- Ručno provereno (C-ov `scaffold` nad `plan.manual.json` za Recepte + `blankApp` + C-ov `serveApp`, export 10 s): sva 3 ručna scenarija prihvaćena nad pokrenutim Receptima; posle upisa pravog ekrana u `app/` (kao promocija) `url()` vraća isti URL bez novog exporta, a scenario se i dalje prihvata (prazan ekran i dalje pada).
-- Testovi: `blank.test.ts` (3), u `agents/tester.test.ts` 2 nova (ukupno 11). Ceo repo: 341 test.
-- `mocks/blank/` ostaje samo za unit testove.
+- B9 (PR #35): `scenarios/blank.ts` (`blankApp(appDir, serveApp)`): prazan ekran u pravom prolazu je placeholder iz `scaffold()`, izvezen jednom i serviran do kraja prolaza, pa ostaje prazan i posle promocija. Tester prima `blankUrl` kao string ili funkciju.
+
+## Gotovo, čeka PR (grana `b/mock-tester`)
+- B10 `src/agents/mocks/todomvc/tester.json` (D-013), usklađen sa D-ovim mock planom (`architect.json`, D15): ključ `tester:todo-list`; model pogleda ekran (`aria_snapshot`), proba i sačuva scenario `todo-list-empty-state` (obaveza `empty-state`: `goto /` → `expectVisible "todos"` → `expectNotVisible "items left!"`), pa objasni zašto ostale četiri obaveze ne mogu da se pokriju (nema koraka za Enter).
+- **Ručno provereno nad pravim TodoMVC-om**, sa praznim ekranom iz C-ovog `scaffold` nad **D-ovim pravim mock planom** (+ `blankApp`/`serveApp`): scenario iz fajla prolazi `validateScenario`. ARIA snapshot praznog TodoMVC-a ima samo `heading "todos"` i `textbox "New Todo Input"`.
+- Test u `agents/tester.test.ts`: pravi tester kroz `MockRunner` sa ovim fajlom stiže do sačuvanog scenarija i `tests.ready`. Ceo repo: 412 testova.
+- Usklađeno sa `main`-om posle PR #36 (arhitekta), #37 (builder), #38 (D15 mock odgovori) i #39 (C-ov mock na mestu iz D-013): sva tri TodoMVC mock fajla koriste ekran `todo-list`. A je povezao testera u CLI kako je predloženo u B9 (D-014: `--original-url`, jedan `blankApp` po prolazu).
+
+## B11 (integracija F2): stanje
+- `migrate --mock --original-url http://localhost:7002` nad TodoMVC-om stiže do `plan.ready` (D-ov analizator i arhitekta kroz mock, C-ov scaffold), a onda staje: **Gatekeeper (C2.4) još ne postoji**, a Conductor ga pravi pre testera i buildera. Tester zato u prolazu još ne kreće. B11 čeka C2.4.
+- **Novi zadatak za B (D-014, PD5):** `serveOriginal(webDir)` koja sama pokreće original, da `--original-url` ne bi bio obavezan („radi iz README-a“, F3).
 
 ## Odluke u B8 i B9 (čekaju potvrdu tima)
 - **B9, ograničenje:** placeholder je potpuno prazan (nema ni zajedničkih delova kao što je meni), pa pravilo 2 **ne odbija** scenario koji proverava samo tekst iz zajedničkog dela aplikacije (npr. naslov „Recepti“ iz bočnog menija). Kriterijum iz b.md B9 („scenario koji proverava samo zajednički naslov biva odbijen“) zato nije ispunjen. Takav scenario sprečava samo prompt („ne proveravaj naslov ili meni koji imaju svi ekrani“). Bolji prazan ekran (aplikacija sa promovisanim zajedničkim jedinicama) ne postoji kad testeri kreću, jer talas 0 tada tek počinje.
@@ -49,7 +53,7 @@ Poslednja izmena: 2026-10-30
 - ništa
 
 ## Sledeće
-- B10: MockRunner odgovori testera za TodoMVC (A12; mesto fajla po P13)
+- B11 (integracija F2) čim C spoji Gatekeeper-učesnika (C2.4); sve ostalo je povezano
 - ponoviti B7 sa C-ovim `serveApp()` (prazan ekran je u B9 već proveren preko `serveApp`)
 
 ## Mockovi koje koristim
@@ -61,7 +65,7 @@ Poslednja izmena: 2026-10-30
 - A: zajednička šema za `tests/<unitId>.json` (niz `Scenario`); do tada `scenarios/tester.ts` koristi `z.array(ScenarioSchema)`
 - A: URL originala i mock-api-ja u `RunConfig` ili drugom ugovoru (b.md Q8); posle toga uključujem `apiFixture`, a tester prestaje da ih prima kao parametre
 - C: dopuna prompta buildera za D-005 (`role="checkbox"`, `Link`/`role="link"`)
-- D (TodoMVC, taster Enter): DSL nema korak za Enter, pa se u TodoMVC ne može dodati zadatak. Predlog D: nov korak `{ submit: { label } }` (promena ugovora). Odluka B/A otvorena.
+- D (TodoMVC, taster Enter): DSL nema korak za Enter, pa se u TodoMVC ne može dodati zadatak. Predlog D: nov korak `{ submit: { label } }` (promena ugovora). Odluka B/A otvorena. Do tada TodoMVC može biti najviše „delimično dokazan“ (samo `shows-header`).
 
 ## Blokira me
 - ništa
