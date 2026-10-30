@@ -267,7 +267,7 @@ describe("builderBrief", () => {
 })
 
 describe("MockRunner primeri za TodoMVC (za A12)", () => {
-  const todomvc = MockFixtureSchema.parse(JSON.parse(readFileSync("src/agents/mocks/builder.todomvc.json", "utf8")))
+  const todomvc = MockFixtureSchema.parse(JSON.parse(readFileSync("src/agents/mocks/todomvc/builder.json", "utf8")))
   const written = (key: string) =>
     todomvc[key]!.flatMap((r) => ("call" in r && r.call.name === "write_file" ? [String(r.call.args.content)] : []))
 
