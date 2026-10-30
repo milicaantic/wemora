@@ -72,21 +72,21 @@ function toAction(s: Step, step: number): Action {
   return { step, kind: "expectNotVisible", text: s.expectNotVisible.text }
 }
 
-// The element a step interacts with. Expectations only read the screen, so they never hit notPortable.
-function actedOn(s: Step): Target | null {
+/** The element a step interacts with. Expectations only read the screen, so they never hit notPortable. */
+export function actedOn(s: Step): Target | null {
   if ("tap" in s) return toTarget(s.tap)
   if ("fill" in s) return toTarget({ label: s.fill.label })
   return null
 }
 
-function toTarget(ref: ElementRef | TapTarget): Target {
+export function toTarget(ref: ElementRef | TapTarget): Target {
   if ("role" in ref) return { by: "role", role: ref.role, name: ref.name }
   if ("text" in ref) return { by: "text", text: ref.text }
   return { by: "label", label: ref.label }
 }
 
-// Same accessible name; roles are compared only when both sides name one.
-function sameElement(a: Target, b: Target): boolean {
+/** Same accessible name; roles are compared only when both sides name one. */
+export function sameElement(a: Target, b: Target): boolean {
   if (a.by === "role" && b.by === "role" && a.role !== b.role) return false
   return nameOf(a) === nameOf(b)
 }
