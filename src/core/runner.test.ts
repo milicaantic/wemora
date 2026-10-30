@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import {
@@ -21,6 +21,7 @@ import { MODELS } from "./config"
 import {
   BudgetedRunner,
   loadMockFixture,
+  loadMockFixtureDir,
   MockRunner,
   models,
   registerContext,
@@ -231,6 +232,19 @@ describe("MockRunner", () => {
 describe("loadMockFixture", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "mock-fixture-"))
   afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  it("merges one file per agent owner from a folder and rejects a key in two files (D-013)", () => {
+    const folder = path.join(dir, "todomvc")
+    mkdirSync(folder)
+    writeFileSync(path.join(folder, "analyzer.json"), JSON.stringify({ analyzer: [{ text: "a" }] }))
+    writeFileSync(path.join(folder, "tester.json"), JSON.stringify({ "tester:list": [{ text: "t" }] }))
+    writeFileSync(path.join(folder, "notes.txt"), "ignored")
+
+    expect(loadMockFixtureDir(folder)).toEqual({ analyzer: [{ text: "a" }], "tester:list": [{ text: "t" }] })
+
+    writeFileSync(path.join(folder, "zz.json"), JSON.stringify({ analyzer: [{ text: "again" }] }))
+    expect(() => loadMockFixtureDir(folder)).toThrow('mock reply key "analyzer" is in both analyzer.json and zz.json')
+  })
 
   it("loads a valid file and rejects an invalid one with its path", () => {
     const good = path.join(dir, "good.json")

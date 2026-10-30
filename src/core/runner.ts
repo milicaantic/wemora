@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 import {
   AnthropicMessages,
   FunctionCallItem,
@@ -186,6 +187,20 @@ export function loadMockFixture(path: string): MockFixture {
   const parsed = MockFixtureSchema.safeParse(JSON.parse(readFileSync(path, "utf8")))
   if (!parsed.success) throw new Error(`invalid mock fixture ${path}: ${z.prettifyError(parsed.error)}`)
   return parsed.data
+}
+
+// One file per agent owner (D-013), e.g. src/agents/mocks/todomvc/tester.json; a key in two files is an error.
+export function loadMockFixtureDir(dir: string): MockFixture {
+  const merged: MockFixture = {}
+  const source = new Map<string, string>()
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".json")).sort()) {
+    for (const [key, replies] of Object.entries(loadMockFixture(join(dir, file)))) {
+      if (source.has(key)) throw new Error(`mock reply key "${key}" is in both ${source.get(key)} and ${file} (${dir})`)
+      source.set(key, file)
+      merged[key] = replies
+    }
+  }
+  return merged
 }
 
 export class MockRunner implements InferenceRunner {

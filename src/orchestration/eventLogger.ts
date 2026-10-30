@@ -21,17 +21,20 @@ export function createEventLogger(): Participant {
     handlers: [
       {
         specification: new EveryEventButStream(),
-        processor: { apply: ({ event }) => log({ agent: nameOf(event.producerId), event: event.type, data: summarize(event) }) },
+        processor: { apply: ({ event }) => log({ agent: agentName(event), event: event.type, data: summarize(event) }) },
       },
     ],
   })
 }
 
-function nameOf(participantId: string): string {
+// participant.left arrives after the participant is gone, so its name comes from the payload (the manifest).
+function agentName(event: SemanticEvent): string {
+  const manifestName = (event.payload as { name?: unknown } | null)?.name
+  if (event.type.startsWith("participant.") && typeof manifestName === "string") return manifestName
   try {
-    return resolveRuntime().getParticipant(participantId)?.getManifest().name ?? participantId
+    return resolveRuntime().getParticipant(event.producerId)?.getManifest().name ?? event.producerId
   } catch {
-    return participantId
+    return event.producerId
   }
 }
 
