@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "migrate": "tsx src/cli.ts migrate",
+    "migrate:mock": "tsx src/cli.ts migrate --mock",
+    "verify": "tsx src/cli.ts verify",
+    "sabotage": "tsx src/cli.ts sabotage",
+    "smoke": "tsx src/cli.ts migrate --mock examples/todomvc"
   },
   "repository": {
     "type": "git",
@@ -20,12 +26,14 @@
   "homepage": "https://github.com/milicaantic/wemora#readme",
   "dependencies": {
     "@mozaik-ai/core": "4.1.0",
-    "dotenv": "^18.0.9"
+    "dotenv": "^18.0.9",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "tsx": "^4.23.15",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^5.0.5"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
