@@ -49,7 +49,7 @@ Ovo je **globalni opis sistema za agente koji pišu kod**. Pravila čitanja:
 1. `cli migrate` → `core` napravi `output/<run-id>/`, inicijalizuje runtime i tablu.
 2. `parseApp()` → `ParsedApp`. Conductor računa broj analizatora N (§9) i deli rute pozivom `splitParts(parsed, N)` iz `analysis/`.
 3. Analizatori rade paralelno → svaki upiše `analysis/<deo>.json` i objavi `analysis.done`.
-4. Kad su stigli **svi** `analysis.done` → Conductor pokreće arhitektu → arhitekta pravi `Plan` → `validatePlan()`. Ako ima grešaka, arhitekta dobija listu i ponavlja (najviše 2 puta, zatim prolaz staje sa greškom). Plan se upiše u `plan.json` i objavi se `plan.ready`.
+4. Kad su stigli **svi** `analysis.done` → Conductor pokreće arhitektu → arhitekta pravi `Plan` → `validatePlan()`. Ako ima grešaka, arhitekta dobija listu i ponavlja (najviše 2 puta; zatim šalje `plan.failed`, a Conductor završava prolaz i pravi izveštaj, D-012). Plan se upiše u `plan.json` i objavi se `plan.ready`.
 5. `scaffold()` → `app/`.
 6. Conductor: red zadataka po talasima. Testeri odmah kreću na ekrane (sve talase), a builderi na talas 0.
 7. Tester → validirani testovi u `tests/<unitId>.json` → `tests.ready`.
@@ -66,6 +66,7 @@ Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a
 |---|---|---|---|
 | `analysis.done` | analizator | `{ partId }` | Conductor (kad su stigli svi, pokreće arhitektu) |
 | `plan.ready` | arhitekta-učesnik | `{}` | Conductor (poziva `scaffold()`) |
+| `plan.failed` | arhitekta-učesnik | `{}` | Conductor (završava prolaz, D-012) |
 | `tests.ready` | tester | `{ unitId }` | Gatekeeper |
 | `draft.submitted` | builder | `{ unitId, round }` | Gatekeeper |
 | `gate.failed` | Gatekeeper | `{ unitId, round }` | Conductor |

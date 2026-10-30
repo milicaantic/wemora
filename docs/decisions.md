@@ -153,3 +153,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: pravilo `core-mozaik` u `scripts/check-layers.ts` važi za kod u `src/core/`, ali ne i za `*.test.ts` u njemu. Pravilo za domen (`domain-no-mozaik`) i dalje važi i za testove.
 - Zašto: testovi za `core/runtime.ts` i `core/runner.ts` trebaju prave Mozaik učesnike (`createHuman`, `createAgent`) da provere događaje i petlju. Testovi se ne izvršavaju u prolazu, pa ne utiču na to da `verify` radi bez Mozaika.
 - Posledice: nema izmena u `architecture.md`; test u `scripts/check-layers.test.ts` proverava oba slučaja (uvedeno u A5).
+
+## D-012: Događaj `plan.failed` kad arhitekta odustane
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; predlog D, PD2 u `docs/tasks/d.md`)
+- Odluka: u `src/contracts/events.ts` postoji događaj `plan.failed` sa praznim payload-om `{}`. Arhitekta ga šalje kad ni posle ponovnih pokušaja (`architecture.md` §4, korak 4) nema plan koji prolazi `validatePlan()`. Conductor tada završava prolaz sa ishodom `plan.failed` i ipak pravi izveštaj. Greške plana arhitekta može da upiše u log; payload nosi samo ID-jeve (invarijanta 5), pa ih ne nosi.
+- Zašto: bez događaja Conductor ne zna da plan neće stići i čeka zauvek.
+- Posledice: `architecture.md` §4 (korak 4) i §5 (tabela događaja). D-ov arhitekta (D14) šalje `plan.failed`; Conductor (A10) ga obrađuje.

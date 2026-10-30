@@ -463,7 +463,15 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
 
 ## F2: Jedan ekran ceo put
 
-### A10 — Conductor
+### A10 — Conductor ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- `new Conductor(deps, options?)` bez `config`: Conductor čita `runId` i `config` sa table (`board()`), koju CLI pravi jednom, pa nema dva izvora istine. `options` (broj agenata, broj rundi) su po podrazumevanoj vrednosti `FIXED_TEAM` iz `config.ts` (F2: 1 analizator, 2 buildera, 1 tester, 2 runde).
+- `RunSummary` ima `outcome` (`finished | plan.failed | budget.exceeded | error`) i `units` (konačan status jedinica), a nema `spentUsd`: trošak zna runner, pa ga dodaje CLI (A11).
+- Nov događaj `plan.failed` (D-012, D-ov PD2).
+- Builder ostaje vezan za svoju jedinicu dok ona ne bude `promoted` ili `failed`; tako sve runde radi isti builder. Agenti ne rade `join` sami; radi ga Conductor i vodi mapu Mozaik UUID → agent.
+- Na `budget.exceeded` nema novih zadataka; posao koji je već dodeljen se završava, a jedinice koje nisu krenule su `failed` (P11 po predlogu).
+- Događaji se obrađuju jedan po jedan, redom, van Mozaik-ovog sinhronog `publish`-a, pa reakcija Conductora ne može da sruši agenta koji je poslao događaj.
+- Testovi (10): pravi Mozaik runtime nad lažnim agentima iz `mocks/fakeAgents.ts` (pun prolaz, redosled analize i arhitekte, testeri na sve talase, ponovna runda kod istog buildera, pad sa blokiranjem zavisnih, `plan.failed`, budžet, greška parsera, `run.jsonl` bez `inference.stream`, tabla i učesnici posle prolaza). Bez timeouta (A13) i bez dinamičnog broja agenata (A14).
 - **Fajlovi:** `src/orchestration/conductor.ts`, `src/orchestration/eventLogger.ts`, `src/orchestration/index.ts`, `src/orchestration/mocks/fakeAgents.ts`, `src/orchestration/conductor.test.ts`.
 - **Izvozi:**
   ```ts
