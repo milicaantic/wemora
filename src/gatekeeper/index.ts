@@ -1,21 +1,12 @@
-import type { CheckDraft, ComputeStatus, Promote, Rollback, ServeApp } from "../contracts"
+import type { CheckDraft, ComputeStatus } from "../contracts"
 
-// Public API of gatekeeper/ (owner: C). Placeholders until F1; signatures come from contracts/api.ts.
+// Javni API gatekeeper/ (vlasnik: C). Potpisi su u contracts/api.ts.
+
+export { promote, rollback } from "./promote"
+export { serveApp } from "./serve"
 
 export const checkDraft: CheckDraft = async () => {
   throw new Error("not implemented: checkDraft")
-}
-
-export const promote: Promote = async () => {
-  throw new Error("not implemented: promote")
-}
-
-export const rollback: Rollback = async () => {
-  throw new Error("not implemented: rollback")
-}
-
-export const serveApp: ServeApp = async () => {
-  throw new Error("not implemented: serveApp")
 }
 
 export const computeStatus: ComputeStatus = () => {
