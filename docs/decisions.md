@@ -115,7 +115,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-008: Kapije 1–4 čitaju kod TypeScriptom; `labels` proverava samo tekst koji postoji u originalu
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (čeka potvrdu tima; `architecture.md` §10 kaže „Babel parsira“)
+- Status: predlog (D potvrdio 2026-10-30, sve tri tačke; čeka A i B; `architecture.md` §10 kaže „Babel parsira“)
 - Odluka:
   1. Kapije `parse`, `forbiddenApis` i `labels` čitaju nacrt TypeScript compiler API-jem (kao parser u D-007), ne Babelom. Kapija `tsc` koristi TypeScript iz šablona (`templates/expo`), nad privremenom kopijom `app/` sa nacrtom.
   2. `forbiddenApis` odbija **svaki** JSX tag malim slovom (`div`, `span`, `p`, `button`, `input`…), jer u RN nema HTML elemenata, i za svaki predlaže RN zamenu.
