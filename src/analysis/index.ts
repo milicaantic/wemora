@@ -18,3 +18,8 @@ export {
   type AnalyzerOutput,
   type ModelReport,
 } from "./reports"
+
+// Used by the architect agent (agents/architect.ts).
+export { expoRouteFor } from "./expoRoute"
+export { ArchitectOutputSchema, normalizePlan, type ArchitectOutput } from "./normalizePlan"
+export { architectBrief, architectRetryMessage } from "./architectBrief"
