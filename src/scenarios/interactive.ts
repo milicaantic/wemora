@@ -1,4 +1,4 @@
-import { chromium } from "playwright"
+import { chromium, type Page } from "playwright"
 import type { ExtractInteractive, InteractiveElement } from "../contracts"
 import { DESKTOP } from "./viewports"
 
@@ -29,15 +29,25 @@ const LOAD_TIMEOUT_MS = 15_000
  * in document order, without duplicates. Only the `main` landmark is read when the page has one, so shared
  * navigation is not counted on every screen. Unnamed elements are skipped: tests address elements by name.
  */
-export const extractInteractive: ExtractInteractive = async (url, route) => {
+export const extractInteractive: ExtractInteractive = (url, route) =>
+  onLoadedPage(url, route, async (page) => {
+    const main = page.getByRole("main")
+    const root = (await main.count()) === 1 ? main : page.locator("body")
+    return interactiveElements(parseAriaSnapshot(await root.ariaSnapshot()))
+  })
+
+/** What a user sees on one screen of the original (desktop viewport), as Playwright's ARIA snapshot YAML. */
+export function ariaSnapshot(url: string, route: string): Promise<string> {
+  return onLoadedPage(url, route, (page) => page.locator("body").ariaSnapshot())
+}
+
+async function onLoadedPage<T>(url: string, route: string, read: (page: Page) => Promise<T>): Promise<T> {
   const browser = await chromium.launch()
   try {
     const page = await browser.newPage({ viewport: DESKTOP })
     await page.goto(`${url.replace(/\/+$/, "")}/${route.replace(/^\/+/, "")}`, { timeout: LOAD_TIMEOUT_MS })
     await page.waitForLoadState("networkidle", { timeout: LOAD_TIMEOUT_MS })
-    const main = page.getByRole("main")
-    const root = (await main.count()) === 1 ? main : page.locator("body")
-    return interactiveElements(parseAriaSnapshot(await root.ariaSnapshot()))
+    return await read(page)
   } finally {
     await browser.close().catch(() => {})
   }
