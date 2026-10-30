@@ -221,7 +221,7 @@ export type ComputeStatus = (input: { tests: Scenario[]; results: ScenarioResult
 
 ## F0: Temelj
 
-### A1 — Kostur repoa
+### A1 — Kostur repoa ✅ 2026-10-30
 - **Fajlovi:** `package.json` (skripte), `.env.example`, `.gitignore`, `docs/decisions.md`, `docs/status/a.md`. Nema izvoza.
 - **Šta radi:** dodaje skripte iz `CLAUDE.md` (`build`, `test`, `migrate`, `migrate:mock`, `verify`, `sabotage`, `smoke`), koje do A11 i A18 javljaju „not implemented“. `.env.example` sadrži samo `ANTHROPIC_API_KEY=` i komentar da se `MOZAIK_*` ključevi ne dodaju (mozaik.md §8). `.gitignore` dobija `output/`, a `runs/` ostaje u gitu. Pravi prazan `docs/decisions.md` sa šablonom zapisa (datum, odluka, zašto, ko), jer ga C puni već u F1.
 - **Gotovo kad:** na čistom klonu prolazi `npm ci && npm run build && npm test`; `git check-ignore output/x` vraća putanju; `grep -E "^MOZAIK" .env.example` ne vraća ništa.
@@ -248,8 +248,8 @@ Umesto `.sh` je `.ts` preko `tsx`, jer niko u timu nema Git Bash (P14, `docs/dec
 - **Gotovo kad:** `npx vitest run scripts` (10 testova, svako pravilo nad privremenim lažnim `src/` i jedan nad pravim `src/`); `npm run build` prolazi; privremeni `import "@mozaik-ai/core"` u `src/scenarios/index.ts` obara `npm run build` sa exit 1 (stavka G0, provereno u PowerShell-u).
 - **Zavisnosti i mock:** nema.
 
-### A3 — Prazni `index.ts` sa potpisima
-- **Fajlovi:** `src/{analysis,scenarios,gatekeeper,scaffold,report,verify}/index.ts`, `src/orchestration/index.ts`, `src/agents/_shared/index.ts`.
+### A3 — Prazni `index.ts` sa potpisima ✅ 2026-10-30
+- **Fajlovi:** `src/{analysis,scenarios,gatekeeper,scaffold,report,verify}/index.ts`. `src/orchestration/` i `src/agents/_shared/` dobijaju sadržaj tek u A8–A10, pa za njih nema praznih fajlova.
 - **Izvozi:** svaki domenski `index.ts` izvozi funkcije svog vlasnika sa tipom iz `contracts/api.ts`, npr. `export const parseApp: ParseApp`.
 - **Šta radi:** svaka funkcija baca `new Error("not implemented: <ime>")`. Tako svi od prvog dana uvoze prave potpise, a `tsc` odmah javlja kad se potpis i implementacija raziđu. Posle G0 vlasnik foldera menja telo funkcije, a potpis samo kroz granu `contracts/<opis>`.
 - **Gotovo kad:** `npm run build` prolazi, a postoji `index.ts` u svih 6 domenskih foldera (`ls src/*/index.ts`).

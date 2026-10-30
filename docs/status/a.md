@@ -10,16 +10,18 @@ Poslednja izmena: 2026-10-30
 
 ## Gotovo, čeka review i spajanje (grana `skeleton`)
 - A2: `scripts/check-layers.ts` (7 pravila, 10 testova), uključen u `npm run build`; odluka D-004 (`.ts` umesto `.sh`, posredna provera Mozaika u domenu)
+- A3: `index.ts` u `analysis`, `report`, `scenarios`, `verify`, `scaffold` i `gatekeeper`; svaka funkcija ima tip iz `contracts/api.ts` i baca „not implemented“
 
 ## U radu
 - ništa
 
 ## Sledeće
-- A3: prazni `index.ts` u domenskim folderima, sa potpisima iz `contracts/api.ts`
-- kapija G0
+- PR grane `skeleton` (A2 + A3), pa kapija G0 na čistom klonu
+- posle G0: A4 (`core/config.ts`)
 
 ## Mockovi koje koristim
 - `src/cli.ts` samo javlja „not implemented“, a pravi CLI stiže u A11 i A18
+- domenski `index.ts` (A3) su prazni potpisi koje vlasnici (B, C, D) popunjavaju u F1
 
 ## Čeka odluku tima
 - review ugovora: B (`scenario.ts`, `ScenarioResult`, `Coverage`), C (`GateResult`, `UnitResult`, potpisi iz P16), D (`ParsedApp`, `AnalyzerReport`, `Plan`, `SplitParts`)
