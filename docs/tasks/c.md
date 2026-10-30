@@ -56,7 +56,7 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 - [x] `node_modules` i build izlaz šablona su u `.gitignore`
 
 ### Kapija G0 (proverava A) — moj deo
-- [ ] `templates/expo/` pravi web export na čistom klonu
+- [x] `templates/expo/` pravi web export na čistom klonu
 
 ---
 
@@ -133,7 +133,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 ### C2.1 Promptovi
 **Šta:** `prompts/builder.md` (uloga, pravila, ugovor o labelama: **labele polja i tekst dugmadi ostaju isti kao na webu, izgled sme da se menja**) i `prompts/web-to-rn.md` (tabela mapiranja web → RN: `div`→`View`, `input`→`TextInput` sa `accessibilityLabel`, `button`→`Pressable`+`Text`, tabela→lista kartica, `localStorage`→zajednički store iz talasa 0, `Link`→Expo Router…).
 **Gotovo kada:**
-- [ ] B je pogledao ugovor o labelama i slaže se sa njim
+- [x] B je pogledao ugovor o labelama i slaže se sa njim (D-005, potvrda B; B predlaže dopunu za checkbox i linkove)
 
 ### C2.2 `agents/builder.ts`
 **Alati:**

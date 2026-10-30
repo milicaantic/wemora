@@ -12,19 +12,11 @@ Faza: F2
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- C2.3 `checkDraft`: gotovo na grani `c/check-draft`, čeka PR
-  - `src/gatekeeper/check.ts`: ekran → kapije 1–4 → promote → kapija 5 (`runScenarios`, 390×844, namerne razlike jedinice) → regresija (testovi svih već promovisanih jedinica) → rollback ako 5 ili regresija padne; zajednička jedinica → kapije 1–3 → promote → regresija
-  - nacrt se privremeno ubacuje pre kapije 5, pa jedan web export nad istim `app/` (topao keš) služi i kapiji 5 i regresiji; rollback vraća `app/` tačno
-  - ekran bez testova ulazi kao nedokazan (C3.2); regresija javlja `brokenTests`
-  - spisak promovisanih jedinica (za regresiju) čuva Gatekeeper u memoriji, u okviru prolaza
-  - testovi: lažni `runScenarios` (7 slučajeva) + G1 test sada ide kroz pravi `checkDraft`
-  - usput (D-015): builder koristi `OwnershipGuard` sa listom (`layout` sme i `app/_layout.tsx`); `roundsExhausted` izbačen iz testova statusa
-- C2.4 Gatekeeper-učesnik: gotovo na grani `c/gatekeeper-participant` (napravljena od `c/check-draft`), čeka PR
-  - `src/agents/gatekeeperParticipant.ts`: `createGatekeeper(id) → Participant` (`createHuman`, handleri po `event.type`)
-  - `draft.submitted` → red čekanja, nacrti jedan po jedan; ekran bez testova čeka `tests.ready`, posle `testsWaitTimeoutMs` → `gate.failed` (bez promocije; „posle drugog timeouta kao unproven“ je C3.2)
-  - rezultat: tabla + `results/<unitId>.json` (`UnitResult`), pa `gate.failed { unitId, round }` ili `unit.promoted { unitId }`; status promovisanog ekrana iz `computeStatus`
-  - **za A:** u `src/orchestration/agents.ts` zameniti `gatekeeper: notYet(...)` sa `gatekeeper: createGatekeeper` (uvoz iz `../agents/gatekeeperParticipant`)
-- sledeće: integracija (`npm run migrate:mock -- examples/todomvc`), čeka A12 i jedan ID ekrana za TodoMVC (D)
+- F2, moj deo koda je gotov i spojen: C2.1 (PR #33), C2.2 (PR #37, #39), C2.3 (PR #44), C2.4 (PR #47)
+- usklađeno sa D-016 (grana `c/checklist`): Gatekeeper nema svoj tajmer, na `tests.missing` ekran ide bez testova i ulazi kao `unproven`; zakasneli nacrt iz ranije runde se ignoriše (i dok čeka u redu); prekinut builder ne šalje `draft.submitted`
+- dopuna prompta za B (D-005): checkbox → `role="checkbox"` + `aria-checked` + labela; web link → uvek `Link`, nikad `Pressable` + `router.push`
+- čeka druge: A da poveže `createGatekeeper` u `src/orchestration/agents.ts`; D da odluči ID ekrana za TodoMVC (`todos` ili `todo-list`), pa menjam `src/agents/mocks/todomvc/builder.json`
+- sledeće: integracija (`npm run migrate:mock -- examples/todomvc`), kapija G2
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.

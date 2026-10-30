@@ -42,10 +42,11 @@ The tests from the web must pass on mobile without changes. So:
 
 1. **Field labels stay the same.** Every input gets `accessibilityLabel` with exactly the label text from the web (`<label>`, `aria-label` or `placeholder` used as a label): `<TextInput accessibilityLabel="Namirnica" … />`.
 2. **Buttons keep their name.** A web `<button>` becomes `<Pressable role="button">` with the same visible text inside a `<Text>`. If the web button has an `aria-label` (e.g. an icon or star button), put the same text in `accessibilityLabel`. Without `role="button"` the tests cannot find the button.
-3. **Links keep their text** and use `Link` from `expo-router`, which is a link for the tests.
+3. **Links keep their text** and use `Link` from `expo-router`, which is a link for the tests. Anything that is a link on the web (`<Link>`, `<NavLink>`, `<a href>`) must be a `Link` on mobile. Never replace it with a `Pressable` that calls `router.push`: the tests look for a link and will not find it.
 4. **Lists** get `role="list"` on the container and `role="listitem"` on each item.
-5. **Visible texts stay the same**: headings, empty states (e.g. `Lista za kupovinu je prazna`), counters (e.g. `Kupljeno: {n} od {total}`), error and loading messages. Copy them character for character, including Serbian letters (č, ć, š, ž, đ). Do not translate, shorten or reword them.
-6. **Layout may change.** Columns become a vertical list, a table becomes a list of cards, a sidebar becomes a bottom bar. Only the texts and names above must stay.
+5. **Checkboxes** (`<input type="checkbox">`) become `<Pressable role="checkbox" aria-checked={checked} accessibilityLabel={…}>`. The label is the text of the web `<label>` for that checkbox, often the item name (e.g. `accessibilityLabel={item.name}` for a shopping list row). Without `role="checkbox"` and the label, the tests cannot tick it.
+6. **Visible texts stay the same**: headings, empty states (e.g. `Lista za kupovinu je prazna`), counters (e.g. `Kupljeno: {n} od {total}`), error and loading messages. Copy them character for character, including Serbian letters (č, ć, š, ž, đ). Do not translate, shorten or reword them.
+7. **Layout may change.** Columns become a vertical list, a table becomes a list of cards, a sidebar becomes a bottom bar. Only the texts and names above must stay.
 
 Everything the user could see on the web must still be reachable on a phone: put long content in a `ScrollView` or a `FlatList`.
 

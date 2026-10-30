@@ -2,20 +2,19 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
 import { EVENTS, type CheckDraft, type GateResult, type Scenario, type ScreenStatus, type Unit, type UnitResult } from "../contracts"
-import { DEFAULTS } from "../core/config"
 import { log } from "../core/log"
 import { board, emit } from "../core/runtime"
 import { checkDraft as realCheckDraft, computeStatus } from "../gatekeeper"
 
 // Gatekeeper-učesnik (C2.4, architecture.md §10): deterministički, bez modela.
 // - draft.submitted → red čekanja; nacrti se proveravaju jedan po jedan (checkDraft)
-// - ekran bez testova čeka tests.ready ("bez testova nema zelenog"); posle testsWaitTimeoutMs → gate.failed
+// - ekran bez testova čeka tests.ready ("bez testova nema zelenog"); na tests.missing (Conductor, D-016)
+//   ide na proveru bez testova i ulazi kao unproven
+// - nacrt iz ranije runde (zakasneli, D-016) se ignoriše
 // - rezultat ide na tablu i u results/<unitId>.json, pa gate.failed { unitId, round } ili unit.promoted { unitId }
 
 export type GatekeeperOptions = {
   checkDraft?: CheckDraft
-  /** Koliko ekran čeka testove pre nego što nacrt padne (core/config.ts). */
-  testsWaitTimeoutMs?: number
 }
 
 type Job = { unitId: string; round: number; builderId: string }
@@ -33,11 +32,12 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 
 export function createGatekeeper(id: string, options: GatekeeperOptions = {}): Participant {
   const check = options.checkDraft ?? realCheckDraft
-  const waitMs = options.testsWaitTimeoutMs ?? DEFAULTS.testsWaitTimeoutMs
 
   const queue: Job[] = []
-  // Ekrani čiji je nacrt stigao pre testova: čekaju tests.ready ili timeout.
-  const waiting = new Map<string, { job: Job; timer: ReturnType<typeof setTimeout> }>()
+  // Ekrani čiji je nacrt stigao pre testova: čekaju tests.ready ili tests.missing.
+  const waiting = new Map<string, Job>()
+  // Ekrani za koje testova neće biti (tests.missing): proveravaju se bez testova.
+  const missing = new Set<string>()
   let working = false
 
   const participant: Participant = createHuman({
@@ -50,7 +50,11 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
       },
       {
         specification: new EventOfType(EVENTS.testsReady),
-        processor: { apply: ({ event }) => safely(() => onTestsReady((event.payload as { unitId: string }).unitId)) },
+        processor: { apply: ({ event }) => safely(() => release((event.payload as { unitId: string }).unitId)) },
+      },
+      {
+        specification: new EventOfType(EVENTS.testsMissing),
+        processor: { apply: ({ event }) => safely(() => onTestsMissing((event.payload as { unitId: string }).unitId)) },
       },
     ],
   })
@@ -71,7 +75,17 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
 
   const hasTests = (unitId: string) => (board().tests[unitId]?.length ?? 0) > 0
 
+  /** Runda koju Conductor trenutno vodi; nacrt iz ranije runde je zakasneo (D-016). */
+  const isStale = (unitId: string, round: number) => {
+    const current = board().units[unitId]?.round
+    return current !== undefined && round !== current
+  }
+
   function onDraft({ unitId, round }: { unitId: string; round: number }, producerId: string): void {
+    if (isStale(unitId, round)) {
+      log({ agent: id, event: "event.stale", data: { unitId, round, current: board().units[unitId]?.round } })
+      return
+    }
     // builderId sa table (Conductor ga upisuje; ime agenta = ime njegovog staging foldera)
     const builderId = board().units[unitId]?.builderId ?? producerId
     const job: Job = { unitId, round, builderId }
@@ -81,30 +95,25 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     } catch (error) {
       return void finish(job, [gate(job, "parse", false, `Gatekeeper: ${message(error)}`)], [])
     }
-    if (unit.kind === "screen" && !hasTests(unitId)) {
-      waiting.get(unitId) && clearTimeout(waiting.get(unitId)!.timer)
-      const timer = setTimeout(() => safely(() => onTestsTimeout(unitId)), waitMs)
-      waiting.set(unitId, { job, timer })
+    if (unit.kind === "screen" && !hasTests(unitId) && !missing.has(unitId)) {
+      waiting.set(unitId, job)
       log({ agent: id, event: "gatekeeper.waiting_for_tests", data: { unitId, round } })
       return
     }
     enqueue(job)
   }
 
-  function onTestsReady(unitId: string): void {
-    const held = waiting.get(unitId)
-    if (!held) return
-    clearTimeout(held.timer)
+  function release(unitId: string): void {
+    const job = waiting.get(unitId)
+    if (!job) return
     waiting.delete(unitId)
-    enqueue(held.job)
+    enqueue(job)
   }
 
-  function onTestsTimeout(unitId: string): void {
-    const held = waiting.get(unitId)
-    if (!held) return
-    waiting.delete(unitId)
-    const minutes = Math.round(waitMs / 60_000)
-    finish(held.job, [gate(held.job, "scenarios", false, `Gatekeeper: ekran nema validiranih testova ni posle ${minutes} min; bez testova nema promocije.`)], [])
+  function onTestsMissing(unitId: string): void {
+    missing.add(unitId)
+    log({ agent: id, event: "gatekeeper.tests_missing", data: { unitId, waiting: waiting.has(unitId) } })
+    release(unitId)
   }
 
   function enqueue(job: Job): void {
@@ -129,6 +138,11 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
   }
 
   async function runOne(job: Job): Promise<void> {
+    // Dok je čekao u redu, Conductor je možda prešao na sledeću rundu.
+    if (isStale(job.unitId, job.round)) {
+      log({ agent: id, event: "event.stale", data: { unitId: job.unitId, round: job.round } })
+      return
+    }
     const unit = unitOf(job.unitId)
     const tests = board().tests[job.unitId] ?? []
     const { runDir, webDir } = board().config
@@ -146,7 +160,7 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
   function finish(job: Job, gates: GateResult[], tests: Scenario[]): void {
     const passed = gates.length > 0 && gates.every((g) => g.ok)
     const failed = gates.find((g) => !g.ok)
-    // Kapija 5 je prošla, pa je svaki test prošao; nula testova → unproven.
+    // Kapija 5 je prošla, pa je svaki test prošao; nula testova (tests.missing) → unproven.
     const status: ScreenStatus = passed
       ? computeStatus({
           tests,
