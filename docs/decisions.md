@@ -177,3 +177,14 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: `wemora migrate` prima `--original-url <url>`: adresu originala koji je pokrenut ručno (npr. `npm run serve` u `examples/todomvc`, plus `examples/mock-api` za Recepte). CLI je prosleđuje B-ovom testeru (`createTester(id, { originalUrl, blankUrl })`); prazna aplikacija je jedan `blankApp` po prolazu, koji se gasi posle prolaza. Bez `--original-url` tester se ne pokreće, a prolaz staje sa porukom šta fali. `RunConfig` u ugovoru se ne menja.
 - Zašto: tester otvara original u browseru i u `--mock` prolazu (mock zamenjuje samo model), a niko još ne pokreće original automatski. Dogovor iz PD5 je da to radi B-ova `serveOriginal(webDir)`, koja još ne postoji.
 - Posledice: `architecture.md` §13 (opcije `--original-url` i `--mock-dir`, D-013). Kad B napravi `serveOriginal` (potrebno za „radi iz README-a“ u F3), CLI je koristi kad `--original-url` nije dat.
+
+## D-015: `checkDraft` dobija jedinicu, rundu i `webDir`; `OwnershipGuard` prima listu putanja
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; predlog C, P16 u `docs/status/c.md`; ispunjava uslov iz D-008)
+- Odluka:
+  1. `CheckDraft = (input: CheckDraftInput) => Promise<GateResult[]>`, gde je `CheckDraftInput = { unit, round, draftDir, tests, webDir }` (`src/contracts/api.ts`). `round` ide u svaki `GateResult`; `unit.sources` (putanje prema `webDir`) koristi kapija 4 (D-008), a `unit.intentionalDifferences` kapija 5.
+  2. `StatusInput.roundsExhausted` je opciono, jer ga `computeStatus` ne koristi (C1.6). Uklanja se iz ugovora kad C izbaci polje iz svojih testova.
+  3. `OwnershipGuard` (`src/agents/_shared/guards.ts`) prima jedan string (folder, kao do sada) ili listu: putanja sa `/` na kraju dozvoljava sve ispod nje, a bez `/` samo taj fajl. Tako zajednička jedinica `layout` sme da piše i `app/_layout.tsx` (PD3); C-ov builder prosleđuje svoj `allowedPaths(unit)`.
+- Zašto: C2.3 (`checkDraft`) i jedinica `layout` nisu mogli da se urade sa starim potpisima, a C je tačno naveo šta fali.
+- Posledice: `architecture.md` §3 (ulaz Gatekeepera). C-ov `checkDraft` (C2.3) koristi novi potpis; C-ov builder može da zameni `guardPrefix(unit)` sa `allowedPaths(unit)`. Postojeći pozivi `OwnershipGuard` sa jednim stringom rade kao pre.

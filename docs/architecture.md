@@ -38,7 +38,7 @@ Ovo je **globalni opis sistema za agente koji pišu kod**. Pravila čitanja:
 | Scaffold | domen | `scaffold/` | C | `Plan` | Expo projekat u `app/` sa praznim ekranima |
 | Tester | AI agent | `agents/tester.ts` | B | jedna jedinica + URL originala | validirani `Scenario[]` |
 | Builder | AI agent | `agents/builder.ts` | C | jedna jedinica + izvorni fajlovi + greška prethodne runde | kod u `staging/` |
-| Gatekeeper | domen + učesnik | `gatekeeper/`, `agents/gatekeeperParticipant.ts` | C | nacrt jedinice + testovi | `GateResult`, promocija, `ScreenStatus` |
+| Gatekeeper | domen + učesnik | `gatekeeper/`, `agents/gatekeeperParticipant.ts` | C | jedinica, runda, nacrt, testovi, `webDir` (`CheckDraftInput`, D-015) | `GateResult`, promocija, `ScreenStatus` |
 | Conductor | orkestracija | `orchestration/` | A | tabla + događaji | pokretanje/gašenje agenata, dodela jedinica |
 | BudgetedRunner | osnova | `core/runner.ts` | A | `InferenceInput` | `InferenceOutput`, nikad izuzetak |
 | Izveštaj | domen | `report/` | D | `output/<run-id>/` | `report.html` |

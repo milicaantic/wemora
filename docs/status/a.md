@@ -32,7 +32,7 @@ Poslednja izmena: 2026-10-30
 
 - A11: `wemora migrate` (`src/cli.ts`, `src/orchestration/migrate.ts`, `agents.ts`), `loadMockFixtureDir`, `Conductor.notifyBudgetExceeded()`, D-013 (PR #34)
 
-## Gotovo, čeka review i spajanje (grana `a/wire-tester`)
+- povezivanje agenata u CLI (commit `ad80f8c`, greškom direktno na `main` bez PR-a; C radi review naknadno):
 - B-ov tester (B8) povezan u `src/orchestration/agents.ts`: `createTester(id, { originalUrl, blankUrl })`, jedan B-ov `blankApp` (B9) po prolazu nad C-ovim `serveApp`, gasi se posle prolaza; `createAgentFactories` vraća `{ factories, close }`
 - nova opcija `--original-url <url>` (samo `migrate`, mora http(s)); bez nje tester javlja „pass --original-url (Q8)“; D-014 i `architecture.md` §13 (sa `--mock-dir` iz D-013); 9 novih testova
 - C-ov builder (C2.2, PR #37) povezan (`createBuilder(id)`); jedino Gatekeeper-učesnik (C2.4) je još zamena
@@ -41,10 +41,13 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - ništa
 
+## Gotovo, čeka review i spajanje (grana `contracts/unblock-c`)
+- D-015, za C: `checkDraft({ unit, round, draftDir, tests, webDir })` (`CheckDraftInput`, C-ov P16 i uslov iz D-008); `StatusInput.roundsExhausted` opciono (uklanja se kad ga C izbaci iz testova); `OwnershipGuard` prima i listu putanja (`folder/` ili jedan fajl, PD3); 8 novih testova; `architecture.md` §3
+
 ## Sledeće
-- PR `a/wire-tester` → `main`
+- PR `contracts/unblock-c` → `main` (prvi push: `git push -u origin contracts/unblock-c`)
 - A13 (`a/timeouts`): tester i builder timeouti, nov događaj `tests.missing` (predlog za P9/P10 čeka „kreni“)
-- `contracts/f1`: šema `tests/<unitId>.json`, `checkDraft` po C-ovom P16, `roundsExhausted`, `failedStep`, `LogEntrySchema`, Enter korak (`submit`) za TodoMVC
+- `contracts/f1`: šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, Enter korak (`submit`) za TodoMVC, uklanjanje `roundsExhausted`
 - B (F3, PD5): `serveOriginal(webDir)`; CLI je koristi kad `--original-url` nije dat
 - kad C i D spoje agente: zamena u `src/orchestration/agents.ts` postaje `import`
 
@@ -67,7 +70,6 @@ Poslednja izmena: 2026-10-30
 - pitanja P1–P18 u `docs/tasks/a.md`; P1 i P2 su zapisani kao predlozi D-002 i D-003 u `docs/decisions.md`; P3 i P14 su rešeni kroz D-004; P4 i P5 kroz D-010
 - usklađivanje koje čeka „ok“ jedne osobe: D-001–D-003 i „contracts: samo zod“ u §2 (C), D-007 (parser na TypeScript-u; kapije su već usklađene kroz D-008), mesto `sabotage` (B, Q14)
 - usklađivanje koje čeka odluku tima: B-ovo pravilo 3 („bar jedna“, Q3, Q22), osnova putanja u `writes` (C, PD4), ko sme da prihvati odluku
-- uslov iz D-008: `checkDraft` u ugovoru dobija putanje originalnih fajlova jedinice (`contracts/f1`, pre C2.3)
 - cene modela u `config.ts` su prepisane iz wemora-plan §6; pretpostavka da ×5 preko 100k važi za ceo zahtev
 
 ## Blokira me

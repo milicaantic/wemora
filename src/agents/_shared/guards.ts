@@ -12,15 +12,20 @@ import { WEMORA_ERROR } from "../../core/runner"
 
 const toPosix = (p: string) => path.posix.normalize(p.replace(/\\/g, "/"))
 
-// Rejects writes outside `prefix` before they happen (architecture.md invariant 6).
+// Rejects writes outside the allowed paths before they happen (architecture.md invariant 6).
+// One string is a folder. In a list, "screens/x/" allows everything below it and "app/_layout.tsx"
+// only that file (D-015; the layout unit writes both, PD3).
 export class OwnershipGuard implements InterceptionHandler {
-  private readonly prefix: string
+  private readonly folders: string[]
+  private readonly files: string[]
 
   constructor(
-    prefix: string,
+    allowed: string | readonly string[],
     private readonly toolNames: readonly string[] = ["write_file"],
   ) {
-    this.prefix = toPosix(prefix).replace(/\/?$/, "/")
+    const entries = typeof allowed === "string" ? [toPosix(allowed).replace(/\/?$/, "/")] : allowed.map(toPosix)
+    this.folders = entries.filter((entry) => entry.endsWith("/"))
+    this.files = entries.filter((entry) => !entry.endsWith("/"))
   }
 
   isSatisfiedBy(transition: ExecutableTransition): boolean {
@@ -32,7 +37,8 @@ export class OwnershipGuard implements InterceptionHandler {
   async handle(transition: ExecutableTransition): Promise<ExecutableTransition> {
     if (transition.nextStateId !== "function_call") return transition
     const { call, inferenceInput } = transition.input
-    const rejection = FunctionCallOutputItem.create(call.callId, `Rejected: you may only write inside ${this.prefix}`)
+    const allowed = [...this.folders, ...this.files].join(", ")
+    const rejection = FunctionCallOutputItem.create(call.callId, `Rejected: you may only write inside ${allowed}`)
     inferenceInput.context.addContextItems([call, rejection])
     return { nextStateId: "inference", input: inferenceInput }
   }
@@ -43,7 +49,8 @@ export class OwnershipGuard implements InterceptionHandler {
       if (typeof target !== "string" || target === "") return false
       const normalized = toPosix(target)
       const absolute = normalized.startsWith("/") || /^[a-zA-Z]:/.test(normalized)
-      return !absolute && normalized.startsWith(this.prefix)
+      if (absolute) return false
+      return this.files.includes(normalized) || this.folders.some((folder) => normalized.startsWith(folder))
     } catch {
       return false
     }
