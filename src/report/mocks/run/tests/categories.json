@@ -1,0 +1,23 @@
+[
+  {
+    "id": "cat-pick",
+    "unitId": "categories",
+    "obligation": "pick-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Supe"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      }
+    ]
+  }
+]

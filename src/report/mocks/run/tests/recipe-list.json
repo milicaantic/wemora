@@ -1,0 +1,132 @@
+[
+  {
+    "id": "rl-shows",
+    "unitId": "recipe-list",
+    "obligation": "shows-recipes",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rl-search",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "fill": {
+          "label": "Pretraga",
+          "value": "sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Musaka"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rl-filter",
+    "unitId": "recipe-list",
+    "obligation": "filter-by-category",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Palačinke"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rl-sort",
+    "unitId": "recipe-list",
+    "obligation": "sort-by-time",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Sortiraj po vremenu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Šopska salata"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rl-favorite",
+    "unitId": "recipe-list",
+    "obligation": "toggle-favorite",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene: Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "★"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rl-open",
+    "unitId": "recipe-list",
+    "obligation": "open-detail",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 8"
+        }
+      }
+    ]
+  }
+]

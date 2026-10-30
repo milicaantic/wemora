@@ -1,0 +1,123 @@
+{
+  "unitId": "recipe-detail",
+  "status": "partial",
+  "rounds": 2,
+  "gates": [
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "labels",
+      "ok": false,
+      "message": "no element with accessibilityLabel or text 'Povećaj porcije' in the draft"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 2,
+      "gate": "parse",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 2,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 2,
+      "gate": "tsc",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 2,
+      "gate": "labels",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 2,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "ok"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "rd-shows",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 1200
+    },
+    {
+      "scenarioId": "rd-scale",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 1200
+    },
+    {
+      "scenarioId": "rd-favorite",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 1200
+    }
+  ],
+  "coverage": {
+    "unitId": "recipe-detail",
+    "obligations": {
+      "covered": [
+        "shows-recipe",
+        "scale-servings",
+        "toggle-favorite"
+      ],
+      "missing": [
+        "add-to-shopping-list",
+        "not-found"
+      ]
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "button",
+          "name": "Povećaj porcije"
+        },
+        {
+          "role": "button",
+          "name": "Dodaj u omiljene"
+        }
+      ],
+      "missing": [
+        {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      ],
+      "notPortable": []
+    }
+  }
+}

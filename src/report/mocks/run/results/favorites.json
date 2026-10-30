@@ -1,0 +1,38 @@
+{
+  "unitId": "favorites",
+  "status": "unproven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "ok"
+    }
+  ],
+  "scenarios": [],
+  "coverage": null,
+  "reason": "nema validiranih testova ni posle drugog testera"
+}

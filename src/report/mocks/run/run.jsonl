@@ -1,0 +1,6 @@
+{"t":"2026-10-30T10:00:00.000Z","agent":"conductor","event":"run.started"}
+{"t":"2026-10-30T10:00:05.000Z","agent":"analyzer-1","event":"analysis.done"}
+this line is not json
+{"t":"2026-10-30T10:01:10.000Z","agent":"architect","event":"plan.ready"}
+{"t":"2026-10-30T10:04:00.000Z","agent":"gatekeeper","event":"unit.promoted"}
+{"t":"2026-10-30T10:07:30.000Z","agent":"conductor","event":"run.finished"}
