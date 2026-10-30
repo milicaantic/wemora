@@ -96,8 +96,8 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 **Pravilo:** prva kapija koja padne vraća grešku. Poruka mora da bude **razumljiva builderu** (koji fajl, koja linija, šta tačno fali, npr. „nema elementa sa accessibilityLabel 'Pretraga'“).
 **Mock:** dobri i loši fixture fajlovi u `src/gatekeeper/mocks/`, ručno napisan testovi JSON za `labels`.
 **Gotovo kada:**
-- [ ] za svaku kapiju test: dobar fixture prolazi, loš pada **baš na toj kapiji** sa jasnom porukom
-- [ ] domen ne uvozi `@mozaik-ai/core` (`npm run build` to proverava)
+- [x] za svaku kapiju test: dobar fixture prolazi, loš pada **baš na toj kapiji** sa jasnom porukom
+- [x] domen ne uvozi `@mozaik-ai/core` (`npm run build` to proverava)
 - [ ] opciono, kasnije: kapija 6 `androidExport`
 **PR:** `c/gates`
 
