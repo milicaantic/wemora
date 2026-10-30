@@ -1,0 +1,90 @@
+/* Desktop only on purpose: fixed sidebar and a wide content area. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1f2933;
+  background: #f5f2ec;
+}
+
+a {
+  color: #8a3b12;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #c9b8a3;
+  background: #fff;
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-width: 1280px;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #3d2b1f;
+  color: #f5f2ec;
+  padding: 24px 16px;
+}
+
+.sidebar-title {
+  margin: 0 0 32px;
+  font-size: 26px;
+}
+
+.sidebar-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  color: #f5f2ec;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background: #5a4130;
+}
+
+.sidebar-link.active {
+  background: #c8622a;
+  font-weight: 600;
+}
+
+.layout-main {
+  padding: 32px 40px;
+  min-width: 1040px;
+}
+
+.page-title {
+  margin: 0 0 24px;
+  font-size: 24px;
+}
+
+.status-message {
+  padding: 16px;
+  color: #52606d;
+}
+
+.status-error {
+  color: #b42318;
+}
