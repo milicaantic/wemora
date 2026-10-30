@@ -314,19 +314,22 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   4. `emit("unit.promoted", { unitId: "u1", code: "x" }, …)` ne prolazi `tsc` (proverava se sa `// @ts-expect-error`).
 - **Zavisnosti i mock:** A0. **Rizik:** runtime postoji jednom po procesu, a vitest deli module unutar jednog test fajla. Zato su svi testovi koji trebaju runtime u istom fajlu, ili Conductor dobija `emit`, `join` i `leave` kao parametre (A10).
 
-### A6 — Log i safety
+### A6 — Log i safety ✅ 2026-10-30
 - **Fajlovi:** `src/core/log.ts`, `src/core/safety.ts`, `src/core/log.test.ts`.
 - **Izvozi:**
   ```ts
   export type LogEntry = { t: string; agent: string; event: string; costUsd?: number; data?: unknown }
-  export function initLog(runDir: string): void                 // output/<run>/run.jsonl
-  export function log(entry: Omit<LogEntry, "t">): void          // jedna JSON linija, t = ISO vreme
+  export function initLog(runDir: string): void                 // output/<run>/run.jsonl, pravi folder ako ne postoji
+  export function log(entry: Omit<LogEntry, "t">): void          // jedna JSON linija, t = ISO vreme; nikad ne baca
+  export function handleUnhandledRejection(reason: unknown): void
   export function installSafety(): void                           // process.on("unhandledRejection") → log + stderr, proces nastavlja
   ```
+- **Napomene iz implementacije:** `log` pre `initLog` piše na stderr; podaci koji ne mogu u JSON (kružna referenca) postaju `"[unserializable]"`. `uncaughtException` se namerno ne hvata, jer posle sinhronog pada stanje procesa nije pouzdano. Proces koji preživi neuhvaćenu grešku proveren je i van vitest-a (bez `installSafety` exit 1, sa njim exit 0).
 - **Šta radi:** `log` sinhrono dopisuje jednu JSON liniju u `run.jsonl`, pa je redosled linija isti kao redosled događaja (D iz toga crta vremensku osu). Fajl ne uvozi Mozaik, pa ga sme koristiti i domen. `installSafety` je poslednja linija odbrane ako petlja ipak baci grešku.
-- **Gotovo kad:** `npx vitest run src/core/log.test.ts`:
+- **Gotovo kad:** `npx vitest run src/core/log.test.ts` (5 testova):
   1. posle `initLog(tmp)` i dva poziva `log` fajl ima 2 linije, a svaka se parsira kao JSON sa `t`, `agent` i `event`;
-  2. posle `installSafety()`, `process.emit("unhandledRejection", new Error("x"), Promise.resolve())` upiše liniju sa `event: "unhandledRejection"`, a test se nastavlja.
+  2. kružni podaci i poziv pre `initLog` ne bacaju grešku;
+  3. `handleUnhandledRejection` upiše liniju sa `event: "unhandledRejection"`, a `installSafety` dvaput registruje handler samo jednom. Test zove handler direktno, jer bi pravi `unhandledRejection` uhvatio i vitest.
 - **Zavisnosti i mock:** nema.
 
 ### A7 — `BudgetedRunner` i `MockRunner`

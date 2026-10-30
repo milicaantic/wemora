@@ -15,16 +15,18 @@ Poslednja izmena: 2026-10-30
 - A4: `src/core/config.ts` (modeli, cene, `DEFAULTS` iz §9, formule za broj agenata, `modelForRound`, `costUsd`) i 23 testa
 - A5: `src/core/state.ts` (`MigrationState extends RuntimeState`, `createInitialState`), `src/core/runtime.ts` (jedini `defineRuntime`, `board()`, `emit()`) i 7 testova
 - `check-layers`: test fajlovi u `core/` smeju da uvoze Mozaik (potrebno za testove runtime-a), uz 1 novi test
+- A6: `src/core/log.ts` (`initLog`, `log` → `run.jsonl`) i `src/core/safety.ts` (`installSafety`), 5 testova
 
 ## U radu
 - ništa
 
 ## Sledeće
-- A6: log i safety (`core/log.ts`, `core/safety.ts`)
-- zatim A7 (runneri), A8 (`agents/_shared/`), A9 (red zadataka)
+- PR `a/config` → `main` (A4, A5, A6)
+- A7 (`BudgetedRunner`, `MockRunner`), zatim A8 (`agents/_shared/`) i A9 (red zadataka)
 
 ## Važno za tim
 - `emit()` / `sendEvent` rade samo ako je pošiljalac prethodno uradio `join` (Mozaik baca `Participant <id> not found`). Važi za Conductor, Gatekeeper-učesnika (C) i sve agente.
+- format linije u `run.jsonl` je `LogEntry` iz `src/core/log.ts`: `{ t, agent, event, costUsd?, data? }`; D ga čita za vremensku osu i trošak u izveštaju. Domen sme da koristi `log()`.
 
 ## Mockovi koje koristim
 - `src/cli.ts` samo javlja „not implemented“, a pravi CLI stiže u A11 i A18
