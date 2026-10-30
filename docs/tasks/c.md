@@ -104,8 +104,8 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 ### C1.5 `promote`, `rollback`, `serveApp`
 **Šta:** `promote(unitId, draftDir)` kopira `staging/<builderId>/<unitId>/` u `app/src/` (isti raspored) i čuva prethodnu verziju; `rollback(unitId)` je vraća. `serveApp(appDir)` → URL, po odluci iz C1.2.
 **Gotovo kada:**
-- [ ] test: promote pa rollback vraća **tačno** prethodne fajlove
-- [ ] `serveApp` vraća URL na kome se otvara aplikacija; zna da se ugasi (bez visećih procesa)
+- [x] test: promote pa rollback vraća **tačno** prethodne fajlove
+- [x] `serveApp` vraća URL na kome se otvara aplikacija; zna da se ugasi (bez visećih procesa)
 **PR:** `c/promote-serve`
 
 ### C1.6 `computeStatus`
