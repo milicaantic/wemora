@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && tsx scripts/check-layers.ts",
     "test": "vitest run",
     "migrate": "tsx src/cli.ts migrate",
     "migrate:mock": "tsx src/cli.ts migrate --mock",

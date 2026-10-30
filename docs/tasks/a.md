@@ -4,7 +4,7 @@ Ovo su koraci osobe A iz `docs/tim-plan.md` (faze F0–F4), prepisani tako da sv
 
 > **Stanje na dan 30. 10. 2026:** `src/` još ne postoji. Nema `tsconfig.json`, `zod` ni `vitest`, a `npm test` je placeholder iz `npm init`. Zato je prvi korak **A0: ugovori**. Svi potpisi u ovom fajlu su **predlog** dok A0 ne bude spojen u `main`. Posle toga važi kod u `src/contracts/`, a ovaj fajl se usklađuje sa njim.
 
-**Moji folderi:** `src/contracts/` (vodim), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.sh`.
+**Moji folderi:** `src/contracts/` (vodim), `src/core/`, `src/orchestration/`, `src/agents/_shared/`, `src/cli.ts`, `scripts/check-layers.ts`.
 
 **Pre svakog PR-a:** `git pull --rebase origin main && npm run build && npm test`, plus ažuriran `docs/status/a.md`.
 
@@ -16,7 +16,7 @@ Ovo su koraci osobe A iz `docs/tim-plan.md` (faze F0–F4), prepisani tako da sv
 |---|---|---|---|
 | **A0** | F0 | **Ugovori: modeli, događaji, potpisi** | `a/deps`, `contracts/initial` |
 | A1 | F0 | Kostur repoa | `a/skeleton` |
-| A2 | F0 | `scripts/check-layers.sh` | `a/skeleton` |
+| A2 | F0 | `scripts/check-layers.ts` | `a/skeleton` |
 | A3 | F0 | Prazni `index.ts` sa potpisima | `a/skeleton` |
 | | | **Kapija G0 (proverava A)** | |
 | A4 | F1 | `core/config.ts` | `a/runtime-runner` |
@@ -227,18 +227,26 @@ export type ComputeStatus = (input: { tests: Scenario[]; results: ScenarioResult
 - **Gotovo kad:** na čistom klonu prolazi `npm ci && npm run build && npm test`; `git check-ignore output/x` vraća putanju; `grep -E "^MOZAIK" .env.example` ne vraća ništa.
 - **Zavisnosti i mock:** A0.0.
 
-### A2 — `scripts/check-layers.sh`
-- **Fajlovi:** `scripts/check-layers.sh`; u `package.json` skripta postaje `build: tsc --noEmit && bash scripts/check-layers.sh`. Nema izvoza.
-- **Šta radi:** prolazi kroz `import`, `export … from` i `import(…)` u `src/` i proverava pravila iz §2 i §14:
-  1. domen ne uvozi `@mozaik-ai/core`, `agents/`, `orchestration/` ni `core/runtime` (i `core/state`, `core/runner`, vidi P3);
-  2. domen uvozi drugi domen samo preko njegovog `index.ts`;
-  3. u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze `@mozaik-ai/core`;
-  4. `contracts/` uvozi samo `zod` i `./`;
-  5. `defineRuntime(` postoji samo u `core/runtime.ts`.
+### A2 — `scripts/check-layers.ts` ✅ 2026-10-30
+Umesto `.sh` je `.ts` preko `tsx`, jer niko u timu nema Git Bash (P14, `docs/decisions.md` D-004).
+- **Fajlovi:** `scripts/check-layers.ts`, `scripts/check-layers.test.ts`; u `package.json` skripta postaje `build: tsc --noEmit && tsx scripts/check-layers.ts`.
+- **Izvozi:**
+  ```ts
+  export type Violation = { file: string; line: number; rule: string; message: string }
+  export function checkLayers(srcDir: string): Violation[]
+  ```
+- **Šta radi:** uvoze u `src/` čita TypeScript-ov `ts.preProcessFile` (svi oblici uvoza, bez komentara) i proverava pravila iz §2 i §14:
+  1. `layer-order`: sloj uvozi samo slojeve ispod sebe;
+  2. `domain-no-mozaik`: domen ne zavisi od `@mozaik-ai/core` ni direktno ni preko drugih fajlova (npr. domen → `core/runner.ts` → Mozaik); time je rešen i P3;
+  3. `domain-via-index`: drugi domenski folder se uvozi samo preko njegovog `index.ts`;
+  4. `core-mozaik`: u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze Mozaik;
+  5. `contracts-imports`: `contracts/` uvozi samo `zod` i sopstvene fajlove (testovi i `vitest`);
+  6. `single-runtime`: `defineRuntime()` se poziva samo u `core/runtime.ts`;
+  7. `unknown-layer`: fajl van poznatih foldera slojeva.
 
-  Za svako kršenje ispisuje `fajl:linija` i pravilo, i vraća exit 1.
-- **Gotovo kad:** `npm run build` prolazi na čistom `main`-u. Svaka od tri privremene izmene obara `npm run build` sa porukom koja imenuje fajl: `import "@mozaik-ai/core"` u `src/scenarios/index.ts` (stavka G0), uvoz `../analysis/parse` iz `src/report/` i `defineRuntime(` van `core/runtime.ts`. Posle provere se izmene vraćaju.
-- **Zavisnosti i mock:** nema. Rizik: Windows (P14).
+  Za svako kršenje ispisuje `fajl:linija [pravilo] poruka` i vraća exit 1.
+- **Gotovo kad:** `npx vitest run scripts` (10 testova, svako pravilo nad privremenim lažnim `src/` i jedan nad pravim `src/`); `npm run build` prolazi; privremeni `import "@mozaik-ai/core"` u `src/scenarios/index.ts` obara `npm run build` sa exit 1 (stavka G0, provereno u PowerShell-u).
+- **Zavisnosti i mock:** nema.
 
 ### A3 — Prazni `index.ts` sa potpisima
 - **Fajlovi:** `src/{analysis,scenarios,gatekeeper,scaffold,report,verify}/index.ts`, `src/orchestration/index.ts`, `src/agents/_shared/index.ts`.
