@@ -82,9 +82,9 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 **Šta:** kopira šablon u `outDir/app/`; za svaki ekran jedna Expo Router ruta u `app/src/app/…` (po `routeMap`); placeholder u `app/src/screens/<unitId>/`; prazni `app/src/shared/<unitId>/` za zajedničke jedinice.
 **Mock:** ručno napisan `plan.json` za Recepte u `src/scaffold/mocks/` (5 ekrana + zajedničke jedinice).
 **Gotovo kada:**
-- [ ] test: nad mock planom nastaje tačan raspored fajlova
-- [ ] placeholder ekran nema nijednu labelu/tekst koji bi test mogao da nađe (B ga koristi kao „prazan ekran“)
-- [ ] ručno: aplikacija iz mock plana se pokreće i rute se otvaraju
+- [x] test: nad mock planom nastaje tačan raspored fajlova
+- [x] placeholder ekran nema nijednu labelu/tekst koji bi test mogao da nađe (B ga koristi kao „prazan ekran“)
+- [x] ručno: aplikacija iz mock plana se pokreće i rute se otvaraju
 **PR:** `c/scaffold`
 
 ### C1.4 Kapije 1–4 (`gatekeeper/gates/`), tačno ovim redom
