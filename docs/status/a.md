@@ -24,17 +24,21 @@ Poslednja izmena: 2026-10-30
 
 - usklađeni dokumenti samo tamo gde postoji potvrda (PR #23): `check-layers.sh` → `.ts` i posredna provera (D-004) u `architecture.md` §2, `tim-plan.md` i `CLAUDE.md`; `splitParts`, Conductor čeka sve `analysis.done` i poziva `scaffold()` (nova D-010, potvrda D-a u `docs/status/d.md`); nova D-011 (testovi u `core/` smeju da uvoze Mozaik); ispravljena D-002
 
-## Gotovo, čeka review i spajanje (grana `a/accept-d005-d008`)
-- D-005 i D-008 prihvaćeni (A kao vlasnik arhitekture; D-005: C i B; D-008: C i D); usklađeni `architecture.md` §10 (kapije 1, 2 i 4) i §11 (ugovor za buildera: `role`, `accessibilityLabel`) i `tim-plan.md` (C, korak 4)
+- D-005 i D-008 prihvaćeni (potvrdili C, B, D i A); usklađeni `architecture.md` §10 i §11 i `tim-plan.md` (PR #28)
+- Kapija G1 prošla 2026-10-30 (proverio D)
+
+## Gotovo, čeka review i spajanje (grana `a/conductor`)
+- plan: grane A10–A18 grupisane u 5 (`docs/tasks/a.md`)
+- A10: `src/orchestration/conductor.ts` (`Conductor`, `AgentFactories`, `ConductorDeps`, `RunSummary`), `eventLogger.ts` (svi događaji osim `inference.stream` → `run.jsonl`, sa imenom agenta), `mocks/fakeAgents.ts`, 10 testova; `FIXED_TEAM` u `config.ts`
+- ugovor: nov događaj `plan.failed {}` (D-012, D-ov PD2), uz test; `architecture.md` §4 i §5 usklađeni
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `a/accept-d005-d008` → `main`
-- kraj F1: obavestiti tim (spisak ispod), čekaju se odgovori za Y1–Y4 i odluke N1–N6 (vidi „Čeka odluku tima“); kapija G1 (proverava D)
-- `contracts/f1`: izmene ugovora koje B, C i D čekaju za F2
-- F2: A10 (Conductor)
+- A11 (`cli migrate`) na istoj grani, pa PR `a/conductor` → `main`
+- `contracts/f1`: izmene ugovora koje B, C i D čekaju (adrese originala u `RunConfig`, šema `tests/<unitId>.json`, `checkDraft` po C-ovom P16, `roundsExhausted`, `failedStep`, `LogEntrySchema`)
+- A13 (`a/timeouts`) posle odluke o P9 i P10
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`

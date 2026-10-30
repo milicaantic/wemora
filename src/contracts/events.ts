@@ -5,6 +5,7 @@ import { z } from "zod"
 export const EVENTS = {
   analysisDone: "analysis.done",
   planReady: "plan.ready",
+  planFailed: "plan.failed",
   testsReady: "tests.ready",
   draftSubmitted: "draft.submitted",
   gateFailed: "gate.failed",
@@ -25,6 +26,8 @@ const round = z.number().int().positive()
 export const EventPayloadSchemas = {
   "analysis.done": z.strictObject({ partId: id }),
   "plan.ready": z.strictObject({}),
+  // The architect gave up after its retries (D-012); the Conductor ends the run.
+  "plan.failed": z.strictObject({}),
   "tests.ready": z.strictObject({ unitId: id }),
   "draft.submitted": z.strictObject({ unitId: id, round }),
   "gate.failed": z.strictObject({ unitId: id, round }),

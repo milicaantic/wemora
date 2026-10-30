@@ -45,6 +45,9 @@ export const DEFAULTS = {
   testsWaitTimeoutMs: 10 * 60_000,
 } as const
 
+// tim-plan F2: a fixed team and only the cheap rounds, until A14/A15 (F3) switch to the formulas below.
+export const FIXED_TEAM = { analyzers: 1, builders: 2, testers: 1, maxRounds: 2 } as const
+
 export function analyzerCount(totalTokens: number): number {
   const needed = Math.ceil(totalTokens / DEFAULTS.tokensPerAnalyzer)
   return Math.min(Math.max(needed, 1), DEFAULTS.maxAnalyzers)

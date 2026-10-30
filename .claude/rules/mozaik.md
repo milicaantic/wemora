@@ -124,6 +124,7 @@ export const writeFile: Tool = {
 ## 6. Događaji i handleri
 
 - `sendEvent(event, senderId)` i petlje objavljuju događaj **svim** učesnicima, **uključujući pošiljaoca**. Svaki handler filtrira po `event.type` i, gde treba, `event.producerId !== participant.getId()`.
+- **Pošiljalac mora prvo da bude pridružen (`join`).** `sendEvent` i `sendMessage` bacaju `Participant <id> not found` ako `senderId` nije na tabli. Agente pridružuje Conductor pre prvog zadatka, pa agent **ne radi `join` sam**. Naš kod šalje događaje preko `emit()` iz `src/core/runtime.ts`. Pravila za agente su u `src/agents/_shared/handle.ts`.
 - Događaj se pravi sa `SemanticEvent.create(type, producerId, payload)`. Imena su iz `src/contracts/events.ts`. **Payload nosi samo ID-jeve** (npr. `{ unitId }`), a podaci su na tabli.
 - Petlja sama objavljuje: `message_received.started/completed`, `inference.started/completed`, `inference.stream`, `function_call.started/completed`, `model.answer`, `interception.started/finished`. Payload je original plus `loopId`, a `producerId` je ID agenta.
 - **Kraj petlje** je `model.answer` sa `producerId === agentId`. Payload: `{ answer: ModelMessageItem, loopId }`, tekst je `answer.content.text`. Proveri `__WEMORA_ERROR__` prefiks.

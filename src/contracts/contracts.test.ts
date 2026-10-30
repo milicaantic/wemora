@@ -94,4 +94,9 @@ describe("EventPayloadSchemas", () => {
     const withData = { unitId: "u1", code: "export default function Screen() {}" }
     expect(EventPayloadSchemas["unit.promoted"].safeParse(withData).success).toBe(false)
   })
+
+  it("has plan.failed with an empty payload (D-012)", () => {
+    expect(EventPayloadSchemas["plan.failed"].safeParse({}).success).toBe(true)
+    expect(EventPayloadSchemas["plan.failed"].safeParse({ errors: ["unit x has no route"] }).success).toBe(false)
+  })
 })
