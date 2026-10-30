@@ -7,7 +7,17 @@ import { DEFAULTS } from "./core/config"
 // only inside `migrate`, so `verify` and `sabotage` never load them (invariant 10).
 
 export type CliCommand =
-  | { cmd: "migrate"; webDir: string; out: string; maxBuilders: number; maxTesters: number; budget: number; mock: boolean; mockDir?: string }
+  | {
+      cmd: "migrate"
+      webDir: string
+      out: string
+      maxBuilders: number
+      maxTesters: number
+      budget: number
+      mock: boolean
+      mockDir?: string
+      originalUrl?: string
+    }
   | { cmd: "verify"; runDir: string }
   | { cmd: "sabotage"; runDir: string; unitId: string }
   | { cmd: "help" }
@@ -15,7 +25,9 @@ export type CliCommand =
 export class UsageError extends Error {}
 
 export const USAGE = `Usage:
-  wemora migrate <web-dir> [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock] [--mock-dir <dir>]
+  wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock] [--mock-dir <dir>]
+
+  --original-url  the running original web app, for the tester (start it first, e.g. npm run serve in examples/todomvc)
   wemora verify <run-dir>
   wemora sabotage <run-dir> <unitId>`
 
@@ -32,6 +44,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
         budget: { type: "string" },
         mock: { type: "boolean" },
         "mock-dir": { type: "string" },
+        "original-url": { type: "string" },
         help: { type: "boolean", short: "h" },
       },
     })
@@ -42,7 +55,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
   const [cmd, ...rest] = positionals
   if (values.help || cmd === undefined) return { cmd: "help" }
 
-  const migrateOnly = ["out", "max-builders", "max-testers", "budget", "mock", "mock-dir"].filter((name) => name in values)
+  const migrateOnly = ["out", "max-builders", "max-testers", "budget", "mock", "mock-dir", "original-url"].filter((name) => name in values)
   if (cmd !== "migrate" && migrateOnly.length > 0) throw new UsageError(`--${migrateOnly[0]} only works with migrate`)
 
   switch (cmd) {
@@ -57,6 +70,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
         budget: positiveNumber(values.budget, DEFAULTS.budgetUsd, "--budget"),
         mock: values.mock ?? false,
         mockDir: values["mock-dir"],
+        originalUrl: httpUrl(values["original-url"], "--original-url"),
       }
     case "verify":
       if (rest.length !== 1) throw new UsageError("verify needs exactly one <run-dir>")
@@ -99,6 +113,13 @@ function positiveInt(raw: string | undefined, fallback: number, flag: string): n
   const value = raw === undefined ? fallback : Number(raw)
   if (!Number.isInteger(value) || value < 1) throw new UsageError(`${flag} must be a whole number of at least 1, got "${raw}"`)
   return value
+}
+
+function httpUrl(raw: string | undefined, flag: string): string | undefined {
+  if (raw === undefined) return undefined
+  const protocol = URL.canParse(raw) ? new URL(raw).protocol : null
+  if (protocol !== "http:" && protocol !== "https:") throw new UsageError(`${flag} must be an http(s) address, got "${raw}"`)
+  return raw
 }
 
 function positiveNumber(raw: string | undefined, fallback: number, flag: string): number {

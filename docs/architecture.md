@@ -198,12 +198,12 @@ Testeri uzimaju jedinice istim redom.
 ## 13. CLI
 
 ```
-wemora migrate <web-dir> [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock]
+wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock] [--mock-dir <dir>]
 wemora verify <run-dir>          # bez API ključa
 wemora sabotage <run-dir> <unitId>
 ```
 
-`--mock` koristi MockRunner (bez API poziva). `--budget` je tvrdi limit u dolarima po prolazu.
+`--mock` koristi MockRunner (bez API poziva), sa odgovorima iz `src/agents/mocks/<aplikacija>/` ili `--mock-dir` (D-013). `--budget` je tvrdi limit u dolarima po prolazu. `--original-url` je adresa pokrenutog originala za testera (D-014).
 
 ## 14. Invarijante (moraju uvek da važe)
 

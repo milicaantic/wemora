@@ -169,3 +169,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: odgovori za `--mock` su u `src/agents/mocks/<aplikacija>/<agent>.json` (npr. `todomvc/analyzer.json` i `todomvc/architect.json` drži D, `todomvc/tester.json` B, `todomvc/builder.json` C). Format je `MockFixtureSchema` iz `src/core/runner.ts`, a ključevi su `vrsta:zadatak:runda`, `vrsta:zadatak` ili `vrsta`. `wemora migrate --mock` učitava sve `.json` fajlove iz foldera i spaja ih; isti ključ u dva fajla je greška. Drugi folder se bira sa `--mock-dir`.
 - Zašto: svako piše samo svoj fajl, pa nema izuzetka od vlasništva ni čekanja na A.
 - Posledice: `src/core/runner.ts` (`loadMockFixtureDir`) i `src/orchestration/migrate.ts` (A11). Dok nema fajlova, `npm run migrate:mock -- examples/todomvc` jasno javlja koji folder fali.
+
+## D-014: Adresa originala za testera: `--original-url`, dok B ne napravi `serveOriginal`
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; privremeno rešenje za `docs/tasks/a.md` P8 i B-ov Q8, uz B-ov zahtev da A poveže testera)
+- Odluka: `wemora migrate` prima `--original-url <url>`: adresu originala koji je pokrenut ručno (npr. `npm run serve` u `examples/todomvc`, plus `examples/mock-api` za Recepte). CLI je prosleđuje B-ovom testeru (`createTester(id, { originalUrl, blankUrl })`); prazna aplikacija je jedan `blankApp` po prolazu, koji se gasi posle prolaza. Bez `--original-url` tester se ne pokreće, a prolaz staje sa porukom šta fali. `RunConfig` u ugovoru se ne menja.
+- Zašto: tester otvara original u browseru i u `--mock` prolazu (mock zamenjuje samo model), a niko još ne pokreće original automatski. Dogovor iz PD5 je da to radi B-ova `serveOriginal(webDir)`, koja još ne postoji.
+- Posledice: `architecture.md` §13 (opcije `--original-url` i `--mock-dir`, D-013). Kad B napravi `serveOriginal` (potrebno za „radi iz README-a“ u F3), CLI je koristi kad `--original-url` nije dat.

@@ -16,6 +16,13 @@ describe("parseCliArgs", () => {
       budget: DEFAULTS.budgetUsd,
       mock: false,
       mockDir: undefined,
+      originalUrl: undefined,
+    })
+  })
+
+  it("takes the original app address for the tester", () => {
+    expect(parseCliArgs(["migrate", "examples/todomvc", "--original-url", "http://localhost:7002"])).toMatchObject({
+      originalUrl: "http://localhost:7002",
     })
   })
 
@@ -37,6 +44,8 @@ describe("parseCliArgs", () => {
     [["deploy"], 'unknown command "deploy"'],
     [["migrate", "app", "--fast"], "Unknown option '--fast'"],
     [["verify", "run", "--mock"], "--mock only works with migrate"],
+    [["migrate", "app", "--original-url", "localhost:7002"], "--original-url must be an http(s) address"],
+    [["verify", "run", "--original-url", "http://x"], "--original-url only works with migrate"],
     [["sabotage", "run"], "sabotage needs <run-dir> and <unitId>"],
   ])("rejects %j", (argv, message) => {
     expect(() => parseCliArgs(argv)).toThrow(UsageError)

@@ -25,6 +25,8 @@ export type MigrateOptions = {
   mock: boolean
   /** Folder with MockRunner replies; default src/agents/mocks/<web folder name>/ (D-013). */
   mockDir?: string
+  /** The running original web app for the tester (Q8); started by hand until B's serveOriginal (PD5). */
+  originalUrl?: string
 }
 
 export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv = process.env, now = new Date()): Promise<number> {
@@ -59,14 +61,24 @@ export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv
   const runner = budgeted ?? new MockRunner(loadMockFixtureDir(mockDir))
 
   initializeRuntime({ state: createInitialState(runId, config), inferenceRunnerConfig: { runner } })
-  log({ agent: "cli", event: "migrate.started", data: { runId, webDir, mock: options.mock, mockDir: options.mock ? mockDir : undefined } })
+  log({
+    agent: "cli",
+    event: "migrate.started",
+    data: { runId, webDir, mock: options.mock, mockDir: options.mock ? mockDir : undefined, originalUrl: options.originalUrl },
+  })
 
+  const agents = createAgentFactories({ originalUrl: options.originalUrl })
   conductor = new Conductor(
-    { parseApp, splitParts, scaffold, buildReport, agents: createAgentFactories() },
+    { parseApp, splitParts, scaffold, buildReport, agents: agents.factories },
     // F2 keeps a fixed team (tim-plan F2); the flags can only make it smaller until A14.
     { builders: Math.min(FIXED_TEAM.builders, options.maxBuilders), testers: Math.min(FIXED_TEAM.testers, options.maxTesters) },
   )
   const summary = await conductor.run()
+  try {
+    await agents.close()
+  } catch (error) {
+    log({ agent: "cli", event: "agents.close_failed", data: { error: error instanceof Error ? error.message : String(error) } })
+  }
   printSummary(summary, budgeted?.spentUsd() ?? 0)
   return summary.outcome === "finished" ? 0 : 1
 }

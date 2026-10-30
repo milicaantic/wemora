@@ -30,18 +30,23 @@ Poslednja izmena: 2026-10-30
 - plan: grane A10–A18 grupisane u 5 (`docs/tasks/a.md`)
 - A10: Conductor, `eventLogger`, lažni agenti, 10 testova; `FIXED_TEAM`; nov događaj `plan.failed` (D-012); pravila za agente u `agents/_shared/handle.ts` i `mozaik.md` §6 (PR #30)
 
-## Gotovo, čeka review i spajanje (grana `a/cli`)
-- A11: `src/cli.ts` (`parseCliArgs`, `main`, `UsageError`), `src/orchestration/migrate.ts` (`runMigrate`: run folder, log, safety, runtime sa `BudgetedRunner` ili `MockRunner`, Conductor, ledger, ispis), `src/orchestration/agents.ts` (pravi agenti ili jasna zamena dok vlasnik ne spoji); `loadMockFixtureDir` u `core/runner.ts`; `Conductor.notifyBudgetExceeded()`; D-013 (mock odgovori: jedan fajl po vlasniku); `check-layers` prepoznaje `cli.test.ts`; 19 novih testova
-- provereno: `npx tsx src/cli.ts migrate examples/todomvc --mock --mock-dir <prazan>` prolazi kroz D-ovog analizatora i staje kod arhitekte (još ne postoji), uz `report.html`
+- A11: `wemora migrate` (`src/cli.ts`, `src/orchestration/migrate.ts`, `agents.ts`), `loadMockFixtureDir`, `Conductor.notifyBudgetExceeded()`, D-013 (PR #34)
+
+## Gotovo, čeka review i spajanje (grana `a/wire-tester`)
+- B-ov tester (B8) povezan u `src/orchestration/agents.ts`: `createTester(id, { originalUrl, blankUrl })`, jedan B-ov `blankApp` (B9) po prolazu nad C-ovim `serveApp`, gasi se posle prolaza; `createAgentFactories` vraća `{ factories, close }`
+- nova opcija `--original-url <url>` (samo `migrate`, mora http(s)); bez nje tester javlja „pass --original-url (Q8)“; D-014 i `architecture.md` §13 (sa `--mock-dir` iz D-013); 9 novih testova
+- C-ov builder (C2.2, PR #37) povezan (`createBuilder(id)`); jedino Gatekeeper-učesnik (C2.4) je još zamena
+- D-ov arhitekta (D14, PR #36) povezan; provereno: `migrate --mock` nad TodoMVC-om sada ide analizator → arhitekta → `plan.failed` (bez mock odgovora) → izveštaj, uz `plan.errors.json`
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `a/cli` → `main`
-- kad B, C i D spoje agente: zamena u `src/orchestration/agents.ts` postaje `import` (jedan red po agentu)
-- `contracts/f1`: izmene ugovora koje B, C i D čekaju (adrese originala u `RunConfig`, šema `tests/<unitId>.json`, `checkDraft` po C-ovom P16, `roundsExhausted`, `failedStep`, `LogEntrySchema`)
-- A13 (`a/timeouts`) posle odluke o P9 i P10
+- PR `a/wire-tester` → `main`
+- A13 (`a/timeouts`): tester i builder timeouti, nov događaj `tests.missing` (predlog za P9/P10 čeka „kreni“)
+- `contracts/f1`: šema `tests/<unitId>.json`, `checkDraft` po C-ovom P16, `roundsExhausted`, `failedStep`, `LogEntrySchema`, Enter korak (`submit`) za TodoMVC
+- B (F3, PD5): `serveOriginal(webDir)`; CLI je koristi kad `--original-url` nije dat
+- kad C i D spoje agente: zamena u `src/orchestration/agents.ts` postaje `import`
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`

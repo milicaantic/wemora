@@ -4,8 +4,9 @@ import path from "node:path"
 import { afterAll, describe, expect, it, vi } from "vitest"
 import { runMigrate, type MigrateOptions } from "./migrate"
 
-// One real `migrate --mock` over examples/todomvc: D's parser and analyzer, the real report, no API calls.
-// The architect is not merged yet, so the run stops there with a clear error and still writes the report.
+// One real `migrate --mock` over examples/todomvc: D's parser, analyzer and architect, the real report,
+// no API calls. With no mock replies the architect gives up and sends plan.failed (D-012), so the run
+// ends there and still writes the report.
 
 const root = mkdtempSync(path.join(tmpdir(), "migrate-"))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
@@ -43,18 +44,18 @@ describe("runMigrate", () => {
 
     const runDir = path.join(root, "output", "20261030-214501-todomvc")
     expect(code).toBe(1)
-    expect(readdirSync(runDir).sort()).toEqual(["analysis", "report.html", "run.jsonl"])
+    expect(readdirSync(runDir).sort()).toEqual(["analysis", "plan.errors.json", "report.html", "run.jsonl"])
     expect(readdirSync(path.join(runDir, "analysis"))).toEqual(["part-1.json"])
     const events = readFileSync(path.join(runDir, "run.jsonl"), "utf8")
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line) as { agent: string; event: string; data?: { outcome?: string; error?: string } })
     expect(events.find((e) => e.event === "analysis.done")?.agent).toBe("analyzer-1")
-    expect(events.find((e) => e.event === "run.finished")?.data).toMatchObject({
-      outcome: "error",
-      error: expect.stringContaining("the architect agent is not available yet (D, D14)"),
-    })
-    expect(events.filter((e) => e.event === "participant.left").map((e) => e.agent)).toContain("analyzer-1")
-    expect(String(out.mock.calls[0][0])).toContain("outcome: error")
+    expect(events.find((e) => e.event === "plan.failed")?.agent).toBe("architect-1")
+    expect(events.find((e) => e.event === "run.finished")?.data).toMatchObject({ outcome: "plan.failed" })
+    expect(events.filter((e) => e.event === "participant.left").map((e) => e.agent)).toEqual(
+      expect.arrayContaining(["analyzer-1", "architect-1"]),
+    )
+    expect(String(out.mock.calls[0][0])).toContain("outcome: plan.failed")
   })
 })
