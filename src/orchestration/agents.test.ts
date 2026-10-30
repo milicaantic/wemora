@@ -17,7 +17,7 @@ beforeAll(() => {
 afterAll(() => rmSync(runDir, { recursive: true, force: true }))
 
 describe("createAgentFactories", () => {
-  it("wires D's analyzer and architect and C's builder", () => {
+  it("wires D's analyzer and architect, and C's builder", () => {
     const { factories } = createAgentFactories()
     expect(factories.analyzer("analyzer-1")).toMatchObject({ id: "analyzer-1", kind: "analyzer" })
     expect(factories.architect("architect-1")).toMatchObject({ id: "architect-1", kind: "architect" })
@@ -41,8 +41,8 @@ describe("createAgentFactories", () => {
     await expect(close()).resolves.toBeUndefined()
   })
 
-  it("keeps clear stand-ins for agents that are not merged yet", () => {
-    const { factories } = createAgentFactories({ originalUrl: "http://localhost:7002" })
-    expect(() => factories.gatekeeper("gatekeeper-1")).toThrow("the gatekeeper agent is not available yet (C, C2.4)")
+  it("wires C's Gatekeeper participant under the name the Conductor gives it", () => {
+    const { factories } = createAgentFactories()
+    expect(factories.gatekeeper("gatekeeper-1").getManifest()).toMatchObject({ name: "gatekeeper-1", role: "human" })
   })
 })

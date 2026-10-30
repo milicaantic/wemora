@@ -2,6 +2,7 @@ import path from "node:path"
 import { createAnalyzer } from "../agents/analyzer"
 import { createArchitect } from "../agents/architect"
 import { createBuilder } from "../agents/builder"
+import { createGatekeeper } from "../agents/gatekeeperParticipant"
 import { createTester } from "../agents/tester"
 import type { ServeApp } from "../contracts"
 import { board } from "../core/runtime"
@@ -9,8 +10,7 @@ import { serveApp } from "../gatekeeper"
 import { blankApp, type BlankApp } from "../scenarios"
 import type { AgentFactories } from "./conductor"
 
-// Which real agent the CLI gives the Conductor for each role. An agent that is not merged yet is a
-// stand-in that fails with a clear message; when its owner merges it, the stand-in becomes one import.
+// Which real agent the CLI gives the Conductor for each role, and what the agents share for one run.
 
 export type AgentWiring = {
   /** The running original web app (Q8); the tester cannot work without it. */
@@ -23,12 +23,6 @@ export type RunAgents = {
   factories: AgentFactories
   /** Stops what the agents share for the whole run (the blank app server). */
   close(): Promise<void>
-}
-
-function notYet(role: string, owner: string, task: string): (id: string) => never {
-  return (id) => {
-    throw new Error(`the ${role} agent is not available yet (${owner}, ${task}); cannot start ${id}`)
-  }
 }
 
 export function createAgentFactories(wiring: AgentWiring = {}): RunAgents {
@@ -50,7 +44,7 @@ export function createAgentFactories(wiring: AgentWiring = {}): RunAgents {
       architect: createArchitect,
       tester,
       builder: createBuilder,
-      gatekeeper: notYet("gatekeeper", "C", "C2.4"),
+      gatekeeper: (id) => createGatekeeper(id),
     },
     close: async () => {
       await blank?.close()
