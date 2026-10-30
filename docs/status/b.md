@@ -56,6 +56,11 @@ Poslednja izmena: 2026-10-30
 
 ## Sledeće
 - B11 do kraja čim C spoji Gatekeeper-učesnika (C2.4): `migrate --mock`, pa pravi prolaz `--budget 1`
+
+## Usklađenost sa C2.3 (`checkDraft`, PR #44)
+- `checkDraft` zove `runScenarios(url, tests, { viewport: 390×844, differences: unit.intentionalDifferences })` po ugovoru; `failedStep` čita kao indeks u `steps` (prikazuje ga +1), a scenario bez rezultata računa kao pao. Build i 432 testa prolaze.
+- B7 „ponoviti sa `serveApp`“ je pokriven: C-ov `src/gatekeeper/g1.test.ts` pušta B-ov scenario kroz `runScenarios` preko pravog `serveApp` (radi kad je `templates/expo` instaliran).
+- **Za C (C2.4) i A: pokrivenost.** `checkDraft` ne računa `Coverage`, a `computeStatus` za nepoznatu pokrivenost daje `partial`, pa bez nje **nijedan ekran ne može biti `proven`** (G2). Neko (predlog Q11: Gatekeeper-učesnik, posle `tests.ready`) mora da pozove `extractInteractive(originalUrl, route)` i `computeCoverage(unit, tests, interactive)` i upiše rezultat u `results/<unitId>.json` i `board.coverage`. Za to Gatekeeper-u treba URL originala, kao i testeru (A vezuje u `orchestration/agents.ts`). Za rutu sa parametrom (`/recepti/:id`) `extractInteractive` ne može da otvori ekran.
 - ponoviti B7 sa C-ovim `serveApp()` (prazan ekran je u B9 već proveren preko `serveApp`)
 
 ## Mockovi koje koristim
