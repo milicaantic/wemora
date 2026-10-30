@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import {
   createHuman,
   FunctionCallOutputItem,
@@ -12,7 +13,7 @@ import {
 import { beforeAll, describe, expect, it } from "vitest"
 import type { Plan, RunConfig, Scenario, Unit, ValidateScenario } from "../contracts"
 import { initLog } from "../core/log"
-import { MockRunner, type MockFixture } from "../core/runner"
+import { loadMockFixture, MockRunner, type MockFixture } from "../core/runner"
 import { board, initializeRuntime, join } from "../core/runtime"
 import { createInitialState } from "../core/state"
 import { readTests } from "../scenarios"
@@ -91,7 +92,9 @@ class TestsReady extends SituationSpecification {
   }
 }
 
-const runner = new RecordingRunner(fixture)
+// B's replies for `migrate --mock` on TodoMVC (D-013) run through the same tester.
+const todomvcReplies = loadMockFixture(fileURLToPath(new URL("./mocks/todomvc/tester.json", import.meta.url)))
+const runner = new RecordingRunner({ ...fixture, ...todomvcReplies })
 const ready: string[] = []
 const validated: string[] = []
 const blanks: string[] = []
@@ -139,7 +142,19 @@ beforeAll(() => {
   initLog(runDir)
   const ids = ["u-full", "u-partial", "u-none", "u-existing", "u-busy", "u-cancel", "u-blank", "u-blank-down"]
   const plan: Plan = {
-    units: [...ids.map((id) => unit(id)), unit("shared-data", { kind: "shared", route: undefined, obligations: [] })],
+    units: [
+      ...ids.map((id) => unit(id)),
+      unit("shared-data", { kind: "shared", route: undefined, obligations: [] }),
+      // The TodoMVC screen as D's architect mock plans it (src/agents/mocks/todomvc/architect.json).
+      unit("todo-list", {
+        route: "*",
+        obligations: [
+          { id: "empty-state", description: "With no todos the screen shows the heading 'todos' and no 'items left!' counter." },
+          { id: "add-todo", description: "Adding a todo shows it in the list" },
+        ],
+        intentionalDifferences: [],
+      }),
+    ],
     flows: [],
     routeMap: { "/narudzbine": "/narudzbine" },
   }
@@ -256,6 +271,14 @@ describe("tester agent", () => {
     expect(ready).not.toContain("u-blank-down")
     const failed = logLines().find((l) => l.event === "tester.failed" && l.data?.unitId === "u-blank-down")
     expect(JSON.stringify(failed)).toContain("web export failed")
+  })
+
+  it("runs the TodoMVC mock replies (src/agents/mocks/todomvc/tester.json) to a saved scenario and tests.ready", async () => {
+    const tester = newTester()
+    tester.assign({ unitId: "todo-list" })
+    await untilIdle(tester)
+    expect(readTests(runDir, "todo-list").map((s) => `${s.id} [${s.obligation}]`)).toEqual(["todo-list-empty-state [empty-state]"])
+    expect(ready).toContain("todo-list")
   })
 
   it("refuses a unit that is not in the plan or is not a screen, without hanging", async () => {

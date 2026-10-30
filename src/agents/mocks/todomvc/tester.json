@@ -1,0 +1,34 @@
+{
+  "tester:todo-list": [
+    { "call": { "name": "aria_snapshot", "args": { "path": "/" } } },
+    {
+      "call": {
+        "name": "try_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-empty-state",
+            "unitId": "todo-list",
+            "obligation": "empty-state",
+            "steps": [{ "goto": "/" }, { "expectVisible": { "text": "todos" } }, { "expectNotVisible": { "text": "items left!" } }]
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "save_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-empty-state",
+            "unitId": "todo-list",
+            "obligation": "empty-state",
+            "steps": [{ "goto": "/" }, { "expectVisible": { "text": "todos" } }, { "expectNotVisible": { "text": "items left!" } }]
+          }
+        }
+      }
+    },
+    {
+      "text": "Saved todo-list-empty-state. add-todo, complete-todo, filter-todos and clear-completed are not covered: a todo is added only with the Enter key, and the test steps have no key press."
+    }
+  ]
+}
