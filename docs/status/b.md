@@ -1,5 +1,5 @@
 # Status: osoba B
-Faza: F1
+Faza: F2
 Poslednja izmena: 2026-10-30
 
 ## Gotovo (spojeno u main)
@@ -8,9 +8,24 @@ Poslednja izmena: 2026-10-30
 - B4 + B5 (PR #11): `validate.ts` (`validateScenario`), `interactive.ts` (`extractInteractive`), `mocks/blank/`, 3 ručna scenarija za Recepte u `mocks/recepti/` (ručno provereni nad Receptima), popravka `expectNotVisible` dok se ekran učitava
 
 - B6 (PR #13): `coverage.ts` (`computeCoverage`); `compile.ts` izvozi `actedOn`, `toTarget`, `sameElement` (pravilo poklapanja je isto kao u izvršiocu)
+- `scenarios/index.ts` izvozi `serveStatic` (C ga koristi u `serveApp`)
+- potvrde D-001, D-002, D-003, D-005, D-007 i D-008 u `docs/decisions.md`
 
-## Gotovo, čeka PR (grana `b/export-serve`)
-- `scenarios/index.ts` izvozi `serveStatic`, na zahtev C-a: `gatekeeper/` ne sme da uvozi `scenarios/serve.ts` direktno (pravilo `domain-via-index`), pa je C pravio svoj server. Posle spajanja C prelazi na `serveStatic`, a `serveApp`, Gatekeeper i `verify` serviraju aplikaciju isto. `serve.test.ts` sada uvozi preko `index.ts`. Ponašanje (SPA fallback, `close()`) menjam samo uz dogovor sa C (b.md Q21).
+## Gotovo, čeka PR (grana `b/tester`)
+- B8 `agents/tester.ts`: `createTester(id, deps)` vraća `AgentHandle<TestTask>`; zasebna `createAgent` instanca, svež kontekst po zadatku (`runTask` iz `_shared`), model `MODELS.default`, `maxOutputTokens` 4000, `CancelGuard` za timeout. `deps`: `originalUrl` i `blankUrl` (ugovor ih još nema, Q8), a `validateScenario`/`extractInteractive`/`ariaSnapshot` mogu da se zamene u testovima.
+  - Alati: `aria_snapshot(path)`, `try_scenario(scenario)`, `save_scenario(scenario)`. Pre browsera se proverava da li scenario pripada jedinici (tačan `unitId`, postojeća obaveza, jedinstven `id`, bez `notPortable` elemenata u `steps` i `setup`). Scenario koji je prošao `try_scenario` se ne validira ponovo. Putanju `tests/<unitId>.json` pravi kod (upis preko privremenog fajla); upisuje se i `board.tests[unitId]`. Posle čuvanja model dobija šta još fali (obaveze i elementi, preko `computeCoverage`).
+  - Drugi tester (posle timeouta) nastavlja od već sačuvanih scenarija.
+  - `prompts/tester.md`: DSL, tri pravila validacije, „prvi red liste“, `setup` preko UI-ja, bez `notPortable`, `hiddenBehind` se ignoriše.
+- Domen za testera u `scenarios/tester.ts` (izvoz kroz `index.ts`): `scenarioProblem`, `testerBrief`, `coverageNote`, `readTests`/`writeTests`/`testsFile`; i `ariaSnapshot` u `interactive.ts`.
+- Testovi: `scenarios/tester.test.ts` (8), `agents/tester.test.ts` (9, pravi Mozaik runtime + `MockRunner`, bez browsera i mreže). Ceo repo: 325 testova.
+- **Nije probano sa pravim modelom** (Haiku 5.5): prompt i JSON šema alata za model (`toModelSchema(ScenarioSchema)`) provereni su samo kroz `MockRunner`.
+
+## Odluke u B8 (čekaju potvrdu tima)
+- **`tests.ready` (b.md Q10):** šalje se jednom, **na kraju petlje**, ako je sačuvan bar jedan scenario, i kad nisu pokrivene sve obaveze (status ekrana tada postaje `partial`). Bez ijednog scenarija se ništa ne šalje (u log ide `tests.none`), pa jedinicu posle timeouta dobija drugi tester. Ovo se razlikuje od b.md B8 kriterijuma 4 („tek kad su sve obaveze pokrivene“), jer bi inače ekran bez pune pokrivenosti ostao zauvek bez testova.
+- **Rute sa parametrima** (`/recepti/:id`): `extractInteractive` ne može da otvori rutu sa `:id`, pa tester za takav ekran ne dobija listu elemenata (samo obaveze); u promptu piše da otvori rutu sa pravom vrednošću.
+- **Usklađeno sa Conductor-om (A10, PR #30)** po pravilima iz `agents/_shared/handle.ts`: fabrika `createTester(id, deps)` (CLI vezuje `deps`), `name: id`, bez `join`, `emit` sa sopstvenog učesnika, tabla i fajl pre događaja, jedan `assign` = jedan zadatak, greške uhvaćene u `assign`. Build i 336 testova prolaze zajedno.
+- **Za A (CLI, A11):** CLI mora da veže `(id) => createTester(id, { originalUrl, blankUrl })`, a za to mora da pokrene original i prazan ekran (Q8).
+- **Za A (A13, timeouti):** Conductor oslobađa testera samo na `tests.ready`. Tester koji ne sačuva nijedan scenario ne šalje ništa (po pravilu „Conductor čeka“), pa ostaje zauzet u Conductor-u. U F2 postoji samo 1 tester (`FIXED_TEAM`), pa bi stalo testiranje svih ostalih ekrana dok A13 ne doda timeout. Predlog za A13: posle isteka osloboditi testera i dati jedinicu drugom.
 
 ## Urađeno ručno (F1, bez PR-a)
 - B7 (G1): **ceo put bez AI-ja radi.** Scenario `shopping-list/add-item`:
@@ -31,8 +46,9 @@ Poslednja izmena: 2026-10-30
 - ništa
 
 ## Sledeće
-- F1 je za B završen. Posle G1: B8 agent tester (F2), čim A spoji `agents/_shared/` (A8) i `MockRunner` (A7)
-- ponoviti B7 sa C-ovim `serveApp()` kad bude spojen
+- B9: prazan ekran iz C-ovog scaffolda kao `blankUrl` (dogovor sa A i C ko pokreće `serveApp` nad scaffoldom)
+- B10: MockRunner odgovori testera za TodoMVC (A12; mesto fajla po P13)
+- ponoviti B7 sa C-ovim `serveApp()`
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
@@ -40,9 +56,9 @@ Poslednja izmena: 2026-10-30
 
 ## Čeka odluku tima
 - A: komentar za `ScenarioResult.failedStep`
-- A: zajednička šema za `tests/<unitId>.json` (niz `Scenario`)
-- A: URL originala i mock-api-ja u `RunConfig` ili drugom ugovoru (b.md Q8); posle toga uključujem `apiFixture`
-- B je u `docs/decisions.md` potvrdio D-001, D-002, D-003, D-005, D-007 i D-008 (grana `b/confirm-decisions-2`). D-005 je time prihvaćeno; za njega je predložena dopuna prompta buildera (`role="checkbox"`, `Link`/`role="link"`), odluka je na C.
+- A: zajednička šema za `tests/<unitId>.json` (niz `Scenario`); do tada `scenarios/tester.ts` koristi `z.array(ScenarioSchema)`
+- A: URL originala i mock-api-ja u `RunConfig` ili drugom ugovoru (b.md Q8); posle toga uključujem `apiFixture`, a tester prestaje da ih prima kao parametre
+- C: dopuna prompta buildera za D-005 (`role="checkbox"`, `Link`/`role="link"`)
 - D (TodoMVC, taster Enter): DSL nema korak za Enter, pa se u TodoMVC ne može dodati zadatak. Predlog D: nov korak `{ submit: { label } }` (promena ugovora). Odluka B/A otvorena.
 
 ## Blokira me
