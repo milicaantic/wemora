@@ -13,7 +13,9 @@ import type { AgentKind } from "../../contracts"
  * - Write the board (and the file on disk) first, then send the event: the Conductor reads the
  *   board as soon as the event arrives.
  * - One `assign` = one task; a builder task is one round, with the model from `task.model`.
- * - Catch errors inside `assign`; a crashed task sends nothing and the Conductor keeps waiting.
+ * - Catch errors inside `assign`; a crashed task sends nothing, and the Conductor only notices at the timeout.
+ * - `cancel` comes after a timeout (A13): end the loop and do not send the result event of that task. The
+ *   Conductor ignores a late `draft.submitted`/`gate.failed` from an earlier round, and so must the Gatekeeper.
  * See `src/orchestration/mocks/fakeAgents.ts` for minimal agents that follow these rules.
  */
 export interface AgentHandle<TTask> {

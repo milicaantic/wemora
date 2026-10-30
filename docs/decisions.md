@@ -188,3 +188,16 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   3. `OwnershipGuard` (`src/agents/_shared/guards.ts`) prima jedan string (folder, kao do sada) ili listu: putanja sa `/` na kraju dozvoljava sve ispod nje, a bez `/` samo taj fajl. Tako zajednička jedinica `layout` sme da piše i `app/_layout.tsx` (PD3); C-ov builder prosleđuje svoj `allowedPaths(unit)`.
 - Zašto: C2.3 (`checkDraft`) i jedinica `layout` nisu mogli da se urade sa starim potpisima, a C je tačno naveo šta fali.
 - Posledice: `architecture.md` §3 (ulaz Gatekeepera). C-ov `checkDraft` (C2.3) koristi novi potpis; C-ov builder može da zameni `guardPrefix(unit)` sa `allowedPaths(unit)`. Postojeći pozivi `OwnershipGuard` sa jednim stringom rade kao pre.
+
+## D-016: Timeouti testera i buildera; događaj `tests.missing`
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A; rešava `docs/tasks/a.md` P9 i P10; B je tražio isto u `docs/status/b.md`, „Za A (A13)“)
+- Odluka:
+  1. **Tester:** ako za `testsWaitTimeoutMs` (10 min) posle dodele nema `tests.ready`, Conductor prekida testera (`cancel`), oslobađa ga i povećava `units[id].testAttempts`. Ekran se vraća u red, ali iza ekrana koji još nisu probani. Posle `maxTestAttempts` (2) pokušaja Conductor šalje **`tests.missing { unitId }`** i ekran se više ne daje testeru. Testerov sopstveni limit od 8 min (`testerUnitTimeoutMs`) je B-ov, unutar petlje; Conductorov tajmer je poslednja zaštita.
+  2. **Gatekeeper** na `tests.missing` promoviše ekran kao `unproven`: odmah ako nacrt već čeka, ili čim nacrt stigne, bez čekanja testova (§9: „posle drugog isteka ekran se promoviše kao nedokazan“).
+  3. **Builder:** ako za `builderRoundTimeoutMs` (10 min) posle dodele runde nema `draft.submitted`, Conductor prekida buildera i to se **računa kao neuspela runda** (P10): isti builder dobija sledeću rundu sa porukom „no draft was submitted within 10 min“, a posle poslednje runde jedinica je `failed`.
+  4. **Zakasneli događaji:** `draft.submitted` i `gate.failed` iz ranije runde dolaze iz petlje koja je već istekla. Conductor ih ignoriše i upisuje `event.stale` u log; Gatekeeper takođe treba da ignoriše nacrt čija runda nije `board().units[unitId].round`. Prekinuti agent ne šalje rezultat tog zadatka (`src/agents/_shared/handle.ts`).
+  5. Novi zadatak prekinutom agentu ide tek kad agent stvarno stane (`isBusy()` je `false`), uz proveru na svakih `idleCheckMs` (1 s).
+- Zašto: u F2 postoji samo jedan tester, pa bi jedan zaglavljen ekran zaustavio testiranje svih ostalih; bez timeouta buildera jedinica bi čekala zauvek. Mozaik ne može da prekine petlju spolja, pa se prekid radi kroz `CancelGuard` (A8).
+- Posledice: `src/contracts/events.ts` (`tests.missing`), `architecture.md` §5 i §9, `src/core/config.ts` (`maxTestAttempts`, `idleCheckMs`), `src/orchestration/` (A13). C-ov Gatekeeper-učesnik (C2.4) reaguje na `tests.missing` i ignoriše zakasnele nacrte.

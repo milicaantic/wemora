@@ -38,18 +38,19 @@ Poslednja izmena: 2026-10-30
 - C-ov builder (C2.2, PR #37) povezan (`createBuilder(id)`); jedino Gatekeeper-učesnik (C2.4) je još zamena
 - D-ov arhitekta (D14, PR #36) povezan; provereno: `migrate --mock` nad TodoMVC-om sada ide analizator → arhitekta → `plan.failed` (bez mock odgovora) → izveštaj, uz `plan.errors.json`
 
+- D-015, za C: `checkDraft({ unit, round, draftDir, tests, webDir })`, `roundsExhausted` opciono, `OwnershipGuard` prima listu putanja (PR #40)
+
 ## U radu
 - ništa
 
-## Gotovo, čeka review i spajanje (grana `contracts/unblock-c`)
-- D-015, za C: `checkDraft({ unit, round, draftDir, tests, webDir })` (`CheckDraftInput`, C-ov P16 i uslov iz D-008); `StatusInput.roundsExhausted` opciono (uklanja se kad ga C izbaci iz testova); `OwnershipGuard` prima i listu putanja (`folder/` ili jedan fajl, PD3); 8 novih testova; `architecture.md` §3
+## Gotovo, čeka review i spajanje (grana `a/timeouts`)
+- A13 (D-016): Conductor prekida testera bez `tests.ready` posle 10 min i daje ekran ponovo (iza neprobanih); posle 2. isteka šalje nov događaj `tests.missing { unitId }` (Gatekeeper promoviše `unproven`); builder bez nacrta posle 10 min = neuspela runda; zakasneli događaji iz ranije runde se ignorišu (`event.stale`); nov zadatak prekinutom agentu tek kad stane. Fajlovi: `orchestration/timeouts.ts`, `conductor.ts`, `queue.ts`, `mocks/manualClock.ts`, `mocks/fakeAgents.ts`; `config.ts` (`maxTestAttempts`, `idleCheckMs`); `contracts/events.ts`; pravilo o `cancel` u `agents/_shared/handle.ts`; 9 novih testova; `architecture.md` §5 i §9
 
 ## Sledeće
-- PR `contracts/unblock-c` → `main` (prvi push: `git push -u origin contracts/unblock-c`)
-- A13 (`a/timeouts`): tester i builder timeouti, nov događaj `tests.missing` (predlog za P9/P10 čeka „kreni“)
-- `contracts/f1`: šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, Enter korak (`submit`) za TodoMVC, uklanjanje `roundsExhausted`
+- PR `a/timeouts` → `main`
+- `contracts/f1`: Enter korak (`submit`) za TodoMVC (čeka B-ovo „da“, blokira G2), šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, uklanjanje `roundsExhausted` (kad ga C izbaci iz testova)
 - B (F3, PD5): `serveOriginal(webDir)`; CLI je koristi kad `--original-url` nije dat
-- kad C i D spoje agente: zamena u `src/orchestration/agents.ts` postaje `import`
+- C (C2.4): Gatekeeper-učesnik; kad bude spojen, zamena u `src/orchestration/agents.ts` postaje `import`
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`

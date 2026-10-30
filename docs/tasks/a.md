@@ -540,7 +540,13 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
 - **Gotovo kad:** `npm run migrate:mock -- examples/todomvc` završava sa exit 0 i pravi `output/<run>/` sa `plan.json`, `analysis/`, `tests/`, `staging/`, `app/`, `results/`, `run.jsonl` i `report.html` (G2). U `run.jsonl` za istu jedinicu postoji `gate.failed`, a posle njega `unit.promoted`.
 - **Zavisnosti i mock:** svi agenti i domenske funkcije (B, C, D), `examples/todomvc` (D). Dok čekam, skripta pokriva samo lažne agente iz A10.
 
-### A13 — Timeouti
+### A13 — Timeouti ✅ 2026-10-31
+**Odstupanja od plana ispod (urađeno ovako, D-016):**
+- `timeouts.ts` ima `Clock`, `realClock` i `Timers` (jedan tajmer po ključu, npr. `tests:<unitId>`, `build:<unitId>`); nema posebne `UnitTimers` klase. Sat se ubacuje kroz `ConductorOptions.clock`; testovi koriste `mocks/manualClock.ts`.
+- Jedan Conductorov tajmer za testove (`testsWaitTimeoutMs`, 10 min) umesto dva; testerovih 8 min je B-ov limit unutar petlje.
+- Posle `maxTestAttempts` (2) isteka Conductor šalje nov događaj `tests.missing { unitId }`; Gatekeeper tada promoviše ekran kao `unproven`. Ekran koji je istekao ide u red iza ekrana koji još nisu probani (`nextForTester`).
+- Istek buildera je neuspela runda (isti put kao `gate.failed`, zajednička `roundFailed`). Zakasneli `draft.submitted`/`gate.failed` iz ranije runde se ignorišu (`event.stale` u logu). Nov zadatak prekinutom agentu ide tek kad `isBusy()` postane `false` (provera na `idleCheckMs`).
+- Testovi: 7 novih u `conductor.test.ts` (ponovna dodela posle isteka, `tests.missing` i `unproven`, istek buildera kao runda, pad posle poslednje runde, čekanje da prekinut agent stane, nijedan tajmer ne ostaje kad svi odgovore na vreme, zakasneli nacrt), 1 u `queue.test.ts`, 1 u `contracts.test.ts`. Lažni agenti umeju da „ćute“, a lažni Gatekeeper čeka testove kao pravi.
 - **Fajlovi:** `src/orchestration/timeouts.ts`, `src/orchestration/timeouts.test.ts`, izmene u `conductor.ts`.
 - **Izvozi:**
   ```ts

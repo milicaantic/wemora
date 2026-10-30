@@ -94,6 +94,17 @@ describe("nextForTester", () => {
     expect(nextForTester(v, new Set(["categories"]))?.id).toBe("edit")
   })
 
+  it("puts screens whose tester timed out after untried ones, and stops after the last attempt", () => {
+    const v = view()
+    v.units.detail = { ...state("waiting"), testAttempts: 1 }
+    v.units.list = { ...state("waiting"), testAttempts: 2 }
+    const offered: string[] = []
+    let next: Unit | undefined
+    while ((next = nextForTester(v, new Set(offered)))) offered.push(next.id)
+
+    expect(offered).toEqual(["favorites", "categories", "edit", "settings", "detail"])
+  })
+
   it("treats an empty test list as no tests", () => {
     const v: QueueView = { ...view(), tests: { detail: [] } }
     expect(nextForTester(v, new Set())?.id).toBe("detail")

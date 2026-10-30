@@ -43,6 +43,10 @@ export const DEFAULTS = {
   builderRoundTimeoutMs: 10 * 60_000,
   testerUnitTimeoutMs: 8 * 60_000,
   testsWaitTimeoutMs: 10 * 60_000,
+  // A screen goes to a tester at most this many times; after that it has no tests (tests.missing, D-016).
+  maxTestAttempts: 2,
+  // How often the Conductor checks whether a cancelled agent has really stopped before giving it a new task.
+  idleCheckMs: 1_000,
 } as const
 
 // tim-plan F2: a fixed team and only the cheap rounds, until A14/A15 (F3) switch to the formulas below.

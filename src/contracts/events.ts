@@ -7,6 +7,7 @@ export const EVENTS = {
   planReady: "plan.ready",
   planFailed: "plan.failed",
   testsReady: "tests.ready",
+  testsMissing: "tests.missing",
   draftSubmitted: "draft.submitted",
   gateFailed: "gate.failed",
   unitPromoted: "unit.promoted",
@@ -29,6 +30,8 @@ export const EventPayloadSchemas = {
   // The architect gave up after its retries (D-012); the Conductor ends the run.
   "plan.failed": z.strictObject({}),
   "tests.ready": z.strictObject({ unitId: id }),
+  // Two testers in a row timed out on this screen; the Gatekeeper promotes it as unproven (D-016).
+  "tests.missing": z.strictObject({ unitId: id }),
   "draft.submitted": z.strictObject({ unitId: id, round }),
   "gate.failed": z.strictObject({ unitId: id, round }),
   "unit.promoted": z.strictObject({ unitId: id }),
