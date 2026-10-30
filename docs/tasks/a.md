@@ -384,7 +384,15 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   7. `MockRunner`: `{ call }` postaje `FunctionCallItem` sa tim imenom i argumentima u JSON-u, `{ json }` postaje tekstualna poruka sa JSON-om, ključ `builder:u1` ima prednost nad `builder`, a nepoznat ključ vraća grešku.
 - **Zavisnosti i mock:** A4, A0 (`AgentKind`). Prave odgovore agenata dobijam u A12, a do tada koristim ručne primere u testu.
 
-### A8 — `agents/_shared/`
+### A8 — `agents/_shared/` ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- Fajlovi: `context.ts`, `guards.ts` (`OwnershipGuard`, `CancelGuard`, `composeGuards` zajedno), `schema.ts`, `tools.ts`, `run.ts`, `handle.ts`, `index.ts`, test `shared.test.ts` (25 testova).
+- Novo: `toModelSchema(schema)` pravi JSON Schemu iz zod-a i briše ključeve koje Anthropic strict režim ne prima (`$schema`, `minLength`, `maxLength`, `minimum`, `maximum`, `propertyNames`, `minItems > 1`…; `oneOf` → `anyOf`). Koriste ga `runStructured` i `defineTool`; odgovor se i dalje proverava punom zod šemom. Ovo je D-ov predlog iz `docs/status/d.md`.
+- `AgentTask.tools` je opciono. `isAgentBusy(agent)` je izvezen, za `AgentHandle.isBusy()`.
+- `runTask` odbija agenta koji nije uradio `join`, jer inače ne bi dobio sopstveni `model.answer`.
+- Greška runnera ili API-ja (`__WEMORA_ERROR__`) u `runStructured` se ne ponavlja: to nije greška modela.
+- `runTask` nema sopstveni timeout; timeoute vodi Conductor preko `CancelGuard`-a (A13).
+
 - **Fajlovi:** `src/agents/_shared/{context,ownershipGuard,cancelGuard,tools,run,handle,index}.ts`, `src/agents/_shared/shared.test.ts`.
 - **Izvozi:**
   ```ts

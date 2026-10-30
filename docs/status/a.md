@@ -18,19 +18,21 @@ Poslednja izmena: 2026-10-30
 
 ## Gotovo, čeka review i spajanje (grana `a/runner`)
 - A7: `src/core/runner.ts`: `BudgetedRunner` (retry iznad SDK-ovog, budžet, nikad ne baca grešku, `onUsage`/`onRateLimited`), `MockRunner` (odgovori po `kind:taskId:round`), `loadMockFixture`, `registerContext`, registracija `claude-haiku-5-5`; 16 testova, uključujući pravi Mozaik `runLoop` nad `MockRunner`-om. U `config.ts` dodati `apiRetries` i `apiRetryBaseMs`.
+- A8: `src/agents/_shared/`: `freshContext`, `OwnershipGuard`, `CancelGuard`, `composeGuards`, `defineTool`, `toModelSchema` (čišćenje JSON Scheme za Anthropic), `runTask`, `runStructured` (zod provera + najviše 2 ponovna pokušaja), `AgentHandle` i tipovi zadataka; 25 testova kroz pravi Mozaik runtime nad `MockRunner`-om.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `a/runner` → `main` (A7)
-- A8 (`agents/_shared/`: `freshContext`, `OwnershipGuard`, `runTask`, `runStructured`), zatim A9 (red zadataka)
+- PR `a/runner` → `main` (A7, A8)
+- A9: red zadataka (`orchestration/queue.ts`), poslednji zadatak F1
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`
 - `LogEntrySchema` u `src/contracts/` (D čeka zamenu privremene šeme u `src/report/load.ts`)
 - odgovori na D-ova pitanja iz `docs/status/d.md`: Enter korak u DSL-u (`submit`, blokira G2), čišćenje JSON Scheme za structured output (ulazi u A8), događaj `plan.failed`, P4 i P5
 - format MockRunner fajla (`MockFixtureSchema` u `core/runner.ts`) za A12, kad B, C i D pišu odgovore svojih agenata
+- za B, C i D, pre pisanja agenata (F2): koristite `agents/_shared` (`runTask`, `runStructured`, `defineTool`, `OwnershipGuard`), ne pravite svoje; agent mora da uradi `join` pre `runTask`; D: čišćenje šeme za structured output je urađeno (`toModelSchema`); interfejs `AgentHandle` i tipovi zadataka (P6) čekaju potvrdu
 
 ## Važno za tim
 - `emit()` / `sendEvent` rade samo ako je pošiljalac prethodno uradio `join` (Mozaik baca `Participant <id> not found`). Važi za Conductor, Gatekeeper-učesnika (C) i sve agente.
