@@ -1,3 +1,4 @@
+import { z } from "zod"
 import type { ElementRef, IntentionalDifference, ScreenStatus, TapTarget, Unit, UnitResult } from "../contracts"
 import type { RunData } from "./load"
 
@@ -37,11 +38,21 @@ export type SharedRow = {
   reason: string | null
 }
 
+/** How the run ended, from the Conductor's last `run.finished` line; null when it ended normally or is unknown. */
+export type RunStop = {
+  outcome: string
+  /** One sentence for the page, in Serbian. */
+  text: string
+  /** The architect's errors when the plan failed. */
+  planErrors: string[]
+}
+
 export type ReportModel = {
   runId: string
   startedAt: string | null
   finishedAt: string | null
   durationText: string | null
+  stop: RunStop | null
   counts: Record<RowStatus, number>
   screens: ScreenRow[]
   shared: SharedRow[]
@@ -167,6 +178,25 @@ function formatDuration(ms: number): string {
   return minutes > 0 ? `${minutes} min ${seconds} s` : `${seconds} s`
 }
 
+// The Conductor logs { event: "run.finished", data: { outcome, error } } (orchestration/conductor.ts).
+const RunFinishedSchema = z.looseObject({ outcome: z.string().min(1), error: z.string().nullish() })
+
+const STOP_TEXT: Record<string, string> = {
+  "plan.failed": "Prolaz je stao: arhitekta ni posle ponovnih pokušaja nije napravio plan koji prolazi proveru.",
+  "budget.exceeded": "Prolaz je stao: potrošen je budžet, pa jedinice koje nisu završene nemaju rezultat.",
+  error: "Prolaz je stao zbog greške",
+}
+
+export function runStop(data: Pick<RunData, "log" | "planErrors">): RunStop | null {
+  const last = [...data.log].reverse().find((l) => l.event === "run.finished")
+  const finished = RunFinishedSchema.safeParse(last?.data)
+  if (!finished.success || finished.data.outcome === "finished") return null
+  const { outcome, error } = finished.data
+  const base = STOP_TEXT[outcome] ?? `Prolaz je stao (${outcome})`
+  const text = outcome === "error" || !STOP_TEXT[outcome] ? `${base}${error ? `: ${error}` : "."}` : base
+  return { outcome, text, planErrors: outcome === "plan.failed" ? (data.planErrors ?? []) : [] }
+}
+
 export function toReportModel(data: RunData): ReportModel {
   const units = data.plan?.units ?? []
   const screens = units
@@ -186,5 +216,5 @@ export function toReportModel(data: RunData): ReportModel {
   const finishedAt = times[times.length - 1] ?? null
   const durationText = startedAt && finishedAt ? formatDuration(Date.parse(finishedAt) - Date.parse(startedAt)) : null
 
-  return { runId: data.runId, startedAt, finishedAt, durationText, counts, screens, shared, warnings: data.warnings }
+  return { runId: data.runId, startedAt, finishedAt, durationText, stop: runStop(data), counts, screens, shared, warnings: data.warnings }
 }

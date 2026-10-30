@@ -54,16 +54,26 @@ Poslednja izmena: 2026-10-30
   - mock ključevi: `taskId` je `"plan"`, a broj pokušaja ide u `TaskMeta.round`, pa skripta za MockRunner ima `architect:plan:1`, `architect:plan:2`… ili samo `architect` za sve pokušaje;
   - 5 testova u `src/agents/architect.test.ts` sa `MockRunner`-om nad Receptima podeljenim na 2 dela: ispravan plan, pa loš plan (bez `/kupovina`) + ispravan, tri loša plana (`plan.failed` tačno jednom), `normalizePlan` popravlja `size`/`wave`/`writes`, zauzet agent + prekid.
   - Provereno sa A-ovim pravim Conductor-om (A10) nad TodoMVC-om, uz pravi parser, analizator i arhitektu i A-ove lažne buildere, testere i Gatekeeper: ispravan plan → `plan.ready` → obe jedinice `promoted`, ishod `finished`; loš plan → `plan.failed` → ishod `plan.failed`, prolaz se odmah završava.
-  - **Za A:** u `src/orchestration/agents.ts` arhitekta je još zamena `notYet(…, "D14")`; sada ide `architect: createArchitect` (A-ov fajl, jedan red).
+  - A je uključio arhitektu u `src/orchestration/agents.ts` (D-014).
 
-## Gotovo, čeka spajanje (grana `d/mock-replies`)
+## Gotovo, spojeno u main (PR #38, grana `d/mock-replies`)
 - D15: MockRunner odgovori za moje agente po D-013:
   - `src/agents/mocks/todomvc/analyzer.json` (`analyzer:part-1`: `list_files`, 4× `read_file`, izveštaj za rutu `*`) i `architect.json` (`architect`: plan sa `app-entry` + `todo-list`, 5 obaveza, `notPortable` za „Delete todo“ i izmenu na dvoklik);
   - `src/agents/mocks/recepti/analyzer.json` (`list_files`, 6× `read_file`, 5 izveštaja) i `architect.json` (`plan.manual.json` bez `routeMap`, sa `size: 0` i praznim `writes`, kao što bi model vratio);
   - ključ `analyzer:part-1` važi za jednog analizatora (F2, `FIXED_TEAM`); sa više delova (F3) analizator bez ključa ide na rezervni izveštaj, a ključ `architect` važi za svaki pokušaj;
   - 7 testova u `src/agents/mocks/d.mocks.test.ts`: fajlovi prolaze `MockFixtureSchema` i `loadMockFixtureDir`, svaki `read_file` je dozvoljen, izveštaji prolaze `finalizeReports` za sve rute, plan posle `normalizePlan` prolazi `validatePlan`, a plan za Recepte je posle normalizacije isti kao `plan.manual.json`.
   - `npm run migrate:mock -- examples/todomvc`: analizator radi iz mock-a (bez rezervnog izveštaja), prolaz staje kod arhitekte jer je u `agents.ts` još zamena. Sa A-ovim Conductor-om i mojim agentima (privremena skripta, ostali agenti lažni) obe aplikacije stižu do `plan.ready` iz prvog pokušaja i do `finished`.
-  - **Za C:** po D-013 builderov mock ide u `src/agents/mocks/todomvc/builder.json`; sada je `src/agents/mocks/builder.todomvc.json`, pa ga `--mock` ne učitava.
+  - C je premestio builderov mock u `src/agents/mocks/todomvc/builder.json` (PR #39).
+
+## D16 (grana `d/fix`): integracija urađena, pravi prolazi čekaju API ključ
+- **`migrate:mock` sa svim pravim agentima** (čist klon `main`-a `27f45ee`, instaliran `templates/expo`, original pokrenut, `--original-url`):
+  - TodoMVC: analizator iz mock-a → `analysis.done` → arhitekta `plan.accepted` iz 1. pokušaja → `plan.ready`; `plan.json` (2 jedinice, `routeMap` `{"*":"/"}`), `analysis/`, `report.html` postoje. Prolaz zatim staje: `the gatekeeper agent is not available yet (C, C2.4)`.
+  - Recepti: isto; plan ima istih 7 jedinica i iste `size` kao `plan.manual.json`; staje na istom mestu (Gatekeeper, C2.4).
+  - Moje G2 stavke za mock: `plan.json` i `analysis/` ✅, `report.html` ✅. Pravi prolaz nad TodoMVC-om: čeka API ključ.
+- **Popravke u mojim folderima:**
+  - izveštaj prikazuje kako se prolaz završio (poslednja linija `run.finished` od Conductor-a): „Prolaz je stao zbog greške: …“, „…arhitekta nije napravio plan…“ uz greške iz `plan.errors.json`, ili „…potrošen je budžet…“; kad je prolaz `finished`, nema trake. Ranije je izveštaj prolaza koji je stao pokazivao samo „nema rezultata“ bez razloga. 3 nova testa.
+  - `validatePlan` pravilo 9: zajednička jedinica `layout` sme da ima i `src/app/_layout.tsx` u `writes` (C, PD3/PD4); ostale jedinice ne. Prompt arhitekte to kaže modelu. Ranije bi takav plan bio odbijen i potrošio pokušaj. `normalizePlan` ne dodaje taj fajl sam: builder ga za sada ne može da upiše (OwnershipGuard ima jedan prefiks, `agents/builder.ts`, čeka A).
+- **Čeka:** `ANTHROPIC_API_KEY` u `.env` (nema ga ni u `.env` ni u okruženju). Tada: dva prava prolaza do plana nad Receptima (`npm run migrate -- examples/recepti --budget 1 --original-url …`), poređenje plana sa `plan.manual.json` (jedinice, zajedničke `data`/`layout`, zavisnosti, obaveze sa tekstom iz originala, `hiddenBehind`/`notPortable`) i popravka prompta; pa pravi prolaz `--budget 1` nad TodoMVC-om.
 
 ## Kapija G1: prošla 2026-10-30 (proverio D)
 Na čistom klonu `main`-a `6289b3c` (posle toga su u `main` stigle samo izmene dokumentacije, do `ea67e09`):
@@ -82,8 +92,8 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - ništa
 
 ## Sledeće
-- PR `d/mock-replies` (D15)
-- D16: pravi prolaz do plana nad Receptima (`--budget 1`) i poređenje sa `plan.manual.json`, kad A u `agents.ts` uključi arhitektu
+- PR `d/fix` (D16: izveštaj sa ishodom prolaza, izuzetak za `_layout.tsx`)
+- D16: pravi prolazi kad stigne API ključ (vidi gore)
 - izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
 
 ## Za A (D12, D14)
@@ -92,7 +102,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
-- **C:** `examples/recepti/wemora/plan.manual.json` je fixture za `scaffold()` (G1). `writes` su `src/screens/<id>/` i `src/shared/<id>/`; po C-ovom odgovoru na PD3/PD4 `layout` sme da menja i `src/app/_layout.tsx`, pa `validatePlan` (pravilo 9) i `normalizePlan` treba da dobiju taj izuzetak.
+- **C:** `examples/recepti/wemora/plan.manual.json` je fixture za `scaffold()` (G1). `writes` su `src/screens/<id>/` i `src/shared/<id>/`; po C-ovom odgovoru na PD3/PD4 `layout` sme da menja i `src/app/_layout.tsx`, i `validatePlan` (pravilo 9) to sada prihvata (D16).
 
 ## Odgovor za B
 - **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).

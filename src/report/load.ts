@@ -21,9 +21,14 @@ export type RunData = {
   /** Keyed by unitId (results/<unitId>.json). */
   results: Record<string, UnitResult>
   log: LogLine[]
+  /** The architect's last errors (plan.errors.json), when it gave up (plan.failed, D-012). */
+  planErrors: string[] | null
   /** Files that are missing or do not match their schema. The report shows them instead of failing. */
   warnings: string[]
 }
+
+// Written by agents/architect.ts on plan.failed; only the error list is shown.
+const PlanErrorsSchema = z.looseObject({ errors: z.array(z.string()) })
 
 const zodMessage = (error: z.ZodError) =>
   error.issues.map((i) => `${i.path.length > 0 ? i.path.join(".") : "(root)"}: ${i.message}`).join("; ")
@@ -85,6 +90,8 @@ export function loadRun(runDir: string): RunData {
   let plan: Plan | null = null
   if (existsSync(planFile)) plan = readJson(planFile, PlanSchema, "plan.json", warnings)
   else warnings.push("plan.json ne postoji, pa izveštaj nema spisak jedinica")
+  const errorsFile = path.join(runDir, "plan.errors.json")
+  const planErrors = existsSync(errorsFile) ? (readJson(errorsFile, PlanErrorsSchema, "plan.errors.json", warnings)?.errors ?? null) : null
 
   const tests = readDir(runDir, "tests", z.array(ScenarioSchema), warnings)
   const results = readDir(runDir, "results", UnitResultSchema, warnings)
@@ -95,5 +102,5 @@ export function loadRun(runDir: string): RunData {
     for (const id of Object.keys(tests)) if (!known.has(id)) warnings.push(`tests/${id}.json pripada jedinici koje nema u planu`)
     for (const id of Object.keys(results)) if (!known.has(id)) warnings.push(`results/${id}.json pripada jedinici koje nema u planu`)
   }
-  return { runId: path.basename(path.resolve(runDir)), plan, tests, results, log, warnings }
+  return { runId: path.basename(path.resolve(runDir)), plan, tests, results, log, planErrors, warnings }
 }

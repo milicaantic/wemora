@@ -66,6 +66,15 @@ function renderShared(rows: SharedRow[]): string {
 <table class="shared"><thead><tr><th>Jedinica</th><th>Status</th><th>Fajlova</th><th>Rundi</th><th>Napomena</th></tr></thead><tbody>${lines.join("")}</tbody></table>`
 }
 
+function renderStop(stop: ReportModel["stop"]): string {
+  if (!stop) return ""
+  const errors =
+    stop.planErrors.length > 0
+      ? `<p>Poslednje greške plana (<code>plan.errors.json</code>):</p><ol>${stop.planErrors.map((x) => `<li>${e(x)}</li>`).join("")}</ol>`
+      : ""
+  return `<section class="warnings run-stop" aria-label="Ishod prolaza"><p><strong>${e(stop.text)}</strong></p>${errors}</section>`
+}
+
 function renderWarnings(warnings: string[]): string {
   if (warnings.length === 0) return ""
   return `<h2>Upozorenja</h2><div class="warnings"><ul class="plain">${warnings.map((w) => `<li>${e(w)}</li>`).join("")}</ul></div>`
@@ -99,6 +108,7 @@ export function renderReport(model: ReportModel): string {
 <p>Prolaz <code>${e(model.runId)}</code></p>
 ${when}
 ${renderSummary(model)}
+${renderStop(model.stop)}
 <p class="muted">Ekran je dokazan samo kad svi testovi prolaze i pokrivene su sve obaveze i svi interaktivni elementi originala. Ekran bez testova nikad nije dokazan.</p>
 <h2>Ekrani</h2>
 ${screens}

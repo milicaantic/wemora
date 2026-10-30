@@ -50,5 +50,7 @@ td.outcome { width: 44px; font-weight: 700; text-align: center; }
 .error { color: var(--failed); overflow-wrap: anywhere; }
 .shared td:first-child { width: 30%; }
 .warnings { background: var(--partial-bg); border: 1px solid var(--partial); border-radius: 8px; padding: 12px 18px; }
+.run-stop { margin: 16px 0; }
+.run-stop ol { margin: 8px 0 0; padding-left: 22px; }
 @media (max-width: 640px) { main { padding: 20px 16px 48px; } td, th { padding: 6px; } }
 `
