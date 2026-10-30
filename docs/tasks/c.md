@@ -174,8 +174,8 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 
 ### Kapija G2 (proverava A) — moj deo
 - [ ] bar 1 ekran TodoMVC-a „dokazan“ kroz Gatekeeper
-- [ ] ručno pokvaren nacrt dobija `gate.failed` sa razumljivom porukom, builder ga popravi u sledećoj rundi
-- [ ] u `run.jsonl` nema uspešnih upisa buildera van `staging/`
+- [x] ručno pokvaren nacrt dobija `gate.failed` sa razumljivom porukom, builder ga popravi u sledećoj rundi (mock prolaz, `todo-list` runda 1 → 2)
+- [x] u `run.jsonl` nema uspešnih upisa buildera van `staging/` (mock prolaz; guard testiran u `builder.test.ts`)
 
 > **Ovde prvi put vidiš Mozaik:** u terminalu tokom `migrate` — builder piše, Gatekeeper odbija ili promoviše; posle u `run.jsonl` i u `output/<run>/app/`.
 
@@ -187,8 +187,8 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - [ ] provereno nad prolazom sa više jedinica: kad nova promocija pokvari stari ekran, izmena se vraća i builder dobija listu pokvarenih testova
 
 ### C3.2 Statusi u `results/`
-- [ ] svaka jedinica dobija `proven / partial / unproven / failed` u `results/<unitId>.json`
-- [ ] ekran bez testova posle drugog timeouta ulazi u aplikaciju kao `unproven`
+- [x] svaka jedinica dobija `proven / partial / unproven / failed` u `results/<unitId>.json`
+- [x] ekran bez testova posle drugog timeouta ulazi u aplikaciju kao `unproven` (na `tests.missing`, D-016)
 - [ ] povezano sa B-ovim `computeCoverage()` i D-ovim izveštajem
 
 ### C3.3 Testovi toka — **samo ako je sve ostalo zeleno**
