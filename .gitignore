@@ -4,10 +4,17 @@ node_modules/
 # Build output
 dist/
 
+# Run output (finished runs that we keep go to runs/, which is committed)
+output/
+
 # Environment variables and secrets
 .env
 .env.*
 !.env.example
+
+# Personal Claude Code files
+CLAUDE.local.md
+.claude/settings.local.json
 
 # Logs
 *.log
