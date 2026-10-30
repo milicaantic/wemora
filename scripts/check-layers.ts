@@ -60,7 +60,8 @@ function checkImport(info: SourceInfo, imp: Import, out: Violation[]): void {
     return
   }
 
-  if (imp.pkg === MOZAIK && layer === "core" && !CORE_MOZAIK_FILES.includes(info.rel)) {
+  // Tests of core/runtime need real Mozaik participants; the domain rule stays strict for tests too.
+  if (imp.pkg === MOZAIK && layer === "core" && !info.isTest && !CORE_MOZAIK_FILES.includes(info.rel)) {
     add("core-mozaik", `only ${CORE_MOZAIK_FILES.join(", ")} may import ${MOZAIK}`)
   }
 

@@ -69,6 +69,15 @@ describe("checkLayers", () => {
     ])
   })
 
+  it("lets core test files import Mozaik, but not domain test files", () => {
+    const src = project({
+      ...clean,
+      "core/runtime.test.ts": `import { createHuman } from "@mozaik-ai/core"`,
+      "scenarios/run.test.ts": `import { createHuman } from "@mozaik-ai/core"`,
+    })
+    expect(checkLayers(src)).toEqual([expect.objectContaining({ file: "src/scenarios/run.test.ts", rule: "domain-no-mozaik" })])
+  })
+
   it("rejects contracts importing anything but zod and contracts", () => {
     const src = project({ ...clean, "contracts/bad.ts": `import fs from "node:fs"\nimport { n } from "../core/config"` })
     expect(rules(src)).toEqual(["contracts-imports", "contracts-imports"])

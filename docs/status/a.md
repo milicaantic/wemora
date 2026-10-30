@@ -13,13 +13,18 @@ Poslednja izmena: 2026-10-30
 
 ## Gotovo, čeka review i spajanje (grana `a/config`)
 - A4: `src/core/config.ts` (modeli, cene, `DEFAULTS` iz §9, formule za broj agenata, `modelForRound`, `costUsd`) i 23 testa
+- A5: `src/core/state.ts` (`MigrationState extends RuntimeState`, `createInitialState`), `src/core/runtime.ts` (jedini `defineRuntime`, `board()`, `emit()`) i 7 testova
+- `check-layers`: test fajlovi u `core/` smeju da uvoze Mozaik (potrebno za testove runtime-a), uz 1 novi test
 
 ## U radu
 - ništa
 
 ## Sledeće
-- A5: tabla (`core/state.ts`) i runtime (`core/runtime.ts`)
-- zatim A6 (log i safety), A7 (runneri), A8 (`agents/_shared/`), A9 (red zadataka)
+- A6: log i safety (`core/log.ts`, `core/safety.ts`)
+- zatim A7 (runneri), A8 (`agents/_shared/`), A9 (red zadataka)
+
+## Važno za tim
+- `emit()` / `sendEvent` rade samo ako je pošiljalac prethodno uradio `join` (Mozaik baca `Participant <id> not found`). Važi za Conductor, Gatekeeper-učesnika (C) i sve agente.
 
 ## Mockovi koje koristim
 - `src/cli.ts` samo javlja „not implemented“, a pravi CLI stiže u A11 i A18

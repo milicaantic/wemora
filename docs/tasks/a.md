@@ -239,7 +239,7 @@ Umesto `.sh` je `.ts` preko `tsx`, jer niko u timu nema Git Bash (P14, `docs/dec
   1. `layer-order`: sloj uvozi samo slojeve ispod sebe;
   2. `domain-no-mozaik`: domen ne zavisi od `@mozaik-ai/core` ni direktno ni preko drugih fajlova (npr. domen → `core/runner.ts` → Mozaik); time je rešen i P3;
   3. `domain-via-index`: drugi domenski folder se uvozi samo preko njegovog `index.ts`;
-  4. `core-mozaik`: u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze Mozaik;
+  4. `core-mozaik`: u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze Mozaik (i test fajlovi u `core/`, od A5, jer testovi runtime-a trebaju prave Mozaik učesnike);
   5. `contracts-imports`: `contracts/` uvozi samo `zod` i sopstvene fajlove (testovi i `vitest`);
   6. `single-runtime`: `defineRuntime()` se poziva samo u `core/runtime.ts`;
   7. `unknown-layer`: fajl van poznatih foldera slojeva.
@@ -293,8 +293,9 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   Ukupno 23 testa. Pretpostavka: množilac ×5 važi za ceo zahtev (ulaz i izlaz), jer wemora-plan §6.1 kaže samo „košta 5× više“.
 - **Zavisnosti i mock:** nema.
 
-### A5 — Tabla i runtime
+### A5 — Tabla i runtime ✅ 2026-10-30
 - **Fajlovi:** `src/core/state.ts`, `src/core/runtime.ts`, `src/core/runtime.test.ts`.
+- **Nalaz iz Mozaik izvora:** `sendEvent` (pa i `emit`) baca `Participant <id> not found` ako pošiljalac nije uradio `join`. Conductor, Gatekeeper-učesnik i svaki agent moraju da se pridruže pre prvog događaja. Ako se `emit` poziva u handleru, to mora biti unutar async funkcije sa `.catch`, inače greška stiže do pošiljaoca događaja (mozaik.md §6).
 - **Izvozi:**
   ```ts
   // state.ts
