@@ -7,15 +7,16 @@ Poslednja izmena: 2026-10-30
 
 ## Gotovo, čeka spajanje
 - D0: review ugovora za moj deo (`ParsedApp`, `AnalysisPart`, `AnalyzerReport`, `Obligation`, `Unit`, `Flow`, `Plan`, `ParseApp`, `SplitParts`, `ValidatePlan`, `BuildReport`). Tipovi odgovaraju mom planu; promena ugovora ne treba. Nalazi su ispod.
-
 - D1: `examples/todomvc`, React primer iz `tastejs/todomvc` (commit `ff43b02`, MIT), bez izmena koda. `npm ci && npm run build && npm run serve` radi na portu 7002. Poreklo, pokretanje i lista interaktivnih elemenata su u `examples/todomvc/SOURCE.md`.
-- D2: ovaj fajl
+- D2: ovaj fajl, po šablonu iz `docs/tim-plan.md` §10
 
 ## U radu
 - ništa
 
 ## Sledeće
-- D3: `examples/mock-api`, D4: `examples/recepti` (posle G0)
+- PR `d/f0` (D0–D2) → review A → spajanje u `main`
+- kapija G0 (proverava A): moja stavka je da se `examples/todomvc` pokreće
+- posle G0: povući `main`, napraviti grane `d/recepti` i `d/parser`, pa D3 (`examples/mock-api`) i D4 (`examples/recepti`)
 
 ## Mockovi koje koristim
 - nijedan
