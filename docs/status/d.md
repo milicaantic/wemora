@@ -16,15 +16,16 @@ Poslednja izmena: 2026-10-30
 - D6: `parseApp(webDir)` u `src/analysis/` (`parse.ts`, `source.ts`, `imports.ts`, `routes.ts`, `webApis.ts`, `errors.ts`). Proverava `package.json` (Next.js, bez Reacta, bez rutera, React Router 5 → `UnsupportedInputError` sa kodom), parsira sve `.js/.jsx/.ts/.tsx` iz `src/`, pravi graf uvoza (i CSS), nalazi rute iz JSX `<Route>` i iz `createBrowserRouter`/`useRoutes` (ugnežđivanje, `index`, layout rute, `Navigate`, `Suspense`, `lazy`), deli fajlove na ekrane i zajedničke, beleži web API-je po ekranu i broji tokene (`ceil(znakovi/4)`, LF). Bez nove zavisnosti: koristi `typescript` (predlog odluke D-007).
   - Recepti: 5 ruta, isti fajlovi i iste veličine kao `plan.manual.json` (test to proverava). TodoMVC: jedna ruta `*`, 9 fajlova, `src/index.js` zajednički.
   - 27 testova u `src/analysis/parse.test.ts` nad oba primera i 9 malih fixture aplikacija u `src/analysis/mocks/` (`.jsx`, pa ih root `tsc` i provera slojeva ne čitaju).
-  - `parts` je za sada jedan deo sa svim rutama; `splitParts` dolazi u D7.
+  - `parts` je `splitParts(parsed, 1)`; Conductor ponovo deli sa svojim N.
   - Ograničenja: ugnežđeni `<Routes>` unutar komponenti ekrana se ne prate; web API-ji iz zajedničkih fajlova nisu ni na jednoj ruti (ugovor nema polje za njih; analizator ih vidi čitanjem fajlova).
+- D7: `splitParts(parsed, n)` u `src/analysis/split.ts`: deli rute na delove slične veličine u tokenima (najveća ruta prva, uvek u najlakši deo, izjednačenja po manjem indeksu i po putanji). `n` se svodi na ceo broj u [1, broj ruta], pa nema praznih delova; zajednički fajlovi nisu ni u jednom delu (svaki analizator ih čita iz `sharedFiles`). 11 testova u `split.test.ts`, nad Receptima i nad ručnim primerima.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- D7: `splitParts` (ista grana)
-- D8: `validatePlan`, sa testom nad `plan.manual.json`
+- PR `d/parser` (D6, D7) → review A
+- D8: `validatePlan`, sa testom nad `plan.manual.json` (grana `d/validate-plan`)
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).

@@ -1,11 +1,12 @@
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { z } from "zod"
-import { ParsedAppSchema, type AnalysisPart, type ParseApp, type ParsedRoute } from "../contracts"
+import { ParsedAppSchema, type ParseApp, type ParsedRoute } from "../contracts"
 import { UnsupportedInputError } from "./errors"
 import { closure, collectModuleInfo, resolveSpec, type ModuleInfo } from "./imports"
 import { findRoutes, type FoundRoute } from "./routes"
 import { estimateTokens, listCodeFiles, parseSource, readText, sourceRoot } from "./source"
+import { splitParts } from "./split"
 import { findWebApis } from "./webApis"
 
 // Only the fields the parser reads; everything else in package.json is ignored.
@@ -149,15 +150,7 @@ export const parseApp: ParseApp = async (webDir) => {
   const allFiles = new Set([...sharedFiles, ...routes.flatMap((r) => r.files)])
   const totalTokens = [...allFiles].reduce((sum, f) => sum + tokens(f), 0)
 
-  // One part with everything; the Conductor re-splits with splitParts(parsed, n) (D7).
-  const parts: AnalysisPart[] = [
-    {
-      id: "part-1",
-      routes: routes.map((r) => r.path),
-      files: [...new Set(routes.flatMap((r) => r.files))].sort(),
-      tokens: routes.reduce((sum, r) => sum + r.tokens, 0),
-    },
-  ]
-
-  return ParsedAppSchema.parse({ webDir: root, routes, sharedFiles, totalTokens, parts })
+  // One part with everything; the Conductor re-splits with splitParts(parsed, n) once it knows n.
+  const parsed = { webDir: root, routes, sharedFiles, totalTokens, parts: [] }
+  return ParsedAppSchema.parse({ ...parsed, parts: splitParts(parsed, 1) })
 }
