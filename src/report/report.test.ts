@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -81,6 +81,42 @@ describe("buildReport on an empty folder", () => {
     expect(html).toContain("plan.json ne postoji")
     expect(html).toContain("run.jsonl ne postoji")
     expect(html).toContain("Plan nema nijedan ekran.")
+  })
+})
+
+describe("how the run ended (run.finished from the Conductor)", () => {
+  const line = (event: string, data: unknown) => JSON.stringify({ t: "2026-10-30T10:00:00.000Z", agent: "conductor", event, data })
+  const runWith = (lines: string[], files: Record<string, string> = {}) => {
+    const runDir = tempDir(false)
+    writeFileSync(path.join(runDir, "run.jsonl"), `${lines.join("\n")}\n`)
+    for (const [name, text] of Object.entries(files)) writeFileSync(path.join(runDir, name), text)
+    return runDir
+  }
+
+  it("on plan.failed says the architect gave up and lists the plan errors", async () => {
+    const runDir = runWith([line("run.started", {}), line("run.finished", { outcome: "plan.failed", error: "the architect could not produce a valid plan" })], {
+      "plan.errors.json": JSON.stringify({ attempts: 3, errors: ['route "/kupovina" has no screen unit', "<b>bad</b>"], lastPlan: null }),
+    })
+    const html = readFileSync(await buildReport(runDir), "utf8")
+    expect(html).toContain("arhitekta ni posle ponovnih pokušaja nije napravio plan")
+    expect(html).toContain("route &quot;/kupovina&quot; has no screen unit")
+    expect(html).toContain("&lt;b&gt;bad&lt;/b&gt;")
+  })
+
+  it("on an error shows the Conductor's message", () => {
+    const runDir = runWith([line("run.finished", { outcome: "error", error: "the gatekeeper agent is not available yet (C, C2.4)" })])
+    expect(toReportModel(loadRun(runDir)).stop).toEqual({
+      outcome: "error",
+      text: "Prolaz je stao zbog greške: the gatekeeper agent is not available yet (C, C2.4)",
+      planErrors: [],
+    })
+  })
+
+  it("shows nothing when the run finished normally or there is no run.finished line", async () => {
+    expect(toReportModel(loadRun(runWith([line("run.finished", { outcome: "finished" })]))).stop).toBeNull()
+    expect(toReportModel(loadRun(fixture)).stop).toBeNull()
+    const html = readFileSync(await buildReport(runWith([line("run.finished", { outcome: "finished" })])), "utf8")
+    expect(html).not.toContain("Ishod prolaza")
   })
 })
 

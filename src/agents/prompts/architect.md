@@ -52,6 +52,8 @@ A flow is a behavior that spans 2 or more screens, e.g. "Open a recipe, tap 'Dod
 
 `size` (tokens), `wave` and empty `writes` are computed by the code from `sources` and `dependsOn`, and the route map is computed from the routes. Give reasonable values (`size: 0`, `wave: 0` for shared and `1` for screens, `writes: []`); they will be overwritten.
 
+The one exception for `writes`: when the web app's navigation (sidebar, header menu) becomes tabs or a drawer on mobile, the shared unit `layout` writes the root layout too: `"writes": ["src/shared/layout/", "src/app/_layout.tsx"]`. No other unit may write outside its own folder.
+
 # Example
 
 A shortened plan with two units (a real plan has a screen unit for every route):

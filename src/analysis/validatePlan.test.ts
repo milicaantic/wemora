@@ -142,13 +142,22 @@ describe("validatePlan catches broken plans", () => {
 
   it("writes outside the unit's folder and writes shared by two units", () => {
     const errors = check((p) => {
-      unit(p, "layout").writes.push("src/app/_layout.tsx")
-      unit(p, "favorites").writes = ["src/screens/favorites/", "src/screens/categories/x.tsx"]
+      unit(p, "favorites").writes = ["src/screens/favorites/", "src/screens/categories/x.tsx", "src/app/_layout.tsx"]
       unit(p, "data").writes = []
     })
-    expectError(errors, `"layout" writes "src/app/_layout.tsx"`, "outside its folder")
+    expectError(errors, `"favorites" writes "src/app/_layout.tsx"`, "outside its folder")
     expectError(errors, `"categories" and "favorites" both write under`)
     expectError(errors, `unit "data" has no writes`)
+  })
+
+  it("lets only the shared unit layout write the root layout src/app/_layout.tsx (C, PD3/PD4)", () => {
+    expect(check((p) => void unit(p, "layout").writes.push("src/app/_layout.tsx"))).toEqual([])
+    const errors = check((p) => {
+      unit(p, "layout").writes.push("src/app/other.tsx")
+      unit(p, "recipe-list").writes.push("src/app/_layout.tsx")
+    })
+    expectError(errors, `"layout" writes "src/app/other.tsx"`, "outside its folder")
+    expectError(errors, `"recipe-list" writes "src/app/_layout.tsx"`, "outside its folder")
   })
 
   it("obligation problems", () => {

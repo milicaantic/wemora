@@ -7,6 +7,8 @@ import { PlanSchema, type Plan, type Unit, type ValidatePlan } from "../contract
 const ID = /^[a-z0-9][a-z0-9-]*$/
 
 const ownPrefix = (unit: Unit) => `src/${unit.kind === "screen" ? "screens" : "shared"}/${unit.id}/`
+/** Root layout of Expo Router; only the shared unit "layout" may write it (rule 9). */
+const ROOT_LAYOUT = "src/app/_layout.tsx"
 const list = (items: string[]) => items.map((x) => `"${x}"`).join(", ")
 const overlaps = (a: string, b: string) => a.startsWith(b) || b.startsWith(a)
 
@@ -131,9 +133,11 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
   }
 
   // 9. writes: only inside the unit's own folder in app/, and never overlapping another unit.
+  // The one exception (C, PD3/PD4): the shared unit "layout" may also write the root layout of Expo Router.
   for (const unit of units) {
     if (unit.writes.length === 0) errors.push(`unit "${unit.id}" has no writes; use ["${ownPrefix(unit)}"]`)
     for (const path of unit.writes) {
+      if (path === ROOT_LAYOUT && unit.kind === "shared" && unit.id === "layout") continue
       if (!path.startsWith(ownPrefix(unit))) {
         errors.push(`unit "${unit.id}" writes "${path}", outside its folder "${ownPrefix(unit)}" (paths are relative to app/)`)
       }
