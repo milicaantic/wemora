@@ -2,12 +2,21 @@ import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { createAgent, type Tool } from "@mozaik-ai/core"
 import { z } from "zod"
-import { ScenarioSchema, type ExtractInteractive, type InteractiveElement, type Scenario, type Unit, type ValidateScenario } from "../contracts"
-import { MODELS } from "../core/config"
+import {
+  ScenarioSchema,
+  type Coverage,
+  type ExtractInteractive,
+  type InteractiveElement,
+  type Scenario,
+  type Unit,
+  type ValidateScenario,
+} from "../contracts"
+import { DEFAULTS, MODELS } from "../core/config"
 import { log } from "../core/log"
 import { board, emit } from "../core/runtime"
 import {
   ariaSnapshot,
+  computeCoverage,
   coverageNote,
   extractInteractive,
   readTests,
@@ -39,6 +48,8 @@ export type TesterDeps = {
   validateScenario?: ValidateScenario
   extractInteractive?: ExtractInteractive
   ariaSnapshot?: (url: string, route: string) => Promise<string>
+  /** The tester's own time limit per unit (D-016); default DEFAULTS.testerUnitTimeoutMs. */
+  unitTimeoutMs?: number
 }
 
 type Task = {
@@ -150,8 +161,14 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     return { unit, blankUrl, saved, interactive, validated: new Set() }
   }
 
+  // The Conductor cancels from outside after its own timeout or at the end of the run (D-016).
+  let cancelledFromOutside = false
+
   async function test(unitId: string, cancel: CancelGuard): Promise<void> {
     let saved = 0
+    let coverage: Coverage | null = null
+    // The tester's own limit (D-016) comes before the Conductor's, so the task ends with what it saved.
+    const ownLimit = setTimeout(() => cancel.cancel("tester time limit"), deps.unitTimeoutMs ?? DEFAULTS.testerUnitTimeoutMs)
     try {
       task = await prepare(unitId)
       const result = await runTask(agent, {
@@ -167,20 +184,31 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     } catch (error) {
       log({ agent: id, event: "tester.failed", data: { unitId, error: message(error) } })
     } finally {
+      clearTimeout(ownLimit)
       saved = task?.saved.length ?? 0
+      if (task && saved > 0) coverage = computeCoverage(task.unit, task.saved, task.interactive)
       task = null
     }
 
     // Free before emitting: the Conductor may hand out the next unit from its tests.ready handler.
+    const cancelled = cancelledFromOutside
     busyWith = null
     guard = null
+    cancelledFromOutside = false
+    // A cancelled task sends no result (handle.ts, D-016); what it saved stays for the next tester.
+    if (cancelled) {
+      log({ agent: id, event: "tester.cancelled", data: { unitId, saved } })
+      return
+    }
     // Partial tests are still sent (docs/tasks/b.md Q10): the Gatekeeper then marks the screen "partial".
     // With none, nothing is sent and the Conductor's timeout gives the unit to another tester.
-    if (saved === 0) {
+    if (saved === 0 || !coverage) {
       log({ agent: id, event: "tests.none", data: { unitId } })
       return
     }
     try {
+      // The Gatekeeper computes the screen status from this coverage, so it goes on the board first.
+      board().coverage[unitId] = coverage
       emit("tests.ready", { unitId }, agent.getId())
     } catch (error) {
       log({ agent: id, event: "tests.emit_failed", data: { unitId, error: message(error) } })
@@ -205,7 +233,9 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
       })
     },
     cancel(reason) {
-      guard?.cancel(reason)
+      if (!guard) return
+      cancelledFromOutside = true
+      guard.cancel(reason)
     },
   }
 }

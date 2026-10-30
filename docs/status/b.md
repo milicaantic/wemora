@@ -51,17 +51,24 @@ Poslednja izmena: 2026-10-30
 - **B5, meni**: ako stranica ima `main`, elementi se uzimaju samo iz njega; zajednički meni ne ulazi u pokrivenost ekrana.
 - Iz B2/B3 i dalje važe: `failedStep` = indeks u `steps` (pad u `setup` → bez `failedStep`, `error` počinje sa `setup: step N:`); poklapanje teksta po b.md Q2; vremenski limiti su konstante u `run.ts` (Q20).
 
+## Gotovo, čeka PR (grana `b/tester-d016`)
+- **Pokrivenost (Q11 rešen kod B):** tester posle zadatka upiše `board().coverage[unitId] = computeCoverage(unit, sačuvani scenariji, interaktivni elementi)` **pa tek onda** pošalje `tests.ready`. C-ov Gatekeeper-učesnik (C2.4) već čita `board().coverage` u `computeStatus` i u `results/<unitId>.json`, pa ekran sada može biti `proven`. Ograničenje: za rutu sa parametrom (`/recepti/:id`) i kad `extractInteractive` ne uspe, lista elemenata je prazna, pa se proveravaju samo obaveze.
+- **D-016 (A13) u testeru:** posle `cancel` spolja (Conductor-ov timeout ili kraj prolaza) tester ne šalje `tests.ready` (log `tester.cancelled`); sačuvani scenariji ostaju na tabli i disku za sledećeg testera. Tester ima i sopstveni limit `testerUnitTimeoutMs` (8 min, `DEFAULTS`): tada završi i pošalje `tests.ready` sa onim što je sačuvao, pre Conductor-ovih 10 min.
+- Testovi: 3 nova u `agents/tester.test.ts` (pokrivenost na tabli u trenutku `tests.ready`; prekid spolja posle čuvanja; sopstveni limit), stabilni u 3 puštanja. Ceo repo: 451 test.
+
+## Usklađenost sa C2.3 i C2.4 (PR #44, #47) i A13 (PR #45)
+- `checkDraft` zove `runScenarios(url, tests, { viewport: 390×844, differences: unit.intentionalDifferences })` po ugovoru; `failedStep` čita kao indeks u `steps` (prikazuje ga +1), a scenario bez rezultata računa kao pao.
+- B7 „ponoviti sa `serveApp`“ je pokriven: C-ov `src/gatekeeper/g1.test.ts` pušta B-ov scenario kroz `runScenarios` preko pravog `serveApp`.
+- Gatekeeper-učesnik čita testove iz `board().tests` (tester ih tu upisuje) i čeka `tests.ready`: usklađeno.
+- C je po D-016 dodao reakciju na `tests.missing` (ekran ulazi kao `unproven`) i ignorisanje zakasnelog nacrta (PR #48); prompt buildera ima checkbox i `Link` (predlog uz D-005). Usklađeno sa testerom; build i 455 testova prolaze.
+- A je povezao Gatekeeper u CLI (PR #49): svi agenti su pravi. `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` sada prolazi ceo tok i završava sa izveštajem.
+- **Za C:** ceo mock prolaz (pravi CLI) završava sa `app-entry: failed` i `todo-list: failed`, jer `src/agents/mocks/todomvc/builder.json` nema odgovor za zajedničku jedinicu **`app-entry`** iz D-ovog plana: rezervni odgovor predaje prazan nacrt, Gatekeeper ga odbija dve runde, `app-entry` je `failed`, a `todo-list` blokiran. Treba `builder:app-entry:1` sa ispravnim nacrtom.
+
 ## U radu
 - ništa
 
 ## Sledeće
-- B11 do kraja čim C spoji Gatekeeper-učesnika (C2.4): `migrate --mock`, pa pravi prolaz `--budget 1`
-
-## Usklađenost sa C2.3 (`checkDraft`, PR #44)
-- `checkDraft` zove `runScenarios(url, tests, { viewport: 390×844, differences: unit.intentionalDifferences })` po ugovoru; `failedStep` čita kao indeks u `steps` (prikazuje ga +1), a scenario bez rezultata računa kao pao. Build i 432 testa prolaze.
-- B7 „ponoviti sa `serveApp`“ je pokriven: C-ov `src/gatekeeper/g1.test.ts` pušta B-ov scenario kroz `runScenarios` preko pravog `serveApp` (radi kad je `templates/expo` instaliran).
-- **Za C (C2.4) i A: pokrivenost.** `checkDraft` ne računa `Coverage`, a `computeStatus` za nepoznatu pokrivenost daje `partial`, pa bez nje **nijedan ekran ne može biti `proven`** (G2). Neko (predlog Q11: Gatekeeper-učesnik, posle `tests.ready`) mora da pozove `extractInteractive(originalUrl, route)` i `computeCoverage(unit, tests, interactive)` i upiše rezultat u `results/<unitId>.json` i `board.coverage`. Za to Gatekeeper-u treba URL originala, kao i testeru (A vezuje u `orchestration/agents.ts`). Za rutu sa parametrom (`/recepti/:id`) `extractInteractive` ne može da otvori ekran.
-- ponoviti B7 sa C-ovim `serveApp()` (prazan ekran je u B9 već proveren preko `serveApp`)
+- B11 do kraja čim A poveže Gatekeeper-učesnika u CLI: `migrate --mock`, pa pravi prolaz `--budget 1`
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
