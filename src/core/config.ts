@@ -34,6 +34,9 @@ export const DEFAULTS = {
   maxRounds: 4,
   // Rounds from this one on use MODELS.strong.
   escalationRound: 3,
+  // Our retries on top of the Anthropic SDK, which already retries each request twice by itself.
+  apiRetries: 2,
+  apiRetryBaseMs: 5_000,
   maxSchemaRetries: 2,
   maxPlanRetries: 2,
   rescaleIntervalMs: 60_000,

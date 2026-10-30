@@ -332,7 +332,16 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   3. `handleUnhandledRejection` upiše liniju sa `event: "unhandledRejection"`, a `installSafety` dvaput registruje handler samo jednom. Test zove handler direktno, jer bi pravi `unhandledRejection` uhvatio i vitest.
 - **Zavisnosti i mock:** nema.
 
-### A7 — `BudgetedRunner` i `MockRunner`
+### A7 — `BudgetedRunner` i `MockRunner` ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- `registerContext(context: ModelContext, meta)` prima sam kontekst, ne `contextId`, i čuva ga u `WeakMap`-u, pa završeni zadaci ne ostaju u memoriji.
+- Anthropic SDK već sam radi 2 ponovna pokušaja (429, 5xx, prekid veze), a Mozaik ne dozvoljava da se to isključi. Naš retry je iznad toga: `DEFAULTS.apiRetries = 2`, pauza `apiRetryBaseMs = 5000` × 2^pokušaj. Ne ponavljaju se 400, 401, 403 i 404.
+- Model bez cene u `PRICING` se odbija (bez cene budžet ne može da se sprovede), npr. `claude-haiku-4-5`.
+- Izvozi se i `errorOutput(reason)` (poruka sa `__WEMORA_ERROR__`) za A8.
+- `onUsage`, `onBudgetExceeded` i `onRateLimited` su zaštićeni: ako callback baci grešku, runner je upiše u log i nastavlja.
+- Poznato ograničenje: provera budžeta je pre poziva, pa paralelni agenti mogu malo da pređu limit (najviše za cenu poziva koji su već krenuli).
+- Testovi (16): uz slučajeve ispod, pravi Mozaik `runLoop` nad `MockRunner`-om poziva alat i završava skriptovanim odgovorom.
+
 - **Fajlovi:** `src/core/runner.ts`, `src/core/runner.test.ts`.
 - **Izvozi:**
   ```ts
@@ -375,7 +384,15 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   7. `MockRunner`: `{ call }` postaje `FunctionCallItem` sa tim imenom i argumentima u JSON-u, `{ json }` postaje tekstualna poruka sa JSON-om, ključ `builder:u1` ima prednost nad `builder`, a nepoznat ključ vraća grešku.
 - **Zavisnosti i mock:** A4, A0 (`AgentKind`). Prave odgovore agenata dobijam u A12, a do tada koristim ručne primere u testu.
 
-### A8 — `agents/_shared/`
+### A8 — `agents/_shared/` ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- Fajlovi: `context.ts`, `guards.ts` (`OwnershipGuard`, `CancelGuard`, `composeGuards` zajedno), `schema.ts`, `tools.ts`, `run.ts`, `handle.ts`, `index.ts`, test `shared.test.ts` (25 testova).
+- Novo: `toModelSchema(schema)` pravi JSON Schemu iz zod-a i briše ključeve koje Anthropic strict režim ne prima (`$schema`, `minLength`, `maxLength`, `minimum`, `maximum`, `propertyNames`, `minItems > 1`…; `oneOf` → `anyOf`). Koriste ga `runStructured` i `defineTool`; odgovor se i dalje proverava punom zod šemom. Ovo je D-ov predlog iz `docs/status/d.md`.
+- `AgentTask.tools` je opciono. `isAgentBusy(agent)` je izvezen, za `AgentHandle.isBusy()`.
+- `runTask` odbija agenta koji nije uradio `join`, jer inače ne bi dobio sopstveni `model.answer`.
+- Greška runnera ili API-ja (`__WEMORA_ERROR__`) u `runStructured` se ne ponavlja: to nije greška modela.
+- `runTask` nema sopstveni timeout; timeoute vodi Conductor preko `CancelGuard`-a (A13).
+
 - **Fajlovi:** `src/agents/_shared/{context,ownershipGuard,cancelGuard,tools,run,handle,index}.ts`, `src/agents/_shared/shared.test.ts`.
 - **Izvozi:**
   ```ts
@@ -412,7 +429,8 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   6. dva poziva `freshContext` daju različite `id`, a memorija agenta ostaje iste dužine posle `runTask`.
 - **Zavisnosti i mock:** A5 (`runLoop`), A7 (`MockRunner`, `registerContext`). `AgentHandle` i tipove zadataka potvrđuju B, C i D (P6); do potvrde ih koriste samo testovi.
 
-### A9 — Red zadataka
+### A9 — Red zadataka ✅ 2026-10-30
+**Napomene iz implementacije:** jedinica koje nema na tabli računa se kao `waiting`. Kad su pravila §9 izjednačena, odlučuje niži talas, pa ID, da redosled uvek bude isti. `nextForTester` preskače i ekrane koji su već `promoted` ili `failed`. P7 i P8 su urađeni po predlogu i čekaju potvrdu tima. 15 testova.
 - **Fajlovi:** `src/orchestration/queue.ts`, `src/orchestration/queue.test.ts`.
 - **Izvozi:**
   ```ts
