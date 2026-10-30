@@ -43,7 +43,11 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - ništa
 
-## Gotovo, čeka review i spajanje (grana `a/timeouts`)
+## Gotovo, čeka review i spajanje (grana `a/wire-gatekeeper`)
+- C-ov Gatekeeper-učesnik (C2.4, PR #47) povezan u `src/orchestration/agents.ts` (`createGatekeeper`); zamena „agent još ne postoji“ uklonjena, jer su sada svi agenti pravi; test u `agents.test.ts`
+- čeka C (D-016, njegov fajl): handler za `tests.missing` umesto sopstvenog tajmera od 10 min, i ignorisanje nacrta iz ranije runde
+
+## Gotovo, A13 (grana `a/timeouts`, PR #45)
 - A13 (D-016): Conductor prekida testera bez `tests.ready` posle 10 min i daje ekran ponovo (iza neprobanih); posle 2. isteka šalje nov događaj `tests.missing { unitId }` (Gatekeeper promoviše `unproven`); builder bez nacrta posle 10 min = neuspela runda; zakasneli događaji iz ranije runde se ignorišu (`event.stale`); nov zadatak prekinutom agentu tek kad stane. Fajlovi: `orchestration/timeouts.ts`, `conductor.ts`, `queue.ts`, `mocks/manualClock.ts`, `mocks/fakeAgents.ts`; `config.ts` (`maxTestAttempts`, `idleCheckMs`); `contracts/events.ts`; pravilo o `cancel` u `agents/_shared/handle.ts`; 9 novih testova; `architecture.md` §5 i §9
 
 ## Sledeće
