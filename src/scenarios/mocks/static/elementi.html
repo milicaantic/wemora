@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- Test page for scenarios/interactive.test.ts: shared navigation, a table with repeated rows,
+     a hidden and an unnamed button, and names with ": " and quotes. -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Elementi</title>
+  </head>
+  <body>
+    <nav aria-label="Glavni meni">
+      <ul>
+        <li><a href="/">Recepti</a></li>
+        <li><a href="/omiljeni">Omiljeni</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h2>Svi recepti</h2>
+      <label for="pretraga">Pretraga</label>
+      <input id="pretraga" type="search" />
+      <div role="group" aria-label="Kategorija">
+        <button type="button" aria-pressed="true">Sve kategorije</button>
+        <button type="button" aria-pressed="false">Supe</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Naziv</th><th>Omiljeni</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="/recepti/1">Pileća supa</a></td>
+            <td><button type="button" aria-label="Dodaj u omiljene: Pileća supa">☆</button></td>
+          </tr>
+          <tr>
+            <td><a href="/recepti/2">Paradajz "čorba"</a></td>
+            <td><button type="button" aria-label="Dodaj u omiljene: Paradajz čorba">☆</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button">Sortiraj po vremenu</button>
+      <button type="button">Sortiraj po vremenu</button>
+      <button type="button" hidden>Skriveno</button>
+      <button type="button" aria-label=""></button>
+      <input id="hleb" type="checkbox" /><label for="hleb">Hleb</label>
+      <button type="button" disabled>Obriši kupljene</button>
+    </main>
+  </body>
+</html>

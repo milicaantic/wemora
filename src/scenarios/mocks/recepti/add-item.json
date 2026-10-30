@@ -1,0 +1,12 @@
+{
+  "id": "shopping-list-add-item",
+  "unitId": "shopping-list",
+  "obligation": "add-item",
+  "steps": [
+    { "goto": "/kupovina" },
+    { "fill": { "label": "Namirnica", "value": "Hleb" } },
+    { "tap": { "role": "button", "name": "Dodaj" } },
+    { "expectVisible": { "text": "Kupljeno: 0 od 1" } },
+    { "expectNotVisible": { "text": "Lista za kupovinu je prazna" } }
+  ]
+}

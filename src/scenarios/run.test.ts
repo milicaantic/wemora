@@ -1,3 +1,5 @@
+import { createServer, type Server } from "node:http"
+import type { AddressInfo } from "node:net"
 import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { IntentionalDifference, Scenario, ServedApp } from "../contracts"
@@ -5,7 +7,13 @@ import { createRunScenarios } from "./run"
 import { serveStatic } from "./serve"
 
 // Real Chromium against a local static server; no internet. Short timeouts keep failing cases fast.
-const runScenarios = createRunScenarios({ stepTimeoutMs: 1_500, navigationTimeoutMs: 5_000, scrollGraceMs: 300, maxScrolls: 30 })
+const runScenarios = createRunScenarios({
+  stepTimeoutMs: 1_500,
+  navigationTimeoutMs: 5_000,
+  scrollGraceMs: 300,
+  maxScrolls: 30,
+  networkQuietMs: 300,
+})
 
 const desktop = { viewport: { width: 1280, height: 800 }, differences: [] }
 const mobile = { viewport: { width: 390, height: 844 }, differences: [] }
@@ -117,6 +125,28 @@ describe("runScenarios", { timeout: 60_000 }, () => {
     const [result] = await runScenarios(app.url, [invalid], desktop)
     expect(result.ok).toBe(false)
     expect(result.error).toMatch(/^invalid scenario/)
+  })
+
+  it("does not pass expectNotVisible while the screen is still loading its data", async () => {
+    // The list arrives from the API 500 ms after the page loads, like Recepti showing "Učitavanje…" first.
+    const server: Server = createServer((req, res) => {
+      if (req.url === "/data") {
+        setTimeout(() => res.writeHead(200, { "content-type": "application/json" }).end('["Musaka"]'), 500)
+        return
+      }
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" })
+      res.end(`<p id="list">Učitavanje…</p>
+        <script>fetch("/data").then((r) => r.json()).then((names) => { list.textContent = names.join(", ") })</script>`)
+    })
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
+    try {
+      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+      const [result] = await runScenarios(url, [scenario("loading", [{ goto: "/" }, { expectNotVisible: { text: "Musaka" } }])], desktop)
+      expect(result).toMatchObject({ ok: false, failedStep: 1 })
+    } finally {
+      server.closeAllConnections()
+      server.close()
+    }
   })
 
   it("never throws when the app is not running", async () => {

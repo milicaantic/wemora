@@ -1,0 +1,14 @@
+{
+  "id": "favorites-shows-favorites",
+  "unitId": "favorites",
+  "obligation": "shows-favorites",
+  "setup": [
+    { "goto": "/" },
+    { "tap": { "role": "button", "name": "Dodaj u omiljene: Sarma" } }
+  ],
+  "steps": [
+    { "goto": "/omiljeni" },
+    { "expectVisible": { "text": "Sarma" } },
+    { "expectNotVisible": { "text": "Nemate omiljenih recepata" } }
+  ]
+}

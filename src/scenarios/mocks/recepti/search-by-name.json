@@ -1,0 +1,11 @@
+{
+  "id": "recipe-list-search-by-name",
+  "unitId": "recipe-list",
+  "obligation": "search-by-name",
+  "steps": [
+    { "goto": "/" },
+    { "fill": { "label": "Pretraga", "value": "sarma" } },
+    { "expectVisible": { "text": "Sarma" } },
+    { "expectNotVisible": { "text": "Musaka" } }
+  ]
+}

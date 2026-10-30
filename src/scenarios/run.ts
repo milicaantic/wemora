@@ -8,6 +8,8 @@ export type RunnerSettings = {
   /** How long to wait for an element before scrolling down to look for it. */
   scrollGraceMs: number
   maxScrolls: number
+  /** expectNotVisible waits until no request has been in flight for this long (the screen may still be loading). */
+  networkQuietMs: number
 }
 
 // Lives here until it gets a place in core/config.ts (docs/tasks/b.md Q20).
@@ -16,9 +18,11 @@ export const DEFAULT_RUNNER_SETTINGS: RunnerSettings = {
   navigationTimeoutMs: 15_000,
   scrollGraceMs: 1_000,
   maxScrolls: 20,
+  networkQuietMs: 300,
 }
 
 type Failure = { step: number; message: string }
+type WaitForQuiet = () => Promise<void>
 
 /**
  * Runs scenarios one after another in a fresh browser context each (empty localStorage): setup first, then steps.
@@ -72,7 +76,8 @@ async function runOne(
     context.setDefaultTimeout(settings.stepTimeoutMs)
     context.setDefaultNavigationTimeout(settings.navigationTimeoutMs)
     const page = await context.newPage()
-    const run = (actions: Action[]) => runActions(page, baseUrl, opts.viewport, settings, actions)
+    const waitForQuiet = trackNetwork(page, settings)
+    const run = (actions: Action[]) => runActions(page, baseUrl, opts.viewport, settings, waitForQuiet, actions)
 
     const setupFailure = await run(setup.actions)
     if (setupFailure) return result(scenario, started, { error: `setup: step ${setupFailure.step}: ${setupFailure.message}` })
@@ -91,10 +96,12 @@ async function runActions(
   baseUrl: string,
   viewport: Viewport,
   settings: RunnerSettings,
+  waitForQuiet: WaitForQuiet,
   actions: Action[],
 ): Promise<Failure | null> {
   for (const action of actions) {
     try {
+      if (action.kind === "expectNotVisible") await waitForQuiet()
       await perform(page, baseUrl, viewport, settings, action)
     } catch (err) {
       return { step: action.step, message: `${describeAction(action)}: ${explain(err, action, settings)}` }
@@ -160,6 +167,31 @@ async function scrollUntilAttached(page: Page, locator: Locator, viewport: Viewp
     await page.mouse.wheel(0, Math.round(viewport.height * 0.8))
     await page.waitForTimeout(100)
     if ((await locator.count()) > 0) return
+  }
+}
+
+// "Text is not visible" is trivially true while a screen still shows "Loading…", so it is checked only after
+// the network has been quiet for a moment. Gives up silently after one step timeout (e.g. a request that never ends).
+function trackNetwork(page: Page, settings: RunnerSettings): WaitForQuiet {
+  let inFlight = 0
+  let lastActivity = Date.now()
+  page.on("request", () => {
+    inFlight++
+    lastActivity = Date.now()
+  })
+  const done = () => {
+    inFlight = Math.max(0, inFlight - 1)
+    lastActivity = Date.now()
+  }
+  page.on("requestfinished", done)
+  page.on("requestfailed", done)
+
+  return async () => {
+    const deadline = Date.now() + settings.stepTimeoutMs
+    while (Date.now() < deadline) {
+      if (inFlight === 0 && Date.now() - lastActivity >= settings.networkQuietMs) return
+      await page.waitForTimeout(50)
+    }
   }
 }
 
