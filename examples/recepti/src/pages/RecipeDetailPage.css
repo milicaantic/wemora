@@ -1,0 +1,57 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.detail-header .page-title {
+  margin-bottom: 8px;
+}
+
+.detail-meta {
+  color: #52606d;
+  margin: 0 0 24px;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+}
+
+.detail-panel {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 6px;
+}
+
+.detail-panel h3 {
+  margin-top: 0;
+}
+
+.servings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ingredients {
+  padding-left: 20px;
+  margin-bottom: 20px;
+}
+
+.ingredients li,
+.steps li {
+  margin-bottom: 8px;
+}
+
+.added-message {
+  color: #2f7a3e;
+  margin-bottom: 0;
+}

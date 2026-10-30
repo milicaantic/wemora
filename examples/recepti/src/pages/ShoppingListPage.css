@@ -1,0 +1,55 @@
+.shopping-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.shopping-form input {
+  width: 320px;
+  padding: 7px 10px;
+  font: inherit;
+  border: 1px solid #c9b8a3;
+  border-radius: 4px;
+}
+
+.shopping-table {
+  width: 720px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.shopping-table th,
+.shopping-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #eadfd2;
+}
+
+.shopping-table th {
+  background: #efe6da;
+}
+
+.shopping-table th:first-child {
+  width: 110px;
+}
+
+.shopping-table tr.bought label {
+  text-decoration: line-through;
+  color: #8792a2;
+}
+
+.shopping-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 720px;
+  margin-top: 12px;
+}
+
+.shopping-empty {
+  padding: 24px;
+  background: #fff;
+  color: #52606d;
+  width: 720px;
+}

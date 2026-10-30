@@ -1,0 +1,14 @@
+{
+  "name": "wemora-mock-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mock API shared by the web original and the Expo app in Wemora examples.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node server.mjs --check"
+  }
+}

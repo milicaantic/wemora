@@ -1,22 +1,33 @@
 # Status: osoba D
-Faza: F0
+Faza: F1
 Poslednja izmena: 2026-10-30
 
 ## Gotovo (spojeno u main)
-- ništa još
+- D0: review ugovora za moj deo. Tipovi odgovaraju planu, promena ugovora ne treba; nalazi su ispod (PR #4).
+- D1: `examples/todomvc`, React primer iz `tastejs/todomvc` (commit `ff43b02`, MIT), bez izmena koda; `npm ci && npm run build && npm run serve` na portu 7002. Detalji u `examples/todomvc/SOURCE.md` (PR #4).
+- D2: ovaj fajl (PR #4)
 
-## Gotovo, čeka spajanje
-- D0: review ugovora za moj deo (`ParsedApp`, `AnalysisPart`, `AnalyzerReport`, `Obligation`, `Unit`, `Flow`, `Plan`, `ParseApp`, `SplitParts`, `ValidatePlan`, `BuildReport`). Tipovi odgovaraju mom planu; promena ugovora ne treba. Nalazi su ispod.
-- D1: `examples/todomvc`, React primer iz `tastejs/todomvc` (commit `ff43b02`, MIT), bez izmena koda. `npm ci && npm run build && npm run serve` radi na portu 7002. Poreklo, pokretanje i lista interaktivnih elemenata su u `examples/todomvc/SOURCE.md`.
-- D2: ovaj fajl, po šablonu iz `docs/tim-plan.md` §10
+## Gotovo, čeka spajanje (grana `d/f1`)
+- D3: `examples/mock-api`, HTTP server bez zavisnosti (`node:http`), port 3000 (isti kao `EXPO_PUBLIC_API_URL` u C-ovom šablonu). Rute `GET /api/categories`, `/api/recipes`, `/api/recipes/:id`, kontrolne `GET /__health`, `POST /__fixture { name }`, `POST /__reset`. Fixture `default` (4 kategorije, 12 recepata) i `empty`. Pri pokretanju i sa `npm run check` proverava podatke, uključujući to da nijedno ime ne sadrži drugo. Sve rute ručno proverene curl-om. Uputstvo u `examples/mock-api/README.md`.
+- D4: `examples/recepti`, React 18 + React Router 6 (ugnežđene rute) + Vite + TypeScript, 5 ekrana namerno samo za desktop: `/` (tabela sa 8 kolona, hover), `/recepti/:id` (dve kolone, porcije), `/kategorije` (lista i detalj jedan pored drugog), `/omiljeni`, `/kupovina` (`localStorage`). `npm run build` prolazi. Playwright provera nad build-om (28 slučajeva, svih 5 ekrana, prazni podaci, pad API-ja, osvežavanje) prolazi; svaki interaktivni element ima jedinstveno pristupačno ime. Ekrani i tačna imena su u `examples/recepti/README.md`.
+  - Odstupanje od plana: filter kategorija je grupa dugmadi, ne `<select>`, jer DSL nema korak za izbor iz liste.
+  - `npm audit`: 2 umerene ranjivosti u React Router 6 (open redirect preko `\` u linku, SSR hidratacija). Ne odnose se na lokalni primer bez SSR-a i bez korisničkih linkova; ostajem na v6 da parser ima i v6 (Recepti) i v7 (TodoMVC).
+
+- D5: `examples/recepti/wemora/plan.manual.json`, ručni plan za Recepte: 2 zajedničke jedinice (`data`, `layout`) u talasu 0, 5 ekrana u talasu 1, 20 obaveza, 2 toka, `routeMap` za svih 5 ruta. Svaki od 23 fajla iz `src/` je u tačno jednoj jedinici; `size` je izračunat pravilom parsera. Prolazi `PlanSchema` i pravila za plan (provereno skriptom; pravi test dolazi sa `validatePlan` u D8). Tabela jedinica i ID-jevi obaveza su u `examples/recepti/wemora/README.md`.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/f0` (D0–D2) → review A → spajanje u `main`
-- kapija G0 (proverava A): moja stavka je da se `examples/todomvc` pokreće
-- posle G0: povući `main`, napraviti grane `d/recepti` i `d/parser`, pa D3 (`examples/mock-api`) i D4 (`examples/recepti`)
+- D6/D7: parser i podela (grana za parser)
+- D8: `validatePlan`, sa testom nad `plan.manual.json`
+
+## Za B i C
+- **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
+- **C:** `examples/recepti/wemora/plan.manual.json` je fixture za `scaffold()` (G1). `writes` su `src/screens/<id>/` i `src/shared/<id>/`. Otvoreno: ko menja `src/app/_layout.tsx` za navigaciju (PD3).
+
+## Odgovor za B
+- **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).
 
 ## Mockovi koje koristim
 - nijedan
