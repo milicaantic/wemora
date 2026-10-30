@@ -262,22 +262,24 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
 
 ## F1: Delovi rade sami
 
-### A4 — `core/config.ts`
+### A4 — `core/config.ts` ✅ 2026-10-30
 - **Fajlovi:** `src/core/config.ts`, `src/core/config.test.ts`.
 - **Izvozi:**
   ```ts
   export const MODELS = { default: "claude-haiku-5-5", strong: "claude-sonnet-5-5" } as const
-  export const PRICING: Record<string, { inputPerMTok: number; outputPerMTok: number }>   // haiku-5-5: 0.10 / 0.50; sonnet-5-5: 2 / 10
+  export type ModelName = (typeof MODELS)[keyof typeof MODELS]
+  export const PRICING: Record<ModelName, { inputPerMTok: number; outputPerMTok: number; longContext?: { thresholdTokens: number; multiplier: number } }>
+  // haiku-5-5: 0.10 / 0.50, ×5 preko 100k ulaznih tokena; sonnet-5-5: 2 / 10
   export const DEFAULTS = {
     maxBuilders: 4, maxTesters: 2, budgetUsd: 3,
-    tokensPerAnalyzer: 60_000, maxAnalyzers: 4, maxRounds: 4,
+    tokensPerAnalyzer: 60_000, maxAnalyzers: 4, maxRounds: 4, escalationRound: 3,
     maxSchemaRetries: 2, maxPlanRetries: 2, rescaleIntervalMs: 60_000,
     builderRoundTimeoutMs: 600_000, testerUnitTimeoutMs: 480_000, testsWaitTimeoutMs: 600_000,
   } as const
   export function analyzerCount(totalTokens: number): number                          // clamp(ceil(t / 60_000), 1, 4)
   export function builderCount(readyUnits: number, busyBuilders: number, maxBuilders: number): number
   export function testerCount(builders: number, maxTesters: number): number            // min(max(1, ceil(b / 2)), maxTesters)
-  export function modelForRound(round: number): string                                 // 1–2 → default, 3–4 → strong
+  export function modelForRound(round: number): ModelName                              // 1–2 → default, 3–4 → strong
   export function costUsd(model: string, inputTokens: number, outputTokens: number): number
   ```
 - **Šta radi:** sve brojke iz §9 i cene modela su na jednom mestu, kao čiste funkcije bez Mozaika, pa ih sme uvesti i domen (P3). Conductor, runner i timeouti čitaju vrednosti samo odavde, nigde drugde nema brojeva ni imena modela. `costUsd` uzima u obzir da je Haiku 5.5 5× skuplji preko 100k ulaznih tokena (wemora-plan §6.1).
@@ -286,7 +288,9 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   - `builderCount(5, 0, 4)` = 4, `(1, 0, 4)` = 1, `(0, 2, 4)` = 2;
   - `testerCount(4, 2)` = 2, `(1, 2)` = 1, `(0, 2)` = 1;
   - `modelForRound`: 1 i 2 → haiku, 3 i 4 → sonnet, 5 → greška;
-  - `costUsd("claude-haiku-5-5", 1_000_000, 1_000_000)` = 0.60.
+  - `costUsd("claude-haiku-5-5", 100_000, 1_000_000)` = 0.51; preko 100k ulaznih tokena cena je 5× veća; model bez cene → greška.
+
+  Ukupno 23 testa. Pretpostavka: množilac ×5 važi za ceo zahtev (ulaz i izlaz), jer wemora-plan §6.1 kaže samo „košta 5× više“.
 - **Zavisnosti i mock:** nema.
 
 ### A5 — Tabla i runtime
