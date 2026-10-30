@@ -33,18 +33,45 @@ Poslednja izmena: 2026-10-30
   - `finalizeReports(raw, parsed, partId)`: proverava izlaz i dopunjuje ga onim što parser sigurno zna (`partId`, fajlovi i web API-ji rute), izbacuje fajlove van dela, sortira; greška je poruka za model.
   - `fallbackReports(parsed, partId, why)`: izveštaji samo iz parsera kad model ne uspe, sa ekranom po imenu fajla i problemima za telefon izvedenim iz web API-ja; prolaz se nastavlja.
   - 21 test u `analyzer-domain.test.ts` nad Receptima podeljenim na 2 dela.
+- D12: agent analizator, `createAnalyzer(id): AgentHandle<AnalyzeTask>` u `src/agents/analyzer.ts`, prompt `src/agents/prompts/analyzer.md`:
+  - alati `list_files` i `read_file` (`defineTool`) samo pozivaju `FileAccess` tekućeg zadatka; odbijena putanja ide modelu kao `Error calling tool: …` i petlja se nastavlja;
+  - `assign({ partId })`: `runStructured` sa `analyzerOutputSchema`, `MODELS.default`, `maxOutputTokens: 8000`, `CancelGuard`; rezultat ide kroz `finalizeReports`;
+  - kad model ni posle 3 pokušaja ne da ispravan izlaz ili je zadatak prekinut (`cancel`): `fallbackReports` i log `analysis.fallback`; kad nema `board().parsed` ili deo ne postoji: log `analysis.failed` i prazna lista. `analysis.done` se šalje u svakom slučaju, pa prolaz ne visi;
+  - upiše `board().reports[partId]` i `analysis/<partId>.json` (niz `AnalyzerReport[]`), oslobodi se, pa `emit("analysis.done", { partId })`; drugi `assign` dok radi se ignoriše (log `task.ignored`);
+  - 7 testova u `src/agents/analyzer.test.ts` sa `MockRunner`-om nad TodoMVC-om (sve 4 stavke iz `docs/tasks/d.md` + zauzet agent, prekid, nepoznat deo).
+
+## Gotovo, čeka spajanje (grana `d/architect`)
+- D13: domen za arhitektu (`expoRouteFor`, `normalizePlan`, `architectBrief`, `architectRetryMessage`), 22 testa. Grana se rebase-uje na `main` posle spajanja `d/analyzer`.
+
+## Kapija G1: prošla 2026-10-30 (proverio D)
+Na čistom klonu `main`-a `6289b3c` (posle toga su u `main` stigle samo izmene dokumentacije, do `ea67e09`):
+- [x] `npm run build` zeleno, `npm test` 280/280 (23 fajla, sa C-ovim `g1.test.ts` i kapijama 3–4 nad instaliranim `templates/expo`)
+- [x] Spike A u `docs/decisions.md` (D-005, D-006; D-005 prihvaćen)
+- [x] `parseApp(examples/recepti)` daje 5 ekrana, `validatePlan(plan.manual.json)` je prazan
+- [x] B: 3 ručna scenarija prolaze nad pokrenutim Receptima (mock-api + build, 1280×800); `validateScenario` prihvata sva 3 i odbija scenario koji prolazi i na praznom ekranu
+- [x] C: `scaffold(plan.manual.json)` pravi aplikaciju, `serveApp()` otvara svih 5 ruta bez greške (posle D-009); dobar ekran prolazi kapije 1–4, loš pada na tačnoj (`gates.test.ts`, `g1.test.ts`)
+- [x] prvi zajednički test: B-ov scenario pada nad praznim ekranom, a prolazi nad ručno napisanim RN ekranom preko C-ovog `serveApp()` (390×844)
+- [x] A: `src/core`, `src/agents/_shared`, `src/orchestration` zeleno (deo `npm test`)
+- [x] statusi A, B, C i D ažurirani
+
+Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala „No routes found“ zbog zajedničkog Metro keša. C je popravio (D-009, PR #22).
 
 ## U radu
 - ništa
 
 ## Sledeće
-- kapija G1 (proveravam ja): lista u `docs/tim-plan.md` §5, kad A, B i C spoje F1
-- D13: domen za arhitektu (`normalizePlan`, `expoRouteFor`, brief)
-- D12/D14: agenti analizator i arhitekta, kad stignu A-ovi `core/` i `agents/_shared/` (A5, A7, A8)
+- PR `d/analyzer` (D11, D12), pa rebase i PR `d/architect` (D13)
+- D14: agent arhitekta + prompt
+- D15: MockRunner odgovori za TodoMVC i Recepte; pun `migrate:mock` čeka A-ov `cli migrate` (A11) i Conductor (A10)
+- izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
+
+## Za A (D12)
+- **ID agenta:** Mozaik daje agentu nasumičan UUID (`agent.getId()`), pa je `producerId` u `analysis.done` taj UUID, a `handle.id` je ime koje daje Conductor (npr. `analyzer-1`) i ide u `TaskMeta.agentId` (log, trošak, mock ključevi). Conductor povezuje događaj sa agentom preko `handle.participant.getId()`.
+- `board().agents` (`busyWith`) agent ne dira; pretpostavljam da ga vodi Conductor.
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
-- **C:** `examples/recepti/wemora/plan.manual.json` je fixture za `scaffold()` (G1). `writes` su `src/screens/<id>/` i `src/shared/<id>/`. Otvoreno: ko menja `src/app/_layout.tsx` za navigaciju (PD3).
+- **C:** `examples/recepti/wemora/plan.manual.json` je fixture za `scaffold()` (G1). `writes` su `src/screens/<id>/` i `src/shared/<id>/`; po C-ovom odgovoru na PD3/PD4 `layout` sme da menja i `src/app/_layout.tsx`, pa `validatePlan` (pravilo 9) i `normalizePlan` treba da dobiju taj izuzetak.
 
 ## Odgovor za B
 - **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).
@@ -55,9 +82,7 @@ Poslednja izmena: 2026-10-30
 
 ## Čeka odluku tima
 - **TodoMVC i DSL (B, A): nema koraka za taster Enter.** U TodoMVC-u se zadatak dodaje samo tasterom Enter u polju `New Todo Input`; dugme ne postoji. DSL ima `fill`, ali ne i pritisak tastera, pa nijedan test ne može da doda zadatak, a bez zadataka se ne vidi ništa drugo (lista, filteri, brojač). To ugrožava stavku G2 „bar 1 ekran dokazan na TodoMVC-u“. Mogućnosti: (a) nov DSL korak, npr. `{ submit: { label } }` (Enter u polju; na RN `onSubmitEditing`), što je promena ugovora; (b) B-ov kompajler posle svakog `fill` pritisne Enter, što menja značenje `fill` i može da pošalje formu tamo gde ne treba. Predlažem (a). Ostale prepreke iz TodoMVC-a: checkbox zadatka nema ime, „Delete todo“ se vidi samo na hover i nije jedinstveno, izmena je na dvoklik. To arhitekta beleži kao `notPortable`/`hiddenBehind`.
-- **Structured output i Anthropic (A, `runStructured` u A8).** Mozaik šalje šemu Anthropicu bez izmena (`output_config.format`). `z.toJSONSchema(PlanSchema)` sadrži ključeve koje Anthropic ne podržava: `minLength` (20×), `minimum`/`maximum` (iz `.int()`), `oneOf` (namerne razlike), `minItems: 2` (`Flow.unitIds`) i `additionalProperties: {type: string}` + `propertyNames` (`routeMap`). Šema analizatora ima `minLength` (3×). Predlog: `runStructured` pre slanja čisti JSON Schemu (briše `minLength`, `maxLength`, `minimum`, `maximum`, `propertyNames`, `$schema`, `minItems > 1`; `oneOf` → `anyOf`), a zod proverava odgovor posle, kao i do sada. Ugovori se ne menjaju.
-- **`routeMap` od modela (moje, D13/D14).** Arhitekta ne vraća `routeMap`: šema za model je `PlanSchema.omit({ routeMap: true })`, a `routeMap` računa kod (`expoRouteFor`). Tako nema `additionalProperties` koji nije `false`.
-- **`writes` (C).** Test ugovora koristi `src/screens/<id>/`, dakle putanje relativne u odnosu na `app/`. Tako radim `validatePlan` i `normalizePlan`, osim ako C kaže drugačije.
+- **`routeMap` od modela (moje, D13/D14).** Arhitekta ne vraća `routeMap`: šema za model je `PlanSchema.omit({ routeMap: true })`, a `routeMap` računa kod (`expoRouteFor`). Tako nema `additionalProperties` koji nije `false`. (Ostale ključeve koje Anthropic ne podržava čisti A-ov `toModelSchema` u `runStructured`: rešeno.)
 - **`Unit.id` kao ime foldera.** `UnitSchema` traži samo `min(1)`. `validatePlan` proverava `^[a-z0-9][a-z0-9-]*$`, pa ugovor ne mora da se menja.
 - **Neuspeo plan (A, PD2).** Nema događaja za „arhitekta nije uspela posle 3 pokušaja“. Predlog: `plan.failed {}` ili timeout u Conductoru uz `plan.errors.json`.
 - Odgovori na P4 (`splitParts`) i P5 (Conductor čeka sve `analysis.done`) iz `docs/tasks/a.md`: slažem se sa predlozima.

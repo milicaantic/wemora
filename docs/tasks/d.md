@@ -353,16 +353,16 @@ Moja stavka: `examples/todomvc` se pokreće; povukao sam `main` i napravio `d/re
 - **Šta radi:** naslov, jedna rečenica šta je Wemora, sekcije sa naslovima iz D19 i oznakom „u izradi“ gde nema sadržaja, i odmah tačni koraci koji već rade: `npm ci`, `npm run build`, `npm test`, pokretanje `examples/mock-api` i `examples/recepti`.
 - **Gotovo kad:** svaka komanda u README-u radi na čistom klonu.
 
-### Kapija G1 — proverava D
-Pušta se na **čistom** `main`-u (novi folder, `git clone`, `npm ci`). Redom:
-- [ ] `npm run build && npm test` zeleno
-- [ ] `docs/decisions.md` ima odluku o Spike A (C)
-- [ ] `npx tsx -e "import { parseApp } from './src/analysis'; parseApp('examples/recepti').then(p => console.log(p.routes.length))"` ispisuje `5`
-- [ ] B: 3 ručna scenarija prolaze na pokrenutim Receptima (`mock-api` + `npm run dev`); `validateScenario` odbija scenario koji prolazi i na praznom ekranu
-- [ ] C: `scaffold()` nad `examples/recepti/wemora/plan.manual.json` pravi aplikaciju koja se servira; dobar ekran prolazi 4 kapije, loš pada na tačnoj
-- [ ] prvi zajednički test: B-ov scenario preko C-ovog `serveApp()` nad ručno napisanim RN ekranom prolazi
-- [ ] A: `npx vitest run src/core src/agents/_shared src/orchestration` zeleno
-- [ ] svaki `docs/status/*.md` ažuriran
+### Kapija G1 — proverava D ✅ 2026-10-30
+Pušta se na **čistom** `main`-u (novi folder, `git clone`, `npm ci`). Redom (prošlo na `6289b3c`, detalji u `docs/status/d.md`):
+- [x] `npm run build && npm test` zeleno
+- [x] `docs/decisions.md` ima odluku o Spike A (C)
+- [x] `npx tsx -e "import { parseApp } from './src/analysis'; parseApp('examples/recepti').then(p => console.log(p.routes.length))"` ispisuje `5`
+- [x] B: 3 ručna scenarija prolaze na pokrenutim Receptima (`mock-api` + `npm run dev`); `validateScenario` odbija scenario koji prolazi i na praznom ekranu
+- [x] C: `scaffold()` nad `examples/recepti/wemora/plan.manual.json` pravi aplikaciju koja se servira; dobar ekran prolazi 4 kapije, loš pada na tačnoj
+- [x] prvi zajednički test: B-ov scenario preko C-ovog `serveApp()` nad ručno napisanim RN ekranom prolazi
+- [x] A: `npx vitest run src/core src/agents/_shared src/orchestration` zeleno
+- [x] svaki `docs/status/*.md` ažuriran
 
 Rezultat (koja stavka pada i ko je vlasnik) pišem u chat tima. Ako stavka padne, vlasnik popravlja, a ja krećem na D11 i D13 (ne zavise od tuđih stavki).
 
