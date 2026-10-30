@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import type { InteractiveElement, Scenario, Unit } from "../contracts"
-import { coverageNote, readTests, scenarioProblem, testerBrief, testsFile, writeTests } from "./tester"
+import { coverageNote, openablePath, readTests, scenarioProblem, testerBrief, testsFile, writeTests } from "./tester"
 
 const unit: Unit = {
   id: "orders",
@@ -71,6 +71,21 @@ describe("testerBrief", () => {
 
   it("explains route parameters", () => {
     expect(testerBrief({ ...unit, route: "/recepti/:id" }, [], [])).toContain("open it with real values")
+  })
+
+  it("tells where to open a catch-all route", () => {
+    expect(testerBrief({ ...unit, route: "*" }, [], [])).toContain("open it at /")
+    expect(testerBrief(unit, [], [])).not.toContain("open it at")
+  })
+})
+
+describe("openablePath", () => {
+  it("opens a catch-all at its prefix, keeps plain paths and refuses parameters", () => {
+    expect(openablePath("*")).toBe("/")
+    expect(openablePath("/docs/*")).toBe("/docs/")
+    expect(openablePath("/kupovina")).toBe("/kupovina")
+    expect(openablePath("/")).toBe("/")
+    expect(openablePath("/recepti/:id")).toBeNull()
   })
 })
 

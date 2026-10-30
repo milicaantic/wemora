@@ -17,14 +17,10 @@ Poslednja izmena: 2026-10-30
 
 - B10 (PR #41): `src/agents/mocks/todomvc/tester.json` (D-013), usklađen sa D-ovim mock planom: ključ `tester:todo-list`, scenario `todo-list-empty-state` (obaveza `empty-state`), ručno proveren nad pravim TodoMVC-om i placeholderom iz D-ovog plana.
 
-## B11 (integracija F2): u radu (grana `b/integration-f2`)
-- `migrate --mock` sam po sebi i dalje staje posle `plan.ready`: **Gatekeeper (C2.4) još ne postoji** (C je na C2.3), a Conductor ga pravi pre testera i buildera.
-- **B-ov deo toka proveren bez Gatekeeper-a** (privremena skripta, nije u repou): isti tok kao `migrate --mock`, sa pravim Conductor-om, D-ovim analizatorom i arhitektom, C-ovim builderom i B-ovim testerom (svi kroz svoje mock fajlove iz `src/agents/mocks/todomvc/`), pravim TodoMVC originalom (`npm run serve`, port 7002) i pravim praznim ekranom (`blankApp` + C-ov `serveApp`). Umesto Gatekeeper-a je „nemi“ učesnik bez handlera. Rezultat:
-  - Conductor dodeljuje `todo-list` testeru u istoj milisekundi kad builder dobija `app-entry` (posle `plan.ready`);
-  - tester validira i čuva `todo-list-empty-state` u `tests/todo-list.json` i `board.tests`, pa šalje `tests.ready` (23 s od dodele, najviše export praznog ekrana);
-  - **tester i builder rade istovremeno** (stavka G2: vremena se preklapaju u `run.jsonl`);
-  - u `tests/` je samo validiran scenario; nema grešaka ni `unhandledRejection` u logu.
-- Ostaje za kad C spoji C2.4: ceo `migrate --mock` do kraja, pa pravi prolaz `--budget 1` (G2: bar 1 ekran dokazan). Za TodoMVC je to moguće tek uz korak `submit` (Enter), inače je ekran najviše „delimično dokazan“.
+## B11 (integracija F2): mock prolaz radi do kraja
+- Posle C-ovog `builder:app-entry:1` (PR #52) i A-ovog povezivanja Gatekeeper-a (PR #49), **`npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` prolazi ceo tok** (ishod `finished`, ~30 s): `app-entry` promovisan kao `unproven` (zajednička jedinica nema testove); `todo-list` posle namerno lošeg nacrta u rundi 1 promovisan u rundi 2 (svih 5 kapija, uključujući B-ove testove na telefonu) kao **`partial`**. Tester i builder rade istovremeno; Gatekeeper čeka `tests.ready` pre provere ekrana; u `tests/` je samo validiran scenario; pokrivenost iz testera je u `results/todo-list.json`.
+- `todo-list` je `partial`, ne `proven`: pokrivena je 1 od 5 obaveza (`empty-state`) i nijedan od 2 elementa (`New Todo Input`, link `TodoMVC`). Ostale obaveze traže dodavanje zadatka, a to ide samo Enter-om: **bez koraka `submit` TodoMVC ne može biti dokazan (G2)**.
+- Ostaje: pravi prolaz sa modelom `--budget 1` (G2), i odluka o `submit`.
 - **Novi zadatak za B (D-014, PD5):** `serveOriginal(webDir)` koja sama pokreće original, da `--original-url` ne bi bio obavezan („radi iz README-a“, F3).
 
 ## Odluke u B8 i B9 (čekaju potvrdu tima)
@@ -51,24 +47,26 @@ Poslednja izmena: 2026-10-30
 - **B5, meni**: ako stranica ima `main`, elementi se uzimaju samo iz njega; zajednički meni ne ulazi u pokrivenost ekrana.
 - Iz B2/B3 i dalje važe: `failedStep` = indeks u `steps` (pad u `setup` → bez `failedStep`, `error` počinje sa `setup: step N:`); poklapanje teksta po b.md Q2; vremenski limiti su konstante u `run.ts` (Q20).
 
-## Gotovo, čeka PR (grana `b/tester-d016`)
-- **Pokrivenost (Q11 rešen kod B):** tester posle zadatka upiše `board().coverage[unitId] = computeCoverage(unit, sačuvani scenariji, interaktivni elementi)` **pa tek onda** pošalje `tests.ready`. C-ov Gatekeeper-učesnik (C2.4) već čita `board().coverage` u `computeStatus` i u `results/<unitId>.json`, pa ekran sada može biti `proven`. Ograničenje: za rutu sa parametrom (`/recepti/:id`) i kad `extractInteractive` ne uspe, lista elemenata je prazna, pa se proveravaju samo obaveze.
-- **D-016 (A13) u testeru:** posle `cancel` spolja (Conductor-ov timeout ili kraj prolaza) tester ne šalje `tests.ready` (log `tester.cancelled`); sačuvani scenariji ostaju na tabli i disku za sledećeg testera. Tester ima i sopstveni limit `testerUnitTimeoutMs` (8 min, `DEFAULTS`): tada završi i pošalje `tests.ready` sa onim što je sačuvao, pre Conductor-ovih 10 min.
-- Testovi: 3 nova u `agents/tester.test.ts` (pokrivenost na tabli u trenutku `tests.ready`; prekid spolja posle čuvanja; sopstveni limit), stabilni u 3 puštanja. Ceo repo: 451 test.
+## Spojeno: pokrivenost i D-016 u testeru (PR #51)
+- Tester upiše `board().coverage[unitId]` (`computeCoverage`) **pa tek onda** pošalje `tests.ready`; Gatekeeper ga čita u `computeStatus` i u `results/<unitId>.json`. Posle `cancel` spolja tester ne šalje `tests.ready`; sopstveni limit `testerUnitTimeoutMs` (8 min) završava zadatak sa onim što je sačuvano.
+
+## Gotovo, čeka PR (grana `b/tester-catchall`)
+- **Popravka:** ekran sa rutom koja hvata sve (`*`, TodoMVC) tester je otvarao na `/*`, što je 404 na običnom statičkom serveru, pa je lista interaktivnih elemenata tiho ostajala prazna i pokrivenost elemenata se nije proveravala. Sada `openablePath` (`scenarios/tester.ts`) otvara `*` na `/` i `/docs/*` na `/docs/`; rute sa `:id` ostaju bez liste elemenata. U zadatku za model piše gde se ruta otvara. Provereno pravim `migrate:mock`: `todo-list` sada ima 2 elementa (`New Todo Input`, link `TodoMVC`).
+- Testovi: `openablePath` i napomena u zadatku (`scenarios/tester.test.ts`), tester za `*` otvara `/` (`agents/tester.test.ts`). Ceo repo: 458 testova.
 
 ## Usklađenost sa C2.3 i C2.4 (PR #44, #47) i A13 (PR #45)
 - `checkDraft` zove `runScenarios(url, tests, { viewport: 390×844, differences: unit.intentionalDifferences })` po ugovoru; `failedStep` čita kao indeks u `steps` (prikazuje ga +1), a scenario bez rezultata računa kao pao.
 - B7 „ponoviti sa `serveApp`“ je pokriven: C-ov `src/gatekeeper/g1.test.ts` pušta B-ov scenario kroz `runScenarios` preko pravog `serveApp`.
 - Gatekeeper-učesnik čita testove iz `board().tests` (tester ih tu upisuje) i čeka `tests.ready`: usklađeno.
 - C je po D-016 dodao reakciju na `tests.missing` (ekran ulazi kao `unproven`) i ignorisanje zakasnelog nacrta (PR #48); prompt buildera ima checkbox i `Link` (predlog uz D-005). Usklađeno sa testerom; build i 455 testova prolaze.
-- A je povezao Gatekeeper u CLI (PR #49): svi agenti su pravi. `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` sada prolazi ceo tok i završava sa izveštajem.
-- **Za C:** ceo mock prolaz (pravi CLI) završava sa `app-entry: failed` i `todo-list: failed`, jer `src/agents/mocks/todomvc/builder.json` nema odgovor za zajedničku jedinicu **`app-entry`** iz D-ovog plana: rezervni odgovor predaje prazan nacrt, Gatekeeper ga odbija dve runde, `app-entry` je `failed`, a `todo-list` blokiran. Treba `builder:app-entry:1` sa ispravnim nacrtom.
+- A je povezao Gatekeeper u CLI (PR #49), a C dodao mock buildera za `app-entry` (PR #52): mock prolaz nad TodoMVC-om radi do kraja (vidi B11).
 
 ## U radu
 - ništa
 
 ## Sledeće
-- B11 do kraja čim A poveže Gatekeeper-učesnika u CLI: `migrate --mock`, pa pravi prolaz `--budget 1`
+- pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
+- F3: `serveOriginal(webDir)`, B12 `verify`, B13 `sabotage` (ne zavise od drugih)
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima

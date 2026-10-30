@@ -56,12 +56,26 @@ export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[
   return null
 }
 
+/**
+ * The path that opens a web route in the browser, or null when it needs real values for its parameters.
+ * A catch-all ends in "*" and matches any path: "*" opens at "/", "/docs/*" at "/docs/".
+ */
+export function openablePath(route: string): string | null {
+  if (route.includes(":")) return null
+  const path = route.endsWith("*") ? route.slice(0, -1) : route
+  return path.startsWith("/") ? path : `/${path}`
+}
+
 /** The task message: what to test on this unit and what is already saved. */
 export function testerBrief(unit: Unit, interactive: InteractiveElement[], saved: Scenario[]): string {
+  const open = unit.route === undefined ? null : openablePath(unit.route)
   const lines = [
     `Unit: ${unit.id}`,
     `Web route: ${unit.route ?? "(none)"}`,
-    unit.route?.includes(":") ? "The route has parameters: open it with real values, e.g. an id you find in a link on another screen." : null,
+    unit.route !== undefined && open === null
+      ? "The route has parameters: open it with real values, e.g. an id you find in a link on another screen."
+      : null,
+    open !== null && open !== unit.route ? `The route matches any path; open it at ${open}` : null,
     "",
     "Obligations (each needs at least one saved scenario, with this id in `obligation`):",
     ...unit.obligations.map((o) => `- ${o.id}: ${o.description}`),

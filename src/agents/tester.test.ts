@@ -112,17 +112,23 @@ const fakeValidate: ValidateScenario = async (_original, blank, scenario) => {
   return scenario.id.startsWith("bad") ? { ok: false, reason: "Passes on the blank placeholder screen too." } : { ok: true }
 }
 
+// Routes the tester opened to list interactive elements.
+const extractedRoutes: string[] = []
+
 let count = 0
 function newTester(overrides: Partial<TesterDeps> = {}) {
   const tester = createTester(`tester-${++count}`, {
     originalUrl: "http://original.test",
     blankUrl: "http://blank.test",
     validateScenario: fakeValidate,
-    extractInteractive: async () => [
-      { role: "searchbox", name: "Pretraga" },
-      { role: "button", name: "Sačuvaj" },
-      { role: "button", name: "Info" },
-    ],
+    extractInteractive: async (_url, route) => {
+      extractedRoutes.push(route)
+      return [
+        { role: "searchbox", name: "Pretraga" },
+        { role: "button", name: "Sačuvaj" },
+        { role: "button", name: "Info" },
+      ]
+    },
     ariaSnapshot: async (_url, route) => `- searchbox "Pretraga"\n- button "Sačuvaj"\n# snapshot of ${route}`,
     ...overrides,
   })
@@ -343,6 +349,9 @@ describe("tester agent", () => {
     await untilIdle(tester)
     expect(readTests(runDir, "todo-list").map((s) => `${s.id} [${s.obligation}]`)).toEqual(["todo-list-empty-state [empty-state]"])
     expect(ready).toContain("todo-list")
+    // The catch-all route "*" is opened at "/": "/*" is a 404 on a plain static server.
+    expect(extractedRoutes).toContain("/")
+    expect(extractedRoutes).not.toContain("*")
   })
 
   it("refuses a unit that is not in the plan or is not a screen, without hanging", async () => {
