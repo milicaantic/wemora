@@ -12,13 +12,15 @@ Faza: F2
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- Kapija G1 prošla (D, 2026-10-30).
-- AsyncStorage 2.2.0 u `templates/expo` (grana `c/async-storage`, samo `package.json` + lock): zamena za `localStorage`; provereno da podatak preživi ponovno otvaranje stranice (B-ov test za omiljene to traži).
-- C2.1 promptovi: gotovo na grani `c/prompts` (posle `c/async-storage`), čeka PR i **B-ovu potvrdu ugovora o labelama** (`builder.md`, odeljak „The label contract“)
-  - `src/agents/prompts/builder.md`: uloga, alati, raspored fajlova, ugovor o labelama, podaci, navigacija, namerne razlike, zabrane, runda posle greške
-  - `src/agents/prompts/web-to-rn.md`: tabela web → RN, React Router → Expo Router, API, store sa AsyncStorage, layout (`app/_layout.tsx`, donja traka od `Link`-ova)
-  - svi primeri koda iz promptova provereni u pravoj aplikaciji iz scaffolda: tsc, kapije 1–2, ARIA imena, čuvanje posle ponovnog otvaranja
-- sledeće: C2.2 `agents/builder.ts`
+- C2.1 promptovi: spojeno (PR #33); čeka se B-ova potvrda ugovora o labelama
+- AsyncStorage u šablonu: PR #32, čeka review
+- C2.2 agent builder: gotovo na grani `c/builder`, čeka PR
+  - `src/agents/builder.ts`: `createBuilder(id)` → `AgentHandle<BuildTask>`; nacrt u `output/<run>/staging/<builderId>/<unitId>/`; svež kontekst po rundi; alati `read_source`, `read_app` (app sa primenjenim nacrtom), `write_file` (OwnershipGuard), `check_draft` (kapije 1–4, samo poruke), `submit_draft`
+  - ako model ne pozove `submit_draft`, nacrt se ipak predaje kad se petlja završi (da Conductor ne čeka timeout)
+  - `gatekeeper/index.ts` sada izvozi `runGates` (za `check_draft`)
+  - **za A (A12):** MockRunner primeri u `src/agents/mocks/builder.todomvc.json`: `builder:todo-list:1` (fali labela „New Todo Input“), `builder:todo-list:2` (popravka), `builder` (rezervni); ključ `todo-list` preimenovati ako lažni arhitekta koristi drugi ID
+  - **za A:** `OwnershipGuard` prima jedan prefiks; jedinica `layout` po PD3 treba i `app/_layout.tsx`. Predlog: `new OwnershipGuard(["shared/layout/", "app/_layout.tsx"])`. Do tada `layout` piše samo u `shared/layout/`.
+- sledeće: C2.3 `checkDraft` (čeka `contracts/f1` od A: `unit`, `round`, `webDir`)
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.
