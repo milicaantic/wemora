@@ -1,0 +1,62 @@
+[
+  {
+    "id": "sl-add",
+    "unitId": "shopping-list",
+    "obligation": "add-item",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Hleb"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 0 od 1"
+        }
+      }
+    ]
+  },
+  {
+    "id": "sl-mark",
+    "unitId": "shopping-list",
+    "obligation": "mark-bought",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Hleb"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "Hleb"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 1 od 1"
+        }
+      }
+    ]
+  }
+]

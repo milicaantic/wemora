@@ -1,0 +1,59 @@
+[
+  {
+    "id": "rd-shows",
+    "unitId": "recipe-detail",
+    "obligation": "shows-recipe",
+    "steps": [
+      {
+        "goto": "/recepti/4"
+      },
+      {
+        "expectVisible": {
+          "text": "Mleveno meso: 1000 g"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rd-scale",
+    "unitId": "recipe-detail",
+    "obligation": "scale-servings",
+    "steps": [
+      {
+        "goto": "/recepti/4"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Povećaj porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 9"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rd-favorite",
+    "unitId": "recipe-detail",
+    "obligation": "toggle-favorite",
+    "steps": [
+      {
+        "goto": "/recepti/4"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Ukloni iz omiljenih"
+        }
+      }
+    ]
+  }
+]

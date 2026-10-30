@@ -1,0 +1,30 @@
+{
+  "unitId": "data",
+  "status": "proven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "data",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "data",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "data",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "ok"
+    }
+  ],
+  "scenarios": [],
+  "coverage": null
+}

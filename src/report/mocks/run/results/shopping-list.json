@@ -1,0 +1,86 @@
+{
+  "unitId": "shopping-list",
+  "status": "failed",
+  "rounds": 4,
+  "gates": [
+    {
+      "unitId": "shopping-list",
+      "round": 4,
+      "gate": "parse",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "shopping-list",
+      "round": 4,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "shopping-list",
+      "round": 4,
+      "gate": "tsc",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "shopping-list",
+      "round": 4,
+      "gate": "labels",
+      "ok": true,
+      "message": "ok"
+    },
+    {
+      "unitId": "shopping-list",
+      "round": 4,
+      "gate": "scenarios",
+      "ok": false,
+      "message": "1 of 2 tests fail: sl-mark <script>alert(1)</script>"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "sl-add",
+      "unitId": "shopping-list",
+      "ok": true,
+      "durationMs": 900
+    },
+    {
+      "scenarioId": "sl-mark",
+      "unitId": "shopping-list",
+      "ok": false,
+      "failedStep": 3,
+      "error": "no checkbox named 'Hleb' <script>alert(1)</script>",
+      "durationMs": 3100
+    }
+  ],
+  "coverage": {
+    "unitId": "shopping-list",
+    "obligations": {
+      "covered": [
+        "add-item",
+        "mark-bought"
+      ],
+      "missing": [
+        "empty-state",
+        "clear-bought"
+      ]
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      ],
+      "missing": [
+        {
+          "role": "checkbox",
+          "name": "Hleb"
+        }
+      ],
+      "notPortable": []
+    }
+  }
+}

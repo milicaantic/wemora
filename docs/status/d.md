@@ -17,18 +17,23 @@ Poslednja izmena: 2026-10-30
   - `parts` je `splitParts(parsed, 1)`; Conductor ponovo deli sa svojim N.
   - Ograničenja: ugnežđeni `<Routes>` unutar komponenti ekrana se ne prate; web API-ji iz zajedničkih fajlova nisu ni na jednoj ruti (ugovor nema polje za njih; analizator ih vidi čitanjem fajlova).
 - D7: `splitParts(parsed, n)` u `src/analysis/split.ts`: deli rute na delove slične veličine u tokenima (najveća ruta prva, uvek u najlakši deo, izjednačenja po manjem indeksu i po putanji). `n` se svodi na ceo broj u [1, broj ruta], pa nema praznih delova; zajednički fajlovi nisu ni u jednom delu (svaki analizator ih čita iz `sharedFiles`). 11 testova u `split.test.ts`, nad Receptima i nad ručnim primerima. (D6–D7: PR #10)
-
-## Gotovo, čeka spajanje (grana `d/validate-plan`)
-- D8: `validatePlan(plan, parsed)` u `src/analysis/validatePlan.ts`. Vraća listu grešaka na engleskom (prazna = ok), poređanu po pravilima, uvek istim redom. Svaka poruka imenuje jedinicu, fajl ili rutu i kaže šta da se promeni, jer je čita model arhitekta. Pravila: šema (`PlanSchema`), ID-jevi jedinica (jedinstveni, kebab-case), `kind` ↔ `route`, svaka ruta iz parsera u tačno jednom ekranu, izvorni fajlovi postoje i pripadaju najviše jednoj jedinici, fajl komponente ide uz svoj ekran, `dependsOn` (postoji, bez sebe, bez ciklusa, sa putanjom ciklusa u poruci), talasi (zajedničke u talasu 0 i zavise samo od zajedničkih; ekran posle svojih zavisnosti), `writes` (samo `src/screens/<id>/` ili `src/shared/<id>/`, bez preklapanja), obaveze (ekran ih ima, zajednička nema, kebab-case, bez duplikata), namerne razlike (samo na ekranima, `movedTo` na postojeći ekran), `routeMap` (svaka ruta, `[param]` umesto `:param`, bez duplikata i viška), tokovi (postojeći ekrani, bez duplikata).
+- D8: `validatePlan(plan, parsed)` u `src/analysis/validatePlan.ts`. Vraća listu grešaka na engleskom (prazna = ok), poređanu po pravilima, uvek istim redom. Svaka poruka imenuje jedinicu, fajl ili rutu i kaže šta da se promeni, jer je čita model arhitekta. Pravila: šema (`PlanSchema`), ID-jevi jedinica (jedinstveni, kebab-case), `kind` ↔ `route`, svaka ruta iz parsera u tačno jednom ekranu, izvorni fajlovi postoje i pripadaju najviše jednoj jedinici, fajl komponente ide uz svoj ekran, `dependsOn` (postoji, bez sebe, bez ciklusa, sa putanjom ciklusa u poruci), talasi (zajedničke u talasu 0 i zavise samo od zajedničkih; ekran posle svojih zavisnosti), `writes` (samo `src/screens/<id>/` ili `src/shared/<id>/`, bez preklapanja), obaveze (ekran ih ima, zajednička nema, kebab-case, bez duplikata), namerne razlike (samo na ekranima, `movedTo` na postojeći ekran), `routeMap` (svaka ruta, `[param]` umesto `:param`, bez duplikata i viška), tokovi (postojeći ekrani, bez duplikata). (PR #12)
   - 23 testa u `validatePlan.test.ts`: ručni plan za Recepte prolazi, a svaka vrsta greške se hvata nad njegovom pokvarenom kopijom; plan za TodoMVC (ruta `*`) prolazi.
   - Pravilo za `writes` prati C-ov šablon. Ako C dozvoli `layout` jedinici da menja `src/app/_layout.tsx` (PD3), pravilo 9 dobija taj izuzetak.
+
+## Gotovo, čeka spajanje (grana `d/report-v1`)
+- D9: `buildReport(runDir)` u `src/report/` (`load.ts` čita i proverava zod-om, `model.ts` računa, `render.ts` pravi HTML, `html.ts` escape, `styles.ts`). Pravi jedan samostalan `report.html` (bez skripti i spoljnih fajlova, svetla i tamna tema, radi i na telefonu): sažetak u 4 boje statusa (+ „nema rezultata“), po ekranu pokrivenost („6/6 obaveze, 5/5 elemenata“), razlog za svaki status osim „dokazan“, namerne razlike kao rečenice i tabela scenarija (✓/✗/— sa korakom i greškom), zatim zajedničke jedinice i upozorenja. Fajl koji fali ili ne prolazi šemu postaje upozorenje, a ne greška. Isti prolaz uvek daje isti HTML; vreme dolazi iz `run.jsonl`, ne sa sata. Sav tekst ide kroz escape.
+  - 18 testova u `src/report/report.test.ts` nad lažnim prolazom `src/report/mocks/run/` (plan Recepata, sva 4 statusa, ekran bez rezultata, pokvaren JSON, loša linija u logu, `<script>` u poruci) i nad praznim folderom. Izgled proveren snimcima ekrana u Chromium-u (desktop, telefon, tamna tema).
+  - Vremenska osa, trošak po agentu i mera ubrzanja dolaze u v2 (D17).
+- D10: kostur `README.md` (engleski, uz rezime na srpskom: predlog PD7). Sve komande koje navodi rade danas (`npm ci`, `build`, `test`, Playwright, mock-api, Recepti, TodoMVC); `migrate`, `verify` i `sabotage` su označeni kao „in progress“.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/validate-plan` (D8) → review A
-- D9: izveštaj v1 i D10: kostur README-a (grana `d/report-v1`)
+- PR `d/report-v1` (D9, D10) → review A
+- kapija G1 (proveravam ja): lista u `docs/tim-plan.md` §5
+- F2: D11–D14 (domen i agenti analizator i arhitekta), posle G1
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
@@ -38,7 +43,8 @@ Poslednja izmena: 2026-10-30
 - **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).
 
 ## Mockovi koje koristim
-- nijedan
+- `src/report/load.ts`: lokalna blaga šema za liniju `run.jsonl` (`t`, `agent`, `event`, `costUsd`) dok A ne doda `LogEntry` u `core/log.ts` (A6); tada je menjam uvozom.
+- Format `tests/<unitId>.json` je niz `Scenario[]` po B-ovom predlogu Q9.
 
 ## Čeka odluku tima
 - **TodoMVC i DSL (B, A): nema koraka za taster Enter.** U TodoMVC-u se zadatak dodaje samo tasterom Enter u polju `New Todo Input`; dugme ne postoji. DSL ima `fill`, ali ne i pritisak tastera, pa nijedan test ne može da doda zadatak, a bez zadataka se ne vidi ništa drugo (lista, filteri, brojač). To ugrožava stavku G2 „bar 1 ekran dokazan na TodoMVC-u“. Mogućnosti: (a) nov DSL korak, npr. `{ submit: { label } }` (Enter u polju; na RN `onSubmitEditing`), što je promena ugovora; (b) B-ov kompajler posle svakog `fill` pritisne Enter, što menja značenje `fill` i može da pošalje formu tamo gde ne treba. Predlažem (a). Ostale prepreke iz TodoMVC-a: checkbox zadatka nema ime, „Delete todo“ se vidi samo na hover i nije jedinstveno, izmena je na dvoklik. To arhitekta beleži kao `notPortable`/`hiddenBehind`.
