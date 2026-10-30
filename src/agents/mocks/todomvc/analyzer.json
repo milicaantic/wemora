@@ -1,0 +1,48 @@
+{
+  "analyzer:part-1": [
+    { "call": { "name": "list_files", "args": {} } },
+    { "call": { "name": "read_file", "args": { "path": "src/todo/app.jsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/todo/components/header.jsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/todo/components/item.jsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/todo/components/footer.jsx" } } },
+    {
+      "json": {
+        "reports": [
+          {
+            "route": "*",
+            "screen": "Todo list",
+            "summary": "The whole app is one screen: a field to add todos, the list with a toggle and a delete button per todo, and a footer with the count, the filters 'All', 'Active' and 'Completed' and 'Clear completed'.",
+            "files": [
+              "src/todo/app.css",
+              "src/todo/app.jsx",
+              "src/todo/components/footer.jsx",
+              "src/todo/components/header.jsx",
+              "src/todo/components/input.jsx",
+              "src/todo/components/item.jsx",
+              "src/todo/components/main.jsx",
+              "src/todo/constants.js",
+              "src/todo/reducer.js"
+            ],
+            "components": ["App", "Header", "Input", "Main", "Item", "Footer"],
+            "dataSources": ["local state via useReducer in src/todo/reducer.js", "current filter from the URL hash via useLocation"],
+            "navigatesTo": ["/active", "/completed"],
+            "webApis": ["keyboard", "doubleclick", "hover"],
+            "mobileIssues": [
+              "a todo is added only by pressing Enter in 'New Todo Input'; there is no add button",
+              "editing a todo starts on double click; phones have no double click",
+              "'Delete todo' appears only on mouse hover over a todo",
+              "the filters are hash links (#/active, #/completed)"
+            ],
+            "suggestedObligations": [
+              "with no todos only the heading 'todos' and the field 'New Todo Input' are shown",
+              "typing 'Buy milk' in 'New Todo Input' and pressing Enter adds 'Buy milk' and shows '1 item left!'",
+              "checking the toggle of 'Buy milk' shows '0 items left!' and the button 'Clear completed'",
+              "'Active' shows only active todos and 'Completed' only completed ones",
+              "'Clear completed' removes completed todos and keeps the active ones"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
