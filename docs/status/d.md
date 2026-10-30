@@ -50,9 +50,11 @@ Poslednja izmena: 2026-10-30
   - `assign({ partIds })`: skupi `board().reports` svih delova, `architectBrief`, pa `runStructured(…, ArchitectOutputSchema)` sa `MODELS.strong`, `maxOutputTokens: 16000`, bez alata, uz `CancelGuard`;
   - izlaz → `normalizePlan` → `validatePlan`; uz greške nov pokušaj u svežem kontekstu sa `architectRetryMessage`, najviše `1 + DEFAULTS.maxPlanRetries` = 3 pokušaja; svaki odbijen pokušaj ide u log `plan.rejected`;
   - uspeh: `board().plan`, `plan.json`, log `plan.accepted`, pa `emit("plan.ready", {})`;
-  - neuspeh (3 loša plana, prekid ili greška): log `plan.failed`, `plan.errors.json` (`attempts`, `errors`, `lastPlan`), `board().plan` ostaje `null`, bez događaja (vidi PD2 ispod), proces ne pada;
+  - neuspeh (3 loša plana, prekid ili greška): log `plan.gave_up` sa greškama, `plan.errors.json` (`attempts`, `errors`, `lastPlan`), `board().plan` ostaje `null`, pa `emit("plan.failed", {})` (D-012); Conductor završava prolaz, proces ne pada;
   - mock ključevi: `taskId` je `"plan"`, a broj pokušaja ide u `TaskMeta.round`, pa skripta za MockRunner ima `architect:plan:1`, `architect:plan:2`… ili samo `architect` za sve pokušaje;
-  - 5 testova u `src/agents/architect.test.ts` sa `MockRunner`-om nad Receptima podeljenim na 2 dela: ispravan plan, pa loš plan (bez `/kupovina`) + ispravan, tri loša plana, `normalizePlan` popravlja `size`/`wave`/`writes`, zauzet agent + prekid.
+  - 5 testova u `src/agents/architect.test.ts` sa `MockRunner`-om nad Receptima podeljenim na 2 dela: ispravan plan, pa loš plan (bez `/kupovina`) + ispravan, tri loša plana (`plan.failed` tačno jednom), `normalizePlan` popravlja `size`/`wave`/`writes`, zauzet agent + prekid.
+  - Provereno sa A-ovim pravim Conductor-om (A10) nad TodoMVC-om, uz pravi parser, analizator i arhitektu i A-ove lažne buildere, testere i Gatekeeper: ispravan plan → `plan.ready` → obe jedinice `promoted`, ishod `finished`; loš plan → `plan.failed` → ishod `plan.failed`, prolaz se odmah završava.
+  - **Za A:** u `src/orchestration/agents.ts` arhitekta je još zamena `notYet(…, "D14")`; posle spajanja ovog PR-a ide `architect: createArchitect` (A-ov fajl, jedan red).
 
 ## Kapija G1: prošla 2026-10-30 (proverio D)
 Na čistom klonu `main`-a `6289b3c` (posle toga su u `main` stigle samo izmene dokumentacije, do `ea67e09`):
@@ -72,7 +74,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 
 ## Sledeće
 - PR `d/architect` (D13, D14)
-- D15: MockRunner odgovori za TodoMVC i Recepte; pun `migrate:mock` čeka A-ov `cli migrate` (A11) i Conductor (A10)
+- D15: MockRunner odgovori po D-013: `src/agents/mocks/todomvc/analyzer.json` i `architect.json` (i isto za Recepte)
 - izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
 
 ## Za A (D12, D14)
@@ -94,7 +96,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - **TodoMVC i DSL (B, A): nema koraka za taster Enter.** U TodoMVC-u se zadatak dodaje samo tasterom Enter u polju `New Todo Input`; dugme ne postoji. DSL ima `fill`, ali ne i pritisak tastera, pa nijedan test ne može da doda zadatak, a bez zadataka se ne vidi ništa drugo (lista, filteri, brojač). To ugrožava stavku G2 „bar 1 ekran dokazan na TodoMVC-u“. Mogućnosti: (a) nov DSL korak, npr. `{ submit: { label } }` (Enter u polju; na RN `onSubmitEditing`), što je promena ugovora; (b) B-ov kompajler posle svakog `fill` pritisne Enter, što menja značenje `fill` i može da pošalje formu tamo gde ne treba. Predlažem (a). Ostale prepreke iz TodoMVC-a: checkbox zadatka nema ime, „Delete todo“ se vidi samo na hover i nije jedinstveno, izmena je na dvoklik. To arhitekta beleži kao `notPortable`/`hiddenBehind`.
 - **`routeMap` od modela (moje, D13/D14).** Arhitekta ne vraća `routeMap`: šema za model je `PlanSchema.omit({ routeMap: true })`, a `routeMap` računa kod (`expoRouteFor`). Tako nema `additionalProperties` koji nije `false`. (Ostale ključeve koje Anthropic ne podržava čisti A-ov `toModelSchema` u `runStructured`: rešeno.)
 - **`Unit.id` kao ime foldera.** `UnitSchema` traži samo `min(1)`. `validatePlan` proverava `^[a-z0-9][a-z0-9-]*$`, pa ugovor ne mora da se menja.
-- **Neuspeo plan (A, PD2).** Nema događaja za „arhitekta nije uspela posle 3 pokušaja“. D14 zasad: log `plan.failed` + `plan.errors.json`, `board().plan` ostaje `null`, a Conductor to hvata timeout-om. Predlog: događaj `plan.failed {}` u `contracts/events.ts` (promena ugovora, ide kroz A), pa ga arhitekta šalje umesto da Conductor čeka.
+- ~~**Neuspeo plan (A, PD2).**~~ Rešeno: događaj `plan.failed {}` (D-012); D14 ga šalje.
 - Odgovori na P4 (`splitParts`) i P5 (Conductor čeka sve `analysis.done`) iz `docs/tasks/a.md`: slažem se sa predlozima.
 
 ## Blokira me

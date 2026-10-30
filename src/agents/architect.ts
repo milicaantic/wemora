@@ -110,10 +110,10 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
     }
   }
 
-  // The contract has no event for a failed plan (PD2): the log line and plan.errors.json say why,
-  // board().plan stays null, and the Conductor's timeout ends the run.
+  // plan.failed (D-012) carries no data: the errors go to the log and to plan.errors.json, and
+  // board().plan stays null. The Conductor ends the run and still builds the report.
   function fail(attempts: number, errors: string[], lastPlan: ArchitectOutput | null): void {
-    log({ agent: id, event: "plan.failed", data: { attempts, errors } })
+    log({ agent: id, event: "plan.gave_up", data: { attempts, errors } })
     try {
       writeJson("plan.errors.json", { attempts, errors, lastPlan })
     } catch (error) {
@@ -121,6 +121,11 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
     }
     busy = false
     guard = null
+    try {
+      emit("plan.failed", {}, agent.getId())
+    } catch (error) {
+      log({ agent: id, event: "plan.emit_failed", data: { error: message(error) } })
+    }
   }
 
   async function run(partIds: string[], cancel: CancelGuard): Promise<void> {

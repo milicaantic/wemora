@@ -49,14 +49,15 @@ class SwitchRunner implements InferenceRunner {
   }
 }
 
-class PlanReady extends SituationSpecification {
+class PlanEvent extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
-    return event.type === "plan.ready"
+    return event.type === "plan.ready" || event.type === "plan.failed"
   }
 }
 
 const runner = new SwitchRunner()
 let planReady = 0
+let planFailed = 0
 let runDir = ""
 let parsed: ParsedApp
 let manual: Plan
@@ -104,13 +105,19 @@ beforeAll(async () => {
     createHuman({
       name: "listener",
       capabilities: [],
-      handlers: [{ specification: new PlanReady(), processor: { apply: () => void planReady++ } }],
+      handlers: [
+        {
+          specification: new PlanEvent(),
+          processor: { apply: ({ event }) => void (event.type === "plan.ready" ? planReady++ : planFailed++) },
+        },
+      ],
     }),
   )
 })
 
 beforeEach(() => {
   planReady = 0
+  planFailed = 0
   board().plan = null
   rmSync(path.join(runDir, "plan.json"), { force: true })
   rmSync(path.join(runDir, "plan.errors.json"), { force: true })
@@ -130,6 +137,7 @@ describe("architect agent", () => {
     expect(plan.units.map((u) => u.id).sort()).toEqual(manual.units.map((u) => u.id).sort())
     expect(board().plan).toEqual(plan)
     expect(planReady).toBe(1)
+    expect(planFailed).toBe(0)
     expect(runner.calls).toBe(1)
     // The brief carries the reports of every part.
     const brief = [...runner.contexts.values()][0]!
@@ -153,7 +161,7 @@ describe("architect agent", () => {
     expect(readLog().some((l) => l.event === "plan.rejected" && l.data.attempt === 1)).toBe(true)
   })
 
-  it("gives up after three bad plans: no plan.ready, plan.errors.json written, the process keeps going", async () => {
+  it("gives up after three bad plans: plan.failed instead of plan.ready, plan.errors.json written, the process keeps going", async () => {
     runner.use({ architect: [{ json: badOutput }] })
     const architect = newArchitect()
     architect.assign({ partIds: parsed.parts.map((p) => p.id) })
@@ -162,13 +170,14 @@ describe("architect agent", () => {
     expect(runner.calls).toBe(3)
     expect(runner.contexts.size).toBe(3)
     expect(planReady).toBe(0)
+    expect(planFailed).toBe(1)
     expect(board().plan).toBeNull()
     expect(existsSync(path.join(runDir, "plan.json"))).toBe(false)
     const errors = JSON.parse(readFileSync(path.join(runDir, "plan.errors.json"), "utf8"))
     expect(errors.attempts).toBe(3)
     expect(errors.errors.join("\n")).toContain("/kupovina")
     expect(errors.lastPlan.units.length).toBe(badOutput.units.length)
-    expect(readLog().some((l) => l.event === "plan.failed" && l.agent === "architect-3")).toBe(true)
+    expect(readLog().some((l) => l.event === "plan.gave_up" && l.agent === "architect-3" && l.data.attempts === 3)).toBe(true)
   })
 
   it("normalizes the model's plan before checking it (wrong size and wave are fixed, not rejected)", async () => {
@@ -185,7 +194,7 @@ describe("architect agent", () => {
     }
   })
 
-  it("ignores a second task while busy and stops on cancel without plan.ready", async () => {
+  it("ignores a second task while busy and on cancel sends plan.failed, not plan.ready", async () => {
     runner.use({ architect: [{ text: "not json" }, { text: "still not json" }, { text: "{" }] })
     const architect = newArchitect()
     architect.assign({ partIds: ["part-1"] })
@@ -194,6 +203,7 @@ describe("architect agent", () => {
     await finished(architect)
 
     expect(planReady).toBe(0)
+    expect(planFailed).toBe(1)
     expect(runner.contexts.size).toBeLessThanOrEqual(1)
     const errors = JSON.parse(readFileSync(path.join(runDir, "plan.errors.json"), "utf8"))
     expect(errors.errors.join("\n")).toContain("timeout")
