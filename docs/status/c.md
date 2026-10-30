@@ -10,7 +10,8 @@ Faza: F1
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- C1.6 `computeStatus`: gotovo na grani `c/status`, čeka PR
+- `serveApp` sada koristi B-ov `serveStatic` (grana `c/use-b-serve`), umesto svog servera
+- C1.6 `computeStatus`: spojeno (PR #19)
   - redosled: nema testova → `unproven`; neki test ne prolazi (ili nema rezultat) → `failed`; pokrivenost nepoznata/nepotpuna → `partial`; inače `proven`
   - **za A:** `roundsExhausted` iz `StatusInput` ne menja status (test koji pada je `failed` i pre poslednje runde); može da se ukloni iz ugovora ili da dobije drugo značenje
 - Kapija G1: ostaje samo zajednički test sa B (B-ov scenario preko mog `serveApp()` nad ručnim RN ekranom)
@@ -21,7 +22,6 @@ Faza: F1
 - kapija 4 ne proverava dugmad koja postoje samo na telefonu (`hiddenBehind.reveal`)
 
 ## Mockovi koje koristim
-- `src/gatekeeper/serve.ts` ima svoj statički server; preći na B-ov `serveStatic` kad ga B izveze iz `scenarios/index.ts`
 - `src/gatekeeper/mocks/drafts.ts` (dobri/loši nacrti) i `shopping-list.tests.json` (ručni testovi)
 - scaffold i kapije koriste D-ov `examples/recepti/wemora/plan.manual.json`
 
