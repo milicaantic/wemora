@@ -145,9 +145,9 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 
 **Builder nema nijedan alat za testove.** Model: Haiku 5.5 (runde 1–2), Sonnet 5.5 (3–4, F3). Svaka runda svež kontekst: prompt + izvor + trenutni kod + poslednja greška.
 **Gotovo kada:**
-- [ ] test: upis van `staging/<builderId>/<unitId>/` je odbijen (guard)
-- [ ] test: builder ne može da pročita `tests/`
-- [ ] 2–3 primera odgovora buildera za MockRunner (za `migrate:mock` nad TodoMVC-om), predati A
+- [x] test: upis van `staging/<builderId>/<unitId>/` je odbijen (guard)
+- [x] test: builder ne može da pročita `tests/`
+- [x] 2–3 primera odgovora buildera za MockRunner (za `migrate:mock` nad TodoMVC-om), predati A
 **PR:** `c/builder`
 
 ### C2.3 `gatekeeper/index.ts` — `checkDraft` ceo put

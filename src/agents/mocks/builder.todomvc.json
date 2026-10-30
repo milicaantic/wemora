@@ -1,0 +1,83 @@
+{
+  "builder:todo-list:1": [
+    {
+      "call": {
+        "name": "read_source",
+        "args": {
+          "path": "src/todo/components/input.jsx"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "screens/todo-list/index.tsx",
+          "content": "import { useState } from \"react\"\nimport { FlatList, Pressable, StyleSheet, Text, TextInput, View } from \"react-native\"\n\ntype Todo = { id: number; title: string; completed: boolean }\n\nexport default function TodoList() {\n  const [todos, setTodos] = useState<Todo[]>([])\n  const [title, setTitle] = useState(\"\")\n  const left = todos.filter((t) => !t.completed).length\n\n  function add() {\n    if (title.trim() === \"\") return\n    setTodos([...todos, { id: Date.now(), title: title.trim(), completed: false }])\n    setTitle(\"\")\n  }\n\n  return (\n    <View style={styles.page}>\n      <Text role=\"heading\" style={styles.title}>todos</Text>\n      <TextInput\n        placeholder=\"What needs to be done?\"\n        value={title}\n        onChangeText={setTitle}\n        onSubmitEditing={add}\n        style={styles.input}\n      />\n      <FlatList\n        role=\"list\"\n        data={todos}\n        keyExtractor={(t) => String(t.id)}\n        renderItem={({ item }) => (\n          <View role=\"listitem\" style={styles.row}>\n            <Pressable\n              role=\"checkbox\"\n              aria-checked={item.completed}\n              onPress={() => setTodos(todos.map((t) => (t.id === item.id ? { ...t, completed: !t.completed } : t)))}\n            >\n              <Text>{item.completed ? \"☑\" : \"☐\"}</Text>\n            </Pressable>\n            <Text style={styles.grow}>{item.title}</Text>\n            <Pressable role=\"button\" accessibilityLabel=\"Delete todo\" onPress={() => setTodos(todos.filter((t) => t.id !== item.id))}>\n              <Text>×</Text>\n            </Pressable>\n          </View>\n        )}\n      />\n      {todos.length > 0 && (\n        <View style={styles.row}>\n          <Text style={styles.grow}>{left} {left === 1 ? \"item\" : \"items\"} left!</Text>\n          <Pressable role=\"button\" onPress={() => setTodos(todos.filter((t) => !t.completed))}>\n            <Text>Clear completed</Text>\n          </Pressable>\n        </View>\n      )}\n    </View>\n  )\n}\n\nconst styles = StyleSheet.create({\n  page: { flex: 1, padding: 16, gap: 12 },\n  title: { fontSize: 48, textAlign: \"center\" },\n  input: { borderWidth: 1, borderColor: \"#ccc\", padding: 12, fontSize: 18 },\n  row: { flexDirection: \"row\", alignItems: \"center\", gap: 12, paddingVertical: 8 },\n  grow: { flex: 1 },\n})\n"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "submit_draft",
+        "args": {}
+      }
+    },
+    {
+      "text": "Submitted the todo list screen."
+    }
+  ],
+  "builder:todo-list:2": [
+    {
+      "call": {
+        "name": "read_app",
+        "args": {
+          "path": "screens/todo-list/index.tsx"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "screens/todo-list/index.tsx",
+          "content": "import { useState } from \"react\"\nimport { FlatList, Pressable, StyleSheet, Text, TextInput, View } from \"react-native\"\n\ntype Todo = { id: number; title: string; completed: boolean }\n\nexport default function TodoList() {\n  const [todos, setTodos] = useState<Todo[]>([])\n  const [title, setTitle] = useState(\"\")\n  const left = todos.filter((t) => !t.completed).length\n\n  function add() {\n    if (title.trim() === \"\") return\n    setTodos([...todos, { id: Date.now(), title: title.trim(), completed: false }])\n    setTitle(\"\")\n  }\n\n  return (\n    <View style={styles.page}>\n      <Text role=\"heading\" style={styles.title}>todos</Text>\n      <TextInput\n        accessibilityLabel=\"New Todo Input\"\n        placeholder=\"What needs to be done?\"\n        value={title}\n        onChangeText={setTitle}\n        onSubmitEditing={add}\n        style={styles.input}\n      />\n      <FlatList\n        role=\"list\"\n        data={todos}\n        keyExtractor={(t) => String(t.id)}\n        renderItem={({ item }) => (\n          <View role=\"listitem\" style={styles.row}>\n            <Pressable\n              role=\"checkbox\"\n              aria-checked={item.completed}\n              onPress={() => setTodos(todos.map((t) => (t.id === item.id ? { ...t, completed: !t.completed } : t)))}\n            >\n              <Text>{item.completed ? \"☑\" : \"☐\"}</Text>\n            </Pressable>\n            <Text style={styles.grow}>{item.title}</Text>\n            <Pressable role=\"button\" accessibilityLabel=\"Delete todo\" onPress={() => setTodos(todos.filter((t) => t.id !== item.id))}>\n              <Text>×</Text>\n            </Pressable>\n          </View>\n        )}\n      />\n      {todos.length > 0 && (\n        <View style={styles.row}>\n          <Text style={styles.grow}>{left} {left === 1 ? \"item\" : \"items\"} left!</Text>\n          <Pressable role=\"button\" onPress={() => setTodos(todos.filter((t) => !t.completed))}>\n            <Text>Clear completed</Text>\n          </Pressable>\n        </View>\n      )}\n    </View>\n  )\n}\n\nconst styles = StyleSheet.create({\n  page: { flex: 1, padding: 16, gap: 12 },\n  title: { fontSize: 48, textAlign: \"center\" },\n  input: { borderWidth: 1, borderColor: \"#ccc\", padding: 12, fontSize: 18 },\n  row: { flexDirection: \"row\", alignItems: \"center\", gap: 12, paddingVertical: 8 },\n  grow: { flex: 1 },\n})\n"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "check_draft",
+        "args": {}
+      }
+    },
+    {
+      "call": {
+        "name": "submit_draft",
+        "args": {}
+      }
+    },
+    {
+      "text": "Added accessibilityLabel \"New Todo Input\" to the input."
+    }
+  ],
+  "builder": [
+    {
+      "call": {
+        "name": "read_app",
+        "args": {
+          "path": "."
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "submit_draft",
+        "args": {}
+      }
+    },
+    {
+      "text": "No scripted reply for this unit; submitted the draft as it is."
+    }
+  ]
+}
