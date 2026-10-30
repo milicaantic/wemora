@@ -41,3 +41,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: `src/contracts/state.ts` izvozi `MigrationStateFields`, a `src/core/state.ts` izvozi `class MigrationState extends RuntimeState implements MigrationStateFields`.
 - Zašto: `contracts/` ne sme da uvozi Mozaik `RuntimeState`, pa oblik i klasa ne mogu da imaju isto ime.
 - Posledice: `architecture.md` §6 i dalje kaže `MigrationState`, što je ime klase u `core/`.
+
+## D-004: Provera slojeva je `scripts/check-layers.ts`, ne `.sh`
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; niko u timu nema Git Bash)
+- Odluka: provera slojeva je TypeScript skripta koju `npm run build` pokreće preko `tsx`. Domen ne sme da zavisi od `@mozaik-ai/core` ni posredno, preko drugih fajlova.
+- Zašto: na Windowsu `npm run build` ide kroz `cmd.exe`, a bez Git Bash-a `bash` ne postoji ili je WSL. Uvoze čita TypeScript (`ts.preProcessFile`), koji je već instaliran, pa nema nove zavisnosti. Posredna provera rešava `docs/tasks/a.md` P3 bez spiska dozvoljenih `core/` fajlova.
+- Posledice: `architecture.md` §2, `CLAUDE.md` i `tim-plan.md` još pominju `scripts/check-layers.sh`, pa ih treba uskladiti (A).
