@@ -15,14 +15,16 @@ Poslednja izmena: 2026-10-30
 
 - B9 (PR #35): `scenarios/blank.ts` (`blankApp(appDir, serveApp)`): prazan ekran u pravom prolazu je placeholder iz `scaffold()`, izvezen jednom i serviran do kraja prolaza, pa ostaje prazan i posle promocija. Tester prima `blankUrl` kao string ili funkciju.
 
-## Gotovo, čeka PR (grana `b/mock-tester`)
-- B10 `src/agents/mocks/todomvc/tester.json` (D-013), usklađen sa D-ovim mock planom (`architect.json`, D15): ključ `tester:todo-list`; model pogleda ekran (`aria_snapshot`), proba i sačuva scenario `todo-list-empty-state` (obaveza `empty-state`: `goto /` → `expectVisible "todos"` → `expectNotVisible "items left!"`), pa objasni zašto ostale četiri obaveze ne mogu da se pokriju (nema koraka za Enter).
-- **Ručno provereno nad pravim TodoMVC-om**, sa praznim ekranom iz C-ovog `scaffold` nad **D-ovim pravim mock planom** (+ `blankApp`/`serveApp`): scenario iz fajla prolazi `validateScenario`. ARIA snapshot praznog TodoMVC-a ima samo `heading "todos"` i `textbox "New Todo Input"`.
-- Test u `agents/tester.test.ts`: pravi tester kroz `MockRunner` sa ovim fajlom stiže do sačuvanog scenarija i `tests.ready`. Ceo repo: 412 testova.
-- Usklađeno sa `main`-om posle PR #36 (arhitekta), #37 (builder), #38 (D15 mock odgovori) i #39 (C-ov mock na mestu iz D-013): sva tri TodoMVC mock fajla koriste ekran `todo-list`. A je povezao testera u CLI kako je predloženo u B9 (D-014: `--original-url`, jedan `blankApp` po prolazu).
+- B10 (PR #41): `src/agents/mocks/todomvc/tester.json` (D-013), usklađen sa D-ovim mock planom: ključ `tester:todo-list`, scenario `todo-list-empty-state` (obaveza `empty-state`), ručno proveren nad pravim TodoMVC-om i placeholderom iz D-ovog plana.
 
-## B11 (integracija F2): stanje
-- `migrate --mock --original-url http://localhost:7002` nad TodoMVC-om stiže do `plan.ready` (D-ov analizator i arhitekta kroz mock, C-ov scaffold), a onda staje: **Gatekeeper (C2.4) još ne postoji**, a Conductor ga pravi pre testera i buildera. Tester zato u prolazu još ne kreće. B11 čeka C2.4.
+## B11 (integracija F2): u radu (grana `b/integration-f2`)
+- `migrate --mock` sam po sebi i dalje staje posle `plan.ready`: **Gatekeeper (C2.4) još ne postoji** (C je na C2.3), a Conductor ga pravi pre testera i buildera.
+- **B-ov deo toka proveren bez Gatekeeper-a** (privremena skripta, nije u repou): isti tok kao `migrate --mock`, sa pravim Conductor-om, D-ovim analizatorom i arhitektom, C-ovim builderom i B-ovim testerom (svi kroz svoje mock fajlove iz `src/agents/mocks/todomvc/`), pravim TodoMVC originalom (`npm run serve`, port 7002) i pravim praznim ekranom (`blankApp` + C-ov `serveApp`). Umesto Gatekeeper-a je „nemi“ učesnik bez handlera. Rezultat:
+  - Conductor dodeljuje `todo-list` testeru u istoj milisekundi kad builder dobija `app-entry` (posle `plan.ready`);
+  - tester validira i čuva `todo-list-empty-state` u `tests/todo-list.json` i `board.tests`, pa šalje `tests.ready` (23 s od dodele, najviše export praznog ekrana);
+  - **tester i builder rade istovremeno** (stavka G2: vremena se preklapaju u `run.jsonl`);
+  - u `tests/` je samo validiran scenario; nema grešaka ni `unhandledRejection` u logu.
+- Ostaje za kad C spoji C2.4: ceo `migrate --mock` do kraja, pa pravi prolaz `--budget 1` (G2: bar 1 ekran dokazan). Za TodoMVC je to moguće tek uz korak `submit` (Enter), inače je ekran najviše „delimično dokazan“.
 - **Novi zadatak za B (D-014, PD5):** `serveOriginal(webDir)` koja sama pokreće original, da `--original-url` ne bi bio obavezan („radi iz README-a“, F3).
 
 ## Odluke u B8 i B9 (čekaju potvrdu tima)
@@ -53,7 +55,7 @@ Poslednja izmena: 2026-10-30
 - ništa
 
 ## Sledeće
-- B11 (integracija F2) čim C spoji Gatekeeper-učesnika (C2.4); sve ostalo je povezano
+- B11 do kraja čim C spoji Gatekeeper-učesnika (C2.4): `migrate --mock`, pa pravi prolaz `--budget 1`
 - ponoviti B7 sa C-ovim `serveApp()` (prazan ekran je u B9 već proveren preko `serveApp`)
 
 ## Mockovi koje koristim
