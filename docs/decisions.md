@@ -53,7 +53,8 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-005: Spike A — Playwright selektori rade na Expo webu, uz obavezan `role`
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (čeka B, jer menja ugovor za buildera)
+- Status: prihvaćeno (C; B potvrdio 2026-10-30)
+- Potvrda (B): slaže se sa izvršiocem testova (`src/scenarios/run.ts`: `getByRole`/`getByLabel` sa tačnim imenom, `getByText`); u B7 provereno nad Expo web exportom sa `TextInput accessibilityLabel` i `Pressable role="button"`. Predlog dopune za prompt buildera (C2.1), jer testovi Recepata traže i ove uloge: checkbox → `role="checkbox"` + `aria-checked` + ime stavke kao labela; link → Expo Router `Link` (na webu `<a>`) ili `role="link"`, a ne `Pressable` sa `router.push` bez uloge.
 - Odluka: ostajemo na selektorima po labeli, ulozi i tekstu, **bez** `testID` ugovora. Builder **mora** da stavi `role="button"` na svaki `Pressable` koji je na webu dugme i `role="list"` / `role="listitem"` na liste. Polja dobijaju `accessibilityLabel` sa istom labelom kao na webu.
 - Zašto: ručni RN ekran (Expo SDK 58, `react-native-web` 0.21, statički web export, viewport 390×844), provereno skriptom `templates/spike-a/check.ts`:
 
@@ -115,7 +116,8 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-008: Kapije 1–4 čitaju kod TypeScriptom; `labels` proverava samo tekst koji postoji u originalu
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (čeka potvrdu tima; `architecture.md` §10 kaže „Babel parsira“)
+- Status: predlog (B potvrdio 2026-10-30; čeka ostatak tima; `architecture.md` §10 kaže „Babel parsira“)
+- Potvrda (B): tačka 3 je potrebna, jer ručni scenariji za Recepte (`src/scenarios/mocks/recepti/`) proveravaju tekst iz podataka. `reveal` dugmad (npr. „Filteri“) nisu u testovima, jer ih ubacuje prevodilac testova, pa ih proverava tek kapija 5.
 - Odluka:
   1. Kapije `parse`, `forbiddenApis` i `labels` čitaju nacrt TypeScript compiler API-jem (kao parser u D-007), ne Babelom. Kapija `tsc` koristi TypeScript iz šablona (`templates/expo`), nad privremenom kopijom `app/` sa nacrtom.
   2. `forbiddenApis` odbija **svaki** JSX tag malim slovom (`div`, `span`, `p`, `button`, `input`…), jer u RN nema HTML elemenata, i za svaki predlaže RN zamenu.
