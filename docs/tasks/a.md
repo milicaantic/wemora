@@ -239,7 +239,7 @@ Umesto `.sh` je `.ts` preko `tsx`, jer niko u timu nema Git Bash (P14, `docs/dec
   1. `layer-order`: sloj uvozi samo slojeve ispod sebe;
   2. `domain-no-mozaik`: domen ne zavisi od `@mozaik-ai/core` ni direktno ni preko drugih fajlova (npr. domen → `core/runner.ts` → Mozaik); time je rešen i P3;
   3. `domain-via-index`: drugi domenski folder se uvozi samo preko njegovog `index.ts`;
-  4. `core-mozaik`: u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze Mozaik;
+  4. `core-mozaik`: u `core/` samo `runtime.ts`, `state.ts` i `runner.ts` uvoze Mozaik (i test fajlovi u `core/`, od A5, jer testovi runtime-a trebaju prave Mozaik učesnike);
   5. `contracts-imports`: `contracts/` uvozi samo `zod` i sopstvene fajlove (testovi i `vitest`);
   6. `single-runtime`: `defineRuntime()` se poziva samo u `core/runtime.ts`;
   7. `unknown-layer`: fajl van poznatih foldera slojeva.
@@ -262,22 +262,24 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
 
 ## F1: Delovi rade sami
 
-### A4 — `core/config.ts`
+### A4 — `core/config.ts` ✅ 2026-10-30
 - **Fajlovi:** `src/core/config.ts`, `src/core/config.test.ts`.
 - **Izvozi:**
   ```ts
   export const MODELS = { default: "claude-haiku-5-5", strong: "claude-sonnet-5-5" } as const
-  export const PRICING: Record<string, { inputPerMTok: number; outputPerMTok: number }>   // haiku-5-5: 0.10 / 0.50; sonnet-5-5: 2 / 10
+  export type ModelName = (typeof MODELS)[keyof typeof MODELS]
+  export const PRICING: Record<ModelName, { inputPerMTok: number; outputPerMTok: number; longContext?: { thresholdTokens: number; multiplier: number } }>
+  // haiku-5-5: 0.10 / 0.50, ×5 preko 100k ulaznih tokena; sonnet-5-5: 2 / 10
   export const DEFAULTS = {
     maxBuilders: 4, maxTesters: 2, budgetUsd: 3,
-    tokensPerAnalyzer: 60_000, maxAnalyzers: 4, maxRounds: 4,
+    tokensPerAnalyzer: 60_000, maxAnalyzers: 4, maxRounds: 4, escalationRound: 3,
     maxSchemaRetries: 2, maxPlanRetries: 2, rescaleIntervalMs: 60_000,
     builderRoundTimeoutMs: 600_000, testerUnitTimeoutMs: 480_000, testsWaitTimeoutMs: 600_000,
   } as const
   export function analyzerCount(totalTokens: number): number                          // clamp(ceil(t / 60_000), 1, 4)
   export function builderCount(readyUnits: number, busyBuilders: number, maxBuilders: number): number
   export function testerCount(builders: number, maxTesters: number): number            // min(max(1, ceil(b / 2)), maxTesters)
-  export function modelForRound(round: number): string                                 // 1–2 → default, 3–4 → strong
+  export function modelForRound(round: number): ModelName                              // 1–2 → default, 3–4 → strong
   export function costUsd(model: string, inputTokens: number, outputTokens: number): number
   ```
 - **Šta radi:** sve brojke iz §9 i cene modela su na jednom mestu, kao čiste funkcije bez Mozaika, pa ih sme uvesti i domen (P3). Conductor, runner i timeouti čitaju vrednosti samo odavde, nigde drugde nema brojeva ni imena modela. `costUsd` uzima u obzir da je Haiku 5.5 5× skuplji preko 100k ulaznih tokena (wemora-plan §6.1).
@@ -286,11 +288,14 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   - `builderCount(5, 0, 4)` = 4, `(1, 0, 4)` = 1, `(0, 2, 4)` = 2;
   - `testerCount(4, 2)` = 2, `(1, 2)` = 1, `(0, 2)` = 1;
   - `modelForRound`: 1 i 2 → haiku, 3 i 4 → sonnet, 5 → greška;
-  - `costUsd("claude-haiku-5-5", 1_000_000, 1_000_000)` = 0.60.
+  - `costUsd("claude-haiku-5-5", 100_000, 1_000_000)` = 0.51; preko 100k ulaznih tokena cena je 5× veća; model bez cene → greška.
+
+  Ukupno 23 testa. Pretpostavka: množilac ×5 važi za ceo zahtev (ulaz i izlaz), jer wemora-plan §6.1 kaže samo „košta 5× više“.
 - **Zavisnosti i mock:** nema.
 
-### A5 — Tabla i runtime
+### A5 — Tabla i runtime ✅ 2026-10-30
 - **Fajlovi:** `src/core/state.ts`, `src/core/runtime.ts`, `src/core/runtime.test.ts`.
+- **Nalaz iz Mozaik izvora:** `sendEvent` (pa i `emit`) baca `Participant <id> not found` ako pošiljalac nije uradio `join`. Conductor, Gatekeeper-učesnik i svaki agent moraju da se pridruže pre prvog događaja. Ako se `emit` poziva u handleru, to mora biti unutar async funkcije sa `.catch`, inače greška stiže do pošiljaoca događaja (mozaik.md §6).
 - **Izvozi:**
   ```ts
   // state.ts
@@ -309,19 +314,22 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   4. `emit("unit.promoted", { unitId: "u1", code: "x" }, …)` ne prolazi `tsc` (proverava se sa `// @ts-expect-error`).
 - **Zavisnosti i mock:** A0. **Rizik:** runtime postoji jednom po procesu, a vitest deli module unutar jednog test fajla. Zato su svi testovi koji trebaju runtime u istom fajlu, ili Conductor dobija `emit`, `join` i `leave` kao parametre (A10).
 
-### A6 — Log i safety
+### A6 — Log i safety ✅ 2026-10-30
 - **Fajlovi:** `src/core/log.ts`, `src/core/safety.ts`, `src/core/log.test.ts`.
 - **Izvozi:**
   ```ts
   export type LogEntry = { t: string; agent: string; event: string; costUsd?: number; data?: unknown }
-  export function initLog(runDir: string): void                 // output/<run>/run.jsonl
-  export function log(entry: Omit<LogEntry, "t">): void          // jedna JSON linija, t = ISO vreme
+  export function initLog(runDir: string): void                 // output/<run>/run.jsonl, pravi folder ako ne postoji
+  export function log(entry: Omit<LogEntry, "t">): void          // jedna JSON linija, t = ISO vreme; nikad ne baca
+  export function handleUnhandledRejection(reason: unknown): void
   export function installSafety(): void                           // process.on("unhandledRejection") → log + stderr, proces nastavlja
   ```
+- **Napomene iz implementacije:** `log` pre `initLog` piše na stderr; podaci koji ne mogu u JSON (kružna referenca) postaju `"[unserializable]"`. `uncaughtException` se namerno ne hvata, jer posle sinhronog pada stanje procesa nije pouzdano. Proces koji preživi neuhvaćenu grešku proveren je i van vitest-a (bez `installSafety` exit 1, sa njim exit 0).
 - **Šta radi:** `log` sinhrono dopisuje jednu JSON liniju u `run.jsonl`, pa je redosled linija isti kao redosled događaja (D iz toga crta vremensku osu). Fajl ne uvozi Mozaik, pa ga sme koristiti i domen. `installSafety` je poslednja linija odbrane ako petlja ipak baci grešku.
-- **Gotovo kad:** `npx vitest run src/core/log.test.ts`:
+- **Gotovo kad:** `npx vitest run src/core/log.test.ts` (5 testova):
   1. posle `initLog(tmp)` i dva poziva `log` fajl ima 2 linije, a svaka se parsira kao JSON sa `t`, `agent` i `event`;
-  2. posle `installSafety()`, `process.emit("unhandledRejection", new Error("x"), Promise.resolve())` upiše liniju sa `event: "unhandledRejection"`, a test se nastavlja.
+  2. kružni podaci i poziv pre `initLog` ne bacaju grešku;
+  3. `handleUnhandledRejection` upiše liniju sa `event: "unhandledRejection"`, a `installSafety` dvaput registruje handler samo jednom. Test zove handler direktno, jer bi pravi `unhandledRejection` uhvatio i vitest.
 - **Zavisnosti i mock:** nema.
 
 ### A7 — `BudgetedRunner` i `MockRunner`
