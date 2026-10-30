@@ -19,25 +19,30 @@ Ovo su koraci osobe A iz `docs/tim-plan.md` (faze F0–F4), prepisani tako da sv
 | A2 | F0 | `scripts/check-layers.ts` | `a/skeleton` |
 | A3 | F0 | Prazni `index.ts` sa potpisima | `a/skeleton` |
 | | | **Kapija G0 (proverava A)** | |
-| A4 | F1 | `core/config.ts` | `a/runtime-runner` |
-| A5 | F1 | Tabla i runtime | `a/runtime-runner` |
-| A6 | F1 | Log i safety | `a/runtime-runner` |
-| A7 | F1 | `BudgetedRunner` i `MockRunner` | `a/runtime-runner` |
-| A8 | F1 | `agents/_shared/` | `a/shared-guard` |
-| A9 | F1 | Red zadataka | `a/queue` |
+| A4 | F1 | `core/config.ts` | `a/config` |
+| A5 | F1 | Tabla i runtime | `a/config` |
+| A6 | F1 | Log i safety | `a/config` |
+| A7 | F1 | `BudgetedRunner` i `MockRunner` | `a/runner` (PR #20) |
+| A8 | F1 | `agents/_shared/` | `a/runner` (PR #20) |
+| A9 | F1 | Red zadataka | `a/runner` (PR #20) |
 | A10 | F2 | Conductor | `a/conductor` |
-| A11 | F2 | `cli migrate` | `a/cli` |
+| A11 | F2 | `cli migrate` | `a/conductor` |
 | A12 | F2 | MockRunner odgovori za TodoMVC | `a/mock-todomvc` |
 | A13 | F2 | Timeouti | `a/timeouts` |
 | | | **Kapija G2 (proverava A)** | |
 | A14 | F3 | Broj agenata po formulama | `a/scaling` |
-| A15 | F3 | Eskalacija modela | `a/escalation` |
-| A16 | F3 | 429 i `budget.exceeded` | `a/backpressure` |
-| A17 | F3 | Dodavanje testera u toku rada (opciono) | `a/adaptive` |
+| A15 | F3 | Eskalacija modela | `a/scaling` |
+| A16 | F3 | 429 i `budget.exceeded` | `a/scaling` |
+| A17 | F3 | Dodavanje testera u toku rada (opciono) | `a/scaling` |
 | A18 | F3 | `cli verify` i `cli sabotage` | `a/cli-verify` |
 | A19 | F4 | Stabilizacija | `a/fix-<opis>` |
 
 Brojevi prate redosled rada: A4 nema zavisnosti, a A5–A9 se oslanjaju na prethodne.
+
+**Grane od F2 (2–4 PR-a po fazi, tim-plan §2):** zadaci idu u istu granu kad menjaju iste fajlove i ne čekaju nikoga, a u posebnu kad čekaju tuđi kod ili odluku tima.
+- F2: `a/conductor` (A10 + A11, rade nad lažnim agentima) → `a/timeouts` (A13, čeka odluke P9 i P10) → `a/mock-todomvc` (A12, čeka agente B, C i D; integracija za G2).
+- F3: `a/scaling` (A14–A17, sve je ponašanje Conductora u istim fajlovima) i `a/cli-verify` (A18, čeka B-ov `verify()`).
+- F4: po jedna `a/fix-<opis>` grana po popravci iz crvenog tima.
 
 ---
 
