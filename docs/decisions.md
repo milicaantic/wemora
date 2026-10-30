@@ -49,3 +49,33 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: provera slojeva je TypeScript skripta koju `npm run build` pokreće preko `tsx`. Domen ne sme da zavisi od `@mozaik-ai/core` ni posredno, preko drugih fajlova.
 - Zašto: na Windowsu `npm run build` ide kroz `cmd.exe`, a bez Git Bash-a `bash` ne postoji ili je WSL. Uvoze čita TypeScript (`ts.preProcessFile`), koji je već instaliran, pa nema nove zavisnosti. Posredna provera rešava `docs/tasks/a.md` P3 bez spiska dozvoljenih `core/` fajlova.
 - Posledice: `architecture.md` §2, `CLAUDE.md` i `tim-plan.md` još pominju `scripts/check-layers.sh`, pa ih treba uskladiti (A).
+
+## D-005: Spike A — Playwright selektori rade na Expo webu, uz obavezan `role`
+- Datum: 2026-10-30
+- Ko: C
+- Status: predlog (čeka B, jer menja ugovor za buildera)
+- Odluka: ostajemo na selektorima po labeli, ulozi i tekstu, **bez** `testID` ugovora. Builder **mora** da stavi `role="button"` na svaki `Pressable` koji je na webu dugme i `role="list"` / `role="listitem"` na liste. Polja dobijaju `accessibilityLabel` sa istom labelom kao na webu.
+- Zašto: ručni RN ekran (Expo SDK 58, `react-native-web` 0.21, statički web export, viewport 390×844), provereno skriptom `templates/spike-a/check.ts`:
+
+  | Selektor | RN zapis | Rezultat |
+  |---|---|---|
+  | `getByLabel("Pretraga")` + `fill` | `TextInput accessibilityLabel="Pretraga"` | radi, `fill` menja stanje |
+  | `getByRole("button", { name })` + `click` | `Pressable` + `Text`, **bez uloge** | **ne radi** (renderuje se kao `<div tabindex="0">`) |
+  | `getByRole("button", { name })` + `click` | `Pressable role="button"` | radi, okida `onPress` |
+  | `getByRole("button", { name })` + `click` | `Pressable accessibilityRole="button"` | radi, okida `onPress` |
+  | `getByText("Traži")` + `click` | `Pressable` + `Text`, bez uloge | radi, okida `onPress` |
+  | `getByText(...)` | stavka u `FlatList` | radi |
+  | `getByRole("listitem")` | `FlatList`, bez uloga | **ne radi** (nema `list`/`listitem` u ARIA stablu) |
+  | `getByRole("list")` / `getByRole("listitem")` | `View role="list"` / `View role="listitem"` | radi |
+
+- Posledice:
+  - `src/agents/prompts/web-to-rn.md` i `builder.md` (C2.1): `button` → `Pressable role="button"` + `Text`; `ul/li` → `role="list"` / `role="listitem"`; `input` → `TextInput accessibilityLabel`.
+  - Kapija 4 `labels` (C1.4) može da proverava i da `Pressable` sa tekstom dugmeta iz testova ima `role="button"`.
+  - Expo Router `Stack` prikazuje naziv rute kao naslov (u ARIA stablu: `heading "index"`). Scaffold (C1.3) treba da postavi pravi naslov ili sakrije zaglavlje, da tekst rute ne smeta `getByText`.
+
+### Usputni nalazi
+- **Greška pri renderovanju jednog ekrana** (dev server, Metro): ostali ekrani rade, Metro ostaje živ; pokvaren ekran je prazan, greška je u konzoli browsera i u Metro logu (`WARN An error occurred in the <BrokenRender> component`).
+- **Sintaksna greška u jednom ekranu ruši celu aplikaciju** na dev serveru: Metro ostaje živ, ali bundle vraća 500, pa ni ispravni ekrani ne rade. Gatekeeper zato mora da pusti kapiju 1 (`parse`) **pre** nego što nacrt dođe u aplikaciju koju Metro služi.
+- Sa `CI=1` Metro **ne prati izmene fajlova**: novi fajl se ne vidi bez ponovnog pokretanja. Bitno za C1.2/C1.5 ako se koristi dev server.
+- **`expo export --platform android` radi bez uređaja i emulatora** (~16 s sa toplim kešom, ~88 s prvi put). Kapija 6 je izvodljiva.
+- Web export šablona + ovog ekrana: ~71 s prvi put (hladan keš).
