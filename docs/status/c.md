@@ -12,11 +12,27 @@ Faza: F1
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- Kapija G1, zajednički test sa B: gotovo na grani `c/g1-joint-test`, čeka PR
-  - `src/gatekeeper/g1.test.ts`: scaffold Recepti → ručni ekran liste za kupovinu prolazi kapije 1–4 → promote → `serveApp` → B-ov `add-item.json` preko `runScenarios` (390×844) prolazi; nad praznim ekranom pada
-  - nađen i popravljen bug (D-009): zajednički Metro keš je davao aplikaciju bez ruta; sada svaka aplikacija ima svoj keš (`templates/expo/metro.config.js`)
-  - `npm test` sada traje ~2,5 min (jedan hladan export)
-- sledeće: F2 (C2.1 promptovi), posle kapije G1
+- ništa; čeka se kapija G1 (D) i potvrde ispod
+- sledeće: F2 (C2.1 promptovi), posle G1
+
+## Odgovori C za kraj F1 (rešeno sa moje strane)
+- **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.
+- **D-001–D-003 i „contracts: samo zod“ (§2):** ok.
+- **Review ugovora (A, P16):** `GateResult` i `UnitResult` su ok. Potpisi:
+  - `promote`/`rollback`: rade bez izmene ugovora, `appDir` se izvodi iz `draftDir` (raspored §7). Ok i ovako.
+  - `serveApp`: rešeno (`ServedApp` sa `close()`).
+  - builderov `check_draft` i Gatekeeper-ov `checkDraft` su **dve funkcije**: `check_draft` = kapije 1–4 (`runGates` iz `gatekeeper/gates/`), `checkDraft` = ceo put (kapije 1–5, promote, regresija, rollback).
+  - **traži izmenu u `contracts/f1` (za C2.3):** `checkDraft` treba da dobije `round` (ide u `GateResult`), jedinicu (`Unit`: `sources` za kapiju 4, `intentionalDifferences` za `runScenarios`) i `webDir` (da se `sources` nađu na disku). Predlog: `checkDraft({ unit, round, draftDir, tests, webDir })`.
+  - `StatusInput.roundsExhausted` ne menja status (C1.6); predlog: ukloniti.
+- **PD3 (navigacija):** zajednička jedinica `layout` sme da menja `src/app/_layout.tsx` (bočni meni → tabovi ili drawer). Scaffold pravi samo početni `_layout.tsx` (Stack bez zaglavlja); ostale rute (`src/app/*`) pravi samo scaffold.
+- **PD4 (`writes`):** potvrđeno: putanje relativne u odnosu na `app/`; ekran `src/screens/<id>/`, zajednička `src/shared/<id>/`, a `layout` još i `src/app/_layout.tsx`. Staging ima raspored `app/src/`, pa builder piše u `staging/<builderId>/<unitId>/` + `writes` bez prefiksa `src/` (za OwnershipGuard).
+- **PD5 (ko pokreće original):** bez primedbi na predlog (Conductor preko B-ovog `serveOriginal`).
+- **PD8 (parser):** Babel ne treba; i D (D-007) i C (D-008) koriste `typescript`.
+- **PD7 (jezik):** ok.
+
+## Čeka potvrdu drugih
+- D-005 (obavezan `role`): B
+- D-008 (kapije TypeScriptom, pravila `forbiddenApis` i `labels`): A, B, D
 
 ## Za C2.3 (`checkDraft`), da se ne zaboravi
 - ugovor `checkDraft(unitId, draftDir, tests)` ne prosleđuje rundu, `appDir`, `Unit.sources` ni namerne razlike
