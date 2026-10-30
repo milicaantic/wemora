@@ -29,8 +29,12 @@ const MAX_SNAPSHOT_CHARS = 30_000
 export type TesterDeps = {
   /** The running original web app. */
   originalUrl: string
-  /** The blank mobile app from scaffold(); a scenario must fail there (validateScenario, rule 2). */
-  blankUrl: string
+  /**
+   * The blank mobile app from scaffold(); a scenario must fail there (validateScenario, rule 2).
+   * In a run this is `blankApp(...).url` from scenarios/: the Conductor starts testers right after
+   * scaffold() and before any builder works, so the first task exports the untouched placeholder.
+   */
+  blankUrl: string | (() => Promise<string>)
   // Replaceable so tests run without a browser.
   validateScenario?: ValidateScenario
   extractInteractive?: ExtractInteractive
@@ -39,6 +43,7 @@ export type TesterDeps = {
 
 type Task = {
   unit: Unit
+  blankUrl: string
   saved: Scenario[]
   interactive: InteractiveElement[]
   // Scenarios (as JSON) that passed try_scenario in this task, so save_scenario does not run them again.
@@ -68,12 +73,12 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
 
   // Runs the browser-free checks first, then validateScenario on the original and the blank screen.
   async function check(scenario: Scenario): Promise<string | null> {
-    const { unit, saved, validated } = current()
+    const { unit, blankUrl, saved, validated } = current()
     const problem = scenarioProblem(scenario, unit, saved)
     if (problem) return problem
     const key = JSON.stringify(scenario)
     if (validated.has(key)) return null
-    const result = await validate(deps.originalUrl, deps.blankUrl, scenario)
+    const result = await validate(deps.originalUrl, blankUrl, scenario)
     if (!result.ok) return result.reason ?? "Validation failed."
     validated.add(key)
     return null
@@ -129,6 +134,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     const unit = board().plan?.units.find((u) => u.id === unitId)
     if (!unit) throw new Error(`unit "${unitId}" is not in the plan`)
     if (unit.kind !== "screen" || !unit.route) throw new Error(`unit "${unitId}" is not a screen with a route`)
+    // Without a blank screen no scenario can be validated, so the task stops before asking the model.
+    const blankUrl = typeof deps.blankUrl === "string" ? deps.blankUrl : await deps.blankUrl()
     // A second tester (after a timeout) continues from what the first one saved.
     const saved = [...(board().tests[unitId] ?? readTests(board().config.runDir, unitId))]
     let interactive: InteractiveElement[] = []
@@ -140,7 +147,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
         log({ agent: id, event: "tester.interactive_failed", data: { unitId, error: message(error) } })
       }
     }
-    return { unit, saved, interactive, validated: new Set() }
+    return { unit, blankUrl, saved, interactive, validated: new Set() }
   }
 
   async function test(unitId: string, cancel: CancelGuard): Promise<void> {
