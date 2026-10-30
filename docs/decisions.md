@@ -21,7 +21,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-001: `zod` 4 i `vitest` 5 kao osnovne zavisnosti
 - Datum: 2026-10-30
 - Ko: A
-- Status: predlog (čeka potvrdu tima)
+- Status: predlog (B potvrdio 2026-10-30; čeka ostatak tima)
 - Odluka: `zod@4.6.7` za sve šeme u `src/contracts/`, `vitest@5.0.5` za testove.
 - Zašto: zod 4 ima `z.toJSONSchema()`, potreban za Mozaik `structuredOutput`; bez njega treba još jedna biblioteka. Vitest navode `CLAUDE.md` i `tim-plan.md`.
 - Posledice: Vitest 5 traži Node ≥ 22.12, a `.nvmrc` sada kaže samo `22`.
@@ -29,7 +29,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-002: `zod` je jedini spoljni uvoz u `src/contracts/`
 - Datum: 2026-10-30
 - Ko: A
-- Status: predlog (čeka potvrdu tima; `docs/tasks/a.md`, P1)
+- Status: predlog (B potvrdio 2026-10-30; čeka ostatak tima; `docs/tasks/a.md`, P1)
 - Odluka: `src/contracts/` uvozi samo `zod` i sopstvene fajlove.
 - Zašto: `architecture.md` §2 kaže da `contracts/` ne uvozi ništa, a tim-plan F0 traži zod šeme u `contracts/`.
 - Posledice: `scripts/check-layers.ts` (D-004) propušta `zod` u `contracts/`.
@@ -37,7 +37,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-003: Oblik table se u ugovorima zove `MigrationStateFields`
 - Datum: 2026-10-30
 - Ko: A
-- Status: predlog (čeka potvrdu tima; `docs/tasks/a.md`, P2)
+- Status: predlog (B potvrdio 2026-10-30; čeka ostatak tima; `docs/tasks/a.md`, P2)
 - Odluka: `src/contracts/state.ts` izvozi `MigrationStateFields`, a `src/core/state.ts` izvozi `class MigrationState extends RuntimeState implements MigrationStateFields`.
 - Zašto: `contracts/` ne sme da uvozi Mozaik `RuntimeState`, pa oblik i klasa ne mogu da imaju isto ime.
 - Posledice: `architecture.md` §6 i dalje kaže `MigrationState`, što je ime klase u `core/`.
@@ -53,7 +53,8 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-005: Spike A — Playwright selektori rade na Expo webu, uz obavezan `role`
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (čeka B, jer menja ugovor za buildera)
+- Status: prihvaćeno (C; B potvrdio 2026-10-30)
+- Potvrda (B): slaže se sa izvršiocem testova (`src/scenarios/run.ts`: `getByRole`/`getByLabel` sa tačnim imenom, `getByText`); u B7 provereno nad Expo web exportom sa `TextInput accessibilityLabel` i `Pressable role="button"`. Predlog dopune za prompt buildera (C2.1), jer testovi Recepata traže i ove uloge: checkbox → `role="checkbox"` + `aria-checked` + ime stavke kao labela; link → Expo Router `Link` (na webu `<a>`) ili `role="link"`, a ne `Pressable` sa `router.push` bez uloge.
 - Odluka: ostajemo na selektorima po labeli, ulozi i tekstu, **bez** `testID` ugovora. Builder **mora** da stavi `role="button"` na svaki `Pressable` koji je na webu dugme i `role="list"` / `role="listitem"` na liste. Polja dobijaju `accessibilityLabel` sa istom labelom kao na webu.
 - Zašto: ručni RN ekran (Expo SDK 58, `react-native-web` 0.21, statički web export, viewport 390×844), provereno skriptom `templates/spike-a/check.ts`:
 
@@ -107,7 +108,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-007: Parser koristi TypeScript compiler API, ne Babel ni ts-morph
 - Datum: 2026-10-30
 - Ko: D
-- Status: predlog (čeka potvrdu tima)
+- Status: predlog (B potvrdio 2026-10-30; čeka ostatak tima)
 - Odluka: `parseApp` (`src/analysis/`) parsira `.js`, `.jsx`, `.ts` i `.tsx` sa `typescript` paketom (`ts.createSourceFile`, a za sintaksne greške `ts.transpileModule` sa `reportDiagnostics`). Nova zavisnost ne treba.
 - Zašto: `typescript` je već u `package.json` i koristi ga `scripts/check-layers.ts`. `wemora-plan.md` §6 kaže „ts-morph ili Babel“, ali oba bi bila nova zavisnost za isti posao. Kapija `parse` (C, `architecture.md` §10) može da ostane na Babel-u ili da koristi isti API; to je odluka C.
 - Posledice: `typescript` se koristi i u toku rada, ne samo pri proveri tipova. Sada je u `devDependencies`, kao i `tsx` kojim se CLI pokreće, pa se ništa ne lomi; ako tim odluči da pravi produkcioni paket, `typescript` prelazi u `dependencies`.
@@ -115,7 +116,8 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-008: Kapije 1–4 čitaju kod TypeScriptom; `labels` proverava samo tekst koji postoji u originalu
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (D potvrdio 2026-10-30, sve tri tačke; čeka A i B; `architecture.md` §10 kaže „Babel parsira“)
+- Status: predlog (D i B potvrdili 2026-10-30, sve tri tačke; čeka A; `architecture.md` §10 kaže „Babel parsira“)
+- Potvrda (B): tačka 3 je potrebna, jer ručni scenariji za Recepte (`src/scenarios/mocks/recepti/`) proveravaju tekst iz podataka. `reveal` dugmad (npr. „Filteri“) nisu u testovima, jer ih ubacuje prevodilac testova, pa ih proverava tek kapija 5.
 - Odluka:
   1. Kapije `parse`, `forbiddenApis` i `labels` čitaju nacrt TypeScript compiler API-jem (kao parser u D-007), ne Babelom. Kapija `tsc` koristi TypeScript iz šablona (`templates/expo`), nad privremenom kopijom `app/` sa nacrtom.
   2. `forbiddenApis` odbija **svaki** JSX tag malim slovom (`div`, `span`, `p`, `button`, `input`…), jer u RN nema HTML elemenata, i za svaki predlaže RN zamenu.

@@ -42,7 +42,7 @@ Poslednja izmena: 2026-10-30
 - A: komentar za `ScenarioResult.failedStep`
 - A: zajednička šema za `tests/<unitId>.json` (niz `Scenario`)
 - A: URL originala i mock-api-ja u `RunConfig` ili drugom ugovoru (b.md Q8); posle toga uključujem `apiFixture`
-- C (D-005, Spike A) čeka B-ovu potvrdu. Predlog: prihvatiti — selektori po labeli, ulozi i tekstu rade uz `role="button"` / `role="list"` / `role="listitem"`, što se slaže sa `run.ts`
+- B je u `docs/decisions.md` potvrdio D-001, D-002, D-003, D-005, D-007 i D-008 (grana `b/confirm-decisions-2`). D-005 je time prihvaćeno; za njega je predložena dopuna prompta buildera (`role="checkbox"`, `Link`/`role="link"`), odluka je na C.
 - D (TodoMVC, taster Enter): DSL nema korak za Enter, pa se u TodoMVC ne može dodati zadatak. Predlog D: nov korak `{ submit: { label } }` (promena ugovora). Odluka B/A otvorena.
 
 ## Blokira me
