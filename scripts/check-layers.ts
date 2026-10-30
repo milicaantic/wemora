@@ -144,7 +144,7 @@ function packageName(spec: string): string | null {
 }
 
 function layerOf(rel: string): Layer | null {
-  if (rel === "cli.ts") return "cli"
+  if (rel === "cli.ts" || rel === "cli.test.ts") return "cli"
   const top = rel.split("/")[0]
   if (top === "contracts" || top === "core" || top === "agents" || top === "orchestration") return top
   return DOMAIN_FOLDERS.includes(top) ? "domain" : null

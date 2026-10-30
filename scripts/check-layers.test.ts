@@ -33,6 +33,7 @@ const clean = {
   "agents/tester.ts": `import { createAgent } from "@mozaik-ai/core"\nimport { run } from "../scenarios/index"`,
   "orchestration/conductor.ts": `import "../agents/tester"\nimport { m } from "../core/runner"`,
   "cli.ts": `const o = await import("./orchestration/conductor")\n// defineRuntime() mentioned in a comment`,
+  "cli.test.ts": `import { main } from "./cli"`,
 }
 
 afterEach(() => {

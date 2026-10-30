@@ -132,6 +132,18 @@ describe("Conductor", () => {
     expect(summary.units).toMatchObject({ api: "promoted", store: "promoted", list: "promoted", detail: "failed", edit: "failed" })
   })
 
+  it("stops handing out work when the runner reports the budget through notifyBudgetExceeded", async () => {
+    const { deps, calls } = fakeWorld({ plan })
+    const conductor = new Conductor(deps)
+    const running = conductor.run()
+    conductor.notifyBudgetExceeded()
+
+    const summary = await running
+    expect(summary.outcome).toBe("budget.exceeded")
+    expect(calls.builder).toEqual([])
+    expect(Object.values(summary.units).every((status) => status === "failed")).toBe(true)
+  })
+
   it("ends with an error, and still builds the report, when parsing fails", async () => {
     const { summary, calls } = await runWith({ parseError: "Next.js is not supported" })
 

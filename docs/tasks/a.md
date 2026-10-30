@@ -507,7 +507,16 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
   6. `run.jsonl` ima liniju za svaki događaj iz §5, a nijednu za `inference.stream`.
 - **Zavisnosti i mock:** B (`createTester`), C (`createBuilder`, Gatekeeper-učesnik, `scaffold`), D (`createAnalyzer`, `createArchitect`, `parseApp`, `splitParts`, `buildReport`). Dok čekam koristim `mocks/fakeAgents.ts` (lažni `AgentHandle`-ovi) i lažne domenske funkcije: ručni `ParsedApp` za TodoMVC, `scaffold` koji ništa ne radi i `buildReport` koji upiše prazan HTML. Beležim ih u `docs/status/a.md` i brišem u integraciji F2.
 
-### A11 — `cli migrate`
+### A11 — `cli migrate` ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- Logika komande je u `src/orchestration/migrate.ts` (`runMigrate(options, env?, now?)`), a `src/cli.ts` je samo parsiranje i dinamički `import()` u grani `migrate`; `verify` i `sabotage` zato ne učitavaju Mozaik.
+- `src/orchestration/agents.ts` (`createAgentFactories`) bira pravog agenta za svaku ulogu. Za sada je pravi samo D-ov analizator; za ostale je zamena koja javlja „agent još ne postoji (vlasnik, zadatak)“, pa prolaz stane sa greškom i ipak napravi izveštaj. Kad vlasnik spoji agenta, zamena postaje jedan `import`.
+- Mock odgovori: folder po aplikaciji, jedan fajl po vlasniku agenta (D-013), opcija `--mock-dir`.
+- Pravi prolaz traži `ANTHROPIC_API_KEY` (iz `.env`, preko `dotenv`, samo kad nije `--mock`); bez njega izlaz 2 pre nego što se išta napravi.
+- U F2 `--max-builders` i `--max-testers` mogu samo da smanje fiksni tim (`FIXED_TEAM`); formule dolaze u A14.
+- `onUsage` iz runnera puni `board().ledger` i upisuje `model.usage` sa `costUsd` u `run.jsonl` (za D-ov trošak po agentu). `onBudgetExceeded` zove nov `Conductor.notifyBudgetExceeded()`.
+- Izlazni kod: 0 kad su sve jedinice konačne, 1 za ostale ishode, 2 za loš ulaz. Nema `bin` polja u `package.json`, jer bi trebalo build-ovati u JS; pokretanje je `npm run migrate` i `npx tsx src/cli.ts`.
+- Provereno pravom komandom nad `examples/todomvc` sa `--mock`: D-ov analizator radi kroz Conductor, upisuje `analysis/part-1.json`, prolaz staje kod arhitekte koji još ne postoji, a `report.html` se pravi. Testovi: 14 za CLI, 3 za `runMigrate` (isti pravi prolaz), 1 za spajanje mock fajlova, 1 za `notifyBudgetExceeded`; `check-layers` sada prepoznaje i `cli.test.ts`.
 - **Fajlovi:** `src/cli.ts`, `src/cli.test.ts`; `package.json` (`bin`, skripte `migrate`, `migrate:mock`, `smoke`).
 - **Izvozi:**
   ```ts

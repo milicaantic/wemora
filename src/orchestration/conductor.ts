@@ -14,7 +14,7 @@ import {
 } from "../contracts"
 import { FIXED_TEAM, modelForRound } from "../core/config"
 import { log } from "../core/log"
-import { board, join, leave } from "../core/runtime"
+import { board, emit, join, leave } from "../core/runtime"
 import { createEventLogger } from "./eventLogger"
 import { blockedBy, isFinished, nextForBuilder, nextForTester, type QueueView } from "./queue"
 
@@ -104,6 +104,12 @@ export class Conductor {
     join(this.participant)
     this.enqueue(() => this.start())
     return done
+  }
+
+  /** Called by the runner's onBudgetExceeded: sends budget.exceeded from the Conductor, which has joined. */
+  notifyBudgetExceeded(): void {
+    if (this.finished) return
+    emit("budget.exceeded", {}, this.participant.getId())
   }
 
   private enqueue(work: () => Promise<void> | void): void {

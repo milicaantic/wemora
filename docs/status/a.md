@@ -27,16 +27,19 @@ Poslednja izmena: 2026-10-30
 - D-005 i D-008 prihvaćeni (potvrdili C, B, D i A); usklađeni `architecture.md` §10 i §11 i `tim-plan.md` (PR #28)
 - Kapija G1 prošla 2026-10-30 (proverio D)
 
-## Gotovo, čeka review i spajanje (grana `a/conductor`)
 - plan: grane A10–A18 grupisane u 5 (`docs/tasks/a.md`)
-- A10: `src/orchestration/conductor.ts` (`Conductor`, `AgentFactories`, `ConductorDeps`, `RunSummary`), `eventLogger.ts` (svi događaji osim `inference.stream` → `run.jsonl`, sa imenom agenta), `mocks/fakeAgents.ts`, 10 testova; `FIXED_TEAM` u `config.ts`
-- ugovor: nov događaj `plan.failed {}` (D-012, D-ov PD2), uz test; `architecture.md` §4 i §5 usklađeni
+- A10: Conductor, `eventLogger`, lažni agenti, 10 testova; `FIXED_TEAM`; nov događaj `plan.failed` (D-012); pravila za agente u `agents/_shared/handle.ts` i `mozaik.md` §6 (PR #30)
+
+## Gotovo, čeka review i spajanje (grana `a/cli`)
+- A11: `src/cli.ts` (`parseCliArgs`, `main`, `UsageError`), `src/orchestration/migrate.ts` (`runMigrate`: run folder, log, safety, runtime sa `BudgetedRunner` ili `MockRunner`, Conductor, ledger, ispis), `src/orchestration/agents.ts` (pravi agenti ili jasna zamena dok vlasnik ne spoji); `loadMockFixtureDir` u `core/runner.ts`; `Conductor.notifyBudgetExceeded()`; D-013 (mock odgovori: jedan fajl po vlasniku); `check-layers` prepoznaje `cli.test.ts`; 19 novih testova
+- provereno: `npx tsx src/cli.ts migrate examples/todomvc --mock --mock-dir <prazan>` prolazi kroz D-ovog analizatora i staje kod arhitekte (još ne postoji), uz `report.html`
 
 ## U radu
 - ništa
 
 ## Sledeće
-- A11 (`cli migrate`) na istoj grani, pa PR `a/conductor` → `main`
+- PR `a/cli` → `main`
+- kad B, C i D spoje agente: zamena u `src/orchestration/agents.ts` postaje `import` (jedan red po agentu)
 - `contracts/f1`: izmene ugovora koje B, C i D čekaju (adrese originala u `RunConfig`, šema `tests/<unitId>.json`, `checkDraft` po C-ovom P16, `roundsExhausted`, `failedStep`, `LogEntrySchema`)
 - A13 (`a/timeouts`) posle odluke o P9 i P10
 

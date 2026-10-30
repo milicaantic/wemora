@@ -161,3 +161,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: u `src/contracts/events.ts` postoji događaj `plan.failed` sa praznim payload-om `{}`. Arhitekta ga šalje kad ni posle ponovnih pokušaja (`architecture.md` §4, korak 4) nema plan koji prolazi `validatePlan()`. Conductor tada završava prolaz sa ishodom `plan.failed` i ipak pravi izveštaj. Greške plana arhitekta može da upiše u log; payload nosi samo ID-jeve (invarijanta 5), pa ih ne nosi.
 - Zašto: bez događaja Conductor ne zna da plan neće stići i čeka zauvek.
 - Posledice: `architecture.md` §4 (korak 4) i §5 (tabela događaja). D-ov arhitekta (D14) šalje `plan.failed`; Conductor (A10) ga obrađuje.
+
+## D-013: MockRunner odgovori: jedan fajl po vlasniku agenta
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; rešava `docs/tasks/a.md` P13, B-ov Q17 i D-ov PD9, koji su čekali odluku A)
+- Odluka: odgovori za `--mock` su u `src/agents/mocks/<aplikacija>/<agent>.json` (npr. `todomvc/analyzer.json` i `todomvc/architect.json` drži D, `todomvc/tester.json` B, `todomvc/builder.json` C). Format je `MockFixtureSchema` iz `src/core/runner.ts`, a ključevi su `vrsta:zadatak:runda`, `vrsta:zadatak` ili `vrsta`. `wemora migrate --mock` učitava sve `.json` fajlove iz foldera i spaja ih; isti ključ u dva fajla je greška. Drugi folder se bira sa `--mock-dir`.
+- Zašto: svako piše samo svoj fajl, pa nema izuzetka od vlasništva ni čekanja na A.
+- Posledice: `src/core/runner.ts` (`loadMockFixtureDir`) i `src/orchestration/migrate.ts` (A11). Dok nema fajlova, `npm run migrate:mock -- examples/todomvc` jasno javlja koji folder fali.
