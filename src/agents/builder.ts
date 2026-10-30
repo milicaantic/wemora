@@ -43,15 +43,6 @@ export function allowedPaths(unit: Unit): string[] {
   return fromPlan.length > 0 ? fromPlan : [own]
 }
 
-/**
- * The OwnershipGuard takes one prefix, so the guard uses the unit's own folder. Extra files in
- * `writes` (src/app/_layout.tsx for the layout unit, PD3) wait for a guard with several prefixes (A).
- */
-export function guardPrefix(unit: Unit): string {
-  const own = `${unit.kind === "screen" ? "screens" : "shared"}/${unit.id}/`
-  return allowedPaths(unit).find((p) => p === own) ?? allowedPaths(unit).find((p) => p.endsWith("/")) ?? own
-}
-
 /** The task message for one round: what to build, where, and what went wrong last time. */
 export function builderBrief(job: Pick<BuildJob, "unit" | "round" | "allowed">, plan: Plan, lastError: string | null): string {
   const { unit, round, allowed } = job
@@ -222,7 +213,7 @@ export function createBuilder(id: string): AgentHandle<BuildTask> {
         model: task.model,
         maxOutputTokens: BUILDER_MAX_OUTPUT_TOKENS,
         tools,
-        guard: composeGuards(new OwnershipGuard(guardPrefix(started.job.unit)), guard),
+        guard: composeGuards(new OwnershipGuard(started.job.allowed), guard),
       })
       if (!result.ok) log({ agent: id, event: "build.loop_failed", data: { unitId: task.unitId, round: task.round, error: result.error } })
       // Without submit_draft the round would hang until the timeout; the Gatekeeper judges the draft as it is.

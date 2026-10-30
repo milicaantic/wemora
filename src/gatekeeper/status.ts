@@ -8,8 +8,7 @@ import type { ComputeStatus, ScenarioResult } from "../contracts"
  * 3. pokrivenost nepoznata ili nepotpuna → partial
  * 4. inače → proven
  *
- * `roundsExhausted` ne menja status: test koji pada je `failed` i pre poslednje runde,
- * jer nijedan drugi status ne odgovara (vidi docs/status/c.md).
+ * Test koji pada je `failed` i pre poslednje runde, jer nijedan drugi status ne odgovara (D-015).
  */
 export const computeStatus: ComputeStatus = ({ tests, results, coverage }) => {
   if (tests.length === 0) return "unproven"
