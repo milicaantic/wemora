@@ -22,14 +22,16 @@ Poslednja izmena: 2026-10-30
 - A9: `src/orchestration/queue.ts`: `readyUnits`, `nextForBuilder`, `nextForTester`, `unlockedBy`, `blockedBy`, `isFinished` (čista logika po §9, P7 i P8 po predlogu); 15 testova.
 - Moja stavka za G1: `npx vitest run src/core src/agents/_shared src/orchestration scripts` → 102/102.
 
-## Gotovo, čeka review i spajanje (grana `a/align-f1`)
-- usklađeni dokumenti samo tamo gde postoji potvrda: `check-layers.sh` → `.ts` i posredna provera (D-004) u `architecture.md` §2, `tim-plan.md` i `CLAUDE.md`; `splitParts`, Conductor čeka sve `analysis.done` i poziva `scaffold()` (nova D-010, potvrda D-a u `docs/status/d.md`); nova D-011 (testovi u `core/` smeju da uvoze Mozaik); ispravljena D-002
+- usklađeni dokumenti samo tamo gde postoji potvrda (PR #23): `check-layers.sh` → `.ts` i posredna provera (D-004) u `architecture.md` §2, `tim-plan.md` i `CLAUDE.md`; `splitParts`, Conductor čeka sve `analysis.done` i poziva `scaffold()` (nova D-010, potvrda D-a u `docs/status/d.md`); nova D-011 (testovi u `core/` smeju da uvoze Mozaik); ispravljena D-002
+
+## Gotovo, čeka review i spajanje (grana `a/accept-d005-d008`)
+- D-005 i D-008 prihvaćeni (A kao vlasnik arhitekture; D-005: C i B; D-008: C i D); usklađeni `architecture.md` §10 (kapije 1, 2 i 4) i §11 (ugovor za buildera: `role`, `accessibilityLabel`) i `tim-plan.md` (C, korak 4)
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `a/align-f1` → `main`
+- PR `a/accept-d005-d008` → `main`
 - kraj F1: obavestiti tim (spisak ispod), čekaju se odgovori za Y1–Y4 i odluke N1–N6 (vidi „Čeka odluku tima“); kapija G1 (proverava D)
 - `contracts/f1`: izmene ugovora koje B, C i D čekaju za F2
 - F2: A10 (Conductor)
@@ -51,8 +53,9 @@ Poslednja izmena: 2026-10-30
 ## Čeka odluku tima
 - review ugovora: B (`scenario.ts`, `ScenarioResult`, `Coverage`), C (`GateResult`, `UnitResult`, potpisi iz P16), D (`ParsedApp`, `AnalyzerReport`, `Plan`, `SplitParts`)
 - pitanja P1–P18 u `docs/tasks/a.md`; P1 i P2 su zapisani kao predlozi D-002 i D-003 u `docs/decisions.md`; P3 i P14 su rešeni kroz D-004; P4 i P5 kroz D-010
-- usklađivanje koje čeka „ok“ jedne osobe: D-005 `role` u `architecture.md` §11 (B), D-001–D-003 i „contracts: samo zod“ u §2 (C), Babel → TypeScript u §10 (tim, D-007/D-008 tačka 1), mesto `sabotage` (B, Q14)
-- usklađivanje koje čeka odluku tima: D-008 tačke 2–3 (`forbiddenApis`, `labels`), B-ovo pravilo 3 („bar jedna“, Q3, Q22), osnova putanja u `writes` (C, PD4), ko sme da prihvati odluku
+- usklađivanje koje čeka „ok“ jedne osobe: D-001–D-003 i „contracts: samo zod“ u §2 (C), D-007 (parser na TypeScript-u; kapije su već usklađene kroz D-008), mesto `sabotage` (B, Q14)
+- usklađivanje koje čeka odluku tima: B-ovo pravilo 3 („bar jedna“, Q3, Q22), osnova putanja u `writes` (C, PD4), ko sme da prihvati odluku
+- uslov iz D-008: `checkDraft` u ugovoru dobija putanje originalnih fajlova jedinice (`contracts/f1`, pre C2.3)
 - cene modela u `config.ts` su prepisane iz wemora-plan §6; pretpostavka da ×5 preko 100k važi za ceo zahtev
 
 ## Blokira me
