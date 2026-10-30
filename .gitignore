@@ -30,3 +30,8 @@ Thumbs.db
 
 # Personal plans (not shared)
 docs/tasks/d.local.md
+
+# Expo sablon (templates/expo)
+templates/expo/node_modules/
+templates/expo/dist/
+templates/expo/.expo/
