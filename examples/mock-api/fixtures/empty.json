@@ -1,0 +1,9 @@
+{
+  "categories": [
+    { "id": "supe", "name": "Supe" },
+    { "id": "glavna-jela", "name": "Glavna jela" },
+    { "id": "salate", "name": "Salate" },
+    { "id": "deserti", "name": "Deserti" }
+  ],
+  "recipes": []
+}

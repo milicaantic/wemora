@@ -1,22 +1,24 @@
 # Status: osoba D
-Faza: F0
+Faza: F1
 Poslednja izmena: 2026-10-30
 
 ## Gotovo (spojeno u main)
-- ništa još
+- D0: review ugovora za moj deo. Tipovi odgovaraju planu, promena ugovora ne treba; nalazi su ispod (PR #4).
+- D1: `examples/todomvc`, React primer iz `tastejs/todomvc` (commit `ff43b02`, MIT), bez izmena koda; `npm ci && npm run build && npm run serve` na portu 7002. Detalji u `examples/todomvc/SOURCE.md` (PR #4).
+- D2: ovaj fajl (PR #4)
 
-## Gotovo, čeka spajanje
-- D0: review ugovora za moj deo (`ParsedApp`, `AnalysisPart`, `AnalyzerReport`, `Obligation`, `Unit`, `Flow`, `Plan`, `ParseApp`, `SplitParts`, `ValidatePlan`, `BuildReport`). Tipovi odgovaraju mom planu; promena ugovora ne treba. Nalazi su ispod.
-- D1: `examples/todomvc`, React primer iz `tastejs/todomvc` (commit `ff43b02`, MIT), bez izmena koda. `npm ci && npm run build && npm run serve` radi na portu 7002. Poreklo, pokretanje i lista interaktivnih elemenata su u `examples/todomvc/SOURCE.md`.
-- D2: ovaj fajl, po šablonu iz `docs/tim-plan.md` §10
+## Gotovo, čeka spajanje (grana `d/recepti`)
+- D3: `examples/mock-api`, HTTP server bez zavisnosti (`node:http`), port 3000 (isti kao `EXPO_PUBLIC_API_URL` u C-ovom šablonu). Rute `GET /api/categories`, `/api/recipes`, `/api/recipes/:id`, kontrolne `GET /__health`, `POST /__fixture { name }`, `POST /__reset`. Fixture `default` (4 kategorije, 12 recepata) i `empty`. Pri pokretanju i sa `npm run check` proverava podatke, uključujući to da nijedno ime ne sadrži drugo. Sve rute ručno proverene curl-om. Uputstvo u `examples/mock-api/README.md`.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/f0` (D0–D2) → review A → spajanje u `main`
-- kapija G0 (proverava A): moja stavka je da se `examples/todomvc` pokreće
-- posle G0: povući `main`, napraviti grane `d/recepti` i `d/parser`, pa D3 (`examples/mock-api`) i D4 (`examples/recepti`)
+- D4: `examples/recepti` (5 ekrana, samo desktop), na istoj grani
+- D5: ručni plan za Recepte
+
+## Odgovor za B
+- **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).
 
 ## Mockovi koje koristim
 - nijedan

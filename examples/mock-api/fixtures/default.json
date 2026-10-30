@@ -1,0 +1,272 @@
+{
+  "categories": [
+    { "id": "supe", "name": "Supe" },
+    { "id": "glavna-jela", "name": "Glavna jela" },
+    { "id": "salate", "name": "Salate" },
+    { "id": "deserti", "name": "Deserti" }
+  ],
+  "recipes": [
+    {
+      "id": "1",
+      "name": "Pileća supa",
+      "categoryId": "supe",
+      "timeMin": 45,
+      "difficulty": "Lako",
+      "servings": 4,
+      "calories": 220,
+      "rating": 4.6,
+      "ingredients": [
+        { "name": "Piletina", "amount": 500, "unit": "g" },
+        { "name": "Šargarepa", "amount": 2, "unit": "kom" },
+        { "name": "Celer", "amount": 1, "unit": "kom" },
+        { "name": "Rezanci", "amount": 100, "unit": "g" }
+      ],
+      "steps": [
+        "Piletinu stavite u lonac sa dva litra hladne vode i prokuvajte.",
+        "Dodajte očišćenu šargarepu i celer i kuvajte 30 minuta na tihoj vatri.",
+        "Izvadite meso, iseckajte ga i vratite u supu.",
+        "Ubacite rezance i kuvajte još 5 minuta."
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Paradajz čorba",
+      "categoryId": "supe",
+      "timeMin": 30,
+      "difficulty": "Lako",
+      "servings": 4,
+      "calories": 180,
+      "rating": 4.2,
+      "ingredients": [
+        { "name": "Paradajz", "amount": 800, "unit": "g" },
+        { "name": "Crni luk", "amount": 1, "unit": "kom" },
+        { "name": "Pavlaka", "amount": 200, "unit": "ml" },
+        { "name": "Brašno", "amount": 2, "unit": "kašika" }
+      ],
+      "steps": [
+        "Na malo ulja propržite sitno seckan crni luk.",
+        "Dodajte oljušten paradajz i kuvajte 15 minuta.",
+        "Izblendajte čorbu i zgusnite je brašnom razmućenim u vodi.",
+        "Pred služenje umešajte pavlaku."
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Riblja čorba",
+      "categoryId": "supe",
+      "timeMin": 90,
+      "difficulty": "Srednje",
+      "servings": 6,
+      "calories": 260,
+      "rating": 4.4,
+      "ingredients": [
+        { "name": "Šaran", "amount": 1000, "unit": "g" },
+        { "name": "Crni luk", "amount": 3, "unit": "kom" },
+        { "name": "Aleva paprika", "amount": 2, "unit": "kašika" },
+        { "name": "Paradajz pire", "amount": 200, "unit": "ml" }
+      ],
+      "steps": [
+        "Crni luk iseckajte i kuvajte u tri litra vode 30 minuta.",
+        "Dodajte ribu isečenu na komade i paradajz pire.",
+        "Umešajte alevu papriku i kuvajte još 40 minuta bez mešanja.",
+        "Posolite po ukusu i služite toplo."
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Sarma",
+      "categoryId": "glavna-jela",
+      "timeMin": 180,
+      "difficulty": "Teško",
+      "servings": 8,
+      "calories": 520,
+      "rating": 4.9,
+      "ingredients": [
+        { "name": "Kiseli kupus", "amount": 1, "unit": "glavica" },
+        { "name": "Mleveno meso", "amount": 1000, "unit": "g" },
+        { "name": "Pirinač", "amount": 150, "unit": "g" },
+        { "name": "Suva rebra", "amount": 300, "unit": "g" },
+        { "name": "Crni luk", "amount": 2, "unit": "kom" }
+      ],
+      "steps": [
+        "Propržite crni luk, dodajte meso i pirinač i kratko dinstajte.",
+        "Svaki list kupusa napunite filom i čvrsto uvijte.",
+        "Sarme složite u šerpu, između njih poređajte suva rebra.",
+        "Nalijte vodom i kuvajte na tihoj vatri tri sata."
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Musaka",
+      "categoryId": "glavna-jela",
+      "timeMin": 75,
+      "difficulty": "Srednje",
+      "servings": 6,
+      "calories": 480,
+      "rating": 4.5,
+      "ingredients": [
+        { "name": "Krompir", "amount": 1000, "unit": "g" },
+        { "name": "Mleveno meso", "amount": 500, "unit": "g" },
+        { "name": "Jaja", "amount": 3, "unit": "kom" },
+        { "name": "Mleko", "amount": 300, "unit": "ml" }
+      ],
+      "steps": [
+        "Krompir oljuštite i isecite na tanke kolutove.",
+        "Meso izdinstajte sa malo luka i začina.",
+        "U pleh ređajte red krompira, red mesa, pa završite krompirom.",
+        "Prelijte umućenim jajima i mlekom i pecite 45 minuta na 200 °C."
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Punjene paprike",
+      "categoryId": "glavna-jela",
+      "timeMin": 90,
+      "difficulty": "Srednje",
+      "servings": 6,
+      "calories": 410,
+      "rating": 4.3,
+      "ingredients": [
+        { "name": "Paprike babure", "amount": 10, "unit": "kom" },
+        { "name": "Mleveno meso", "amount": 600, "unit": "g" },
+        { "name": "Pirinač", "amount": 100, "unit": "g" },
+        { "name": "Paradajz sos", "amount": 500, "unit": "ml" }
+      ],
+      "steps": [
+        "Paprikama izvadite semenke.",
+        "Meso pomešajte sa pirinčem i začinima.",
+        "Napunite paprike i složite ih u šerpu.",
+        "Prelijte paradajz sosom i kuvajte sat vremena."
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Šopska salata",
+      "categoryId": "salate",
+      "timeMin": 10,
+      "difficulty": "Lako",
+      "servings": 2,
+      "calories": 150,
+      "rating": 4.7,
+      "ingredients": [
+        { "name": "Paradajz", "amount": 2, "unit": "kom" },
+        { "name": "Krastavac", "amount": 1, "unit": "kom" },
+        { "name": "Paprika", "amount": 1, "unit": "kom" },
+        { "name": "Beli sir", "amount": 100, "unit": "g" }
+      ],
+      "steps": [
+        "Povrće operite i isecite na kocke.",
+        "Posolite i prelijte uljem.",
+        "Pospite izrendanim belim sirom."
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Srpska salata",
+      "categoryId": "salate",
+      "timeMin": 10,
+      "difficulty": "Lako",
+      "servings": 2,
+      "calories": 90,
+      "rating": 4.1,
+      "ingredients": [
+        { "name": "Paradajz", "amount": 2, "unit": "kom" },
+        { "name": "Krastavac", "amount": 1, "unit": "kom" },
+        { "name": "Crni luk", "amount": 1, "unit": "kom" },
+        { "name": "Ulje", "amount": 2, "unit": "kašika" }
+      ],
+      "steps": [
+        "Paradajz i krastavac isecite na kriške.",
+        "Dodajte crni luk isečen na polukrugove.",
+        "Posolite i prelijte uljem."
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ruska salata",
+      "categoryId": "salate",
+      "timeMin": 40,
+      "difficulty": "Srednje",
+      "servings": 6,
+      "calories": 350,
+      "rating": 4,
+      "ingredients": [
+        { "name": "Krompir", "amount": 500, "unit": "g" },
+        { "name": "Šargarepa", "amount": 2, "unit": "kom" },
+        { "name": "Grašak", "amount": 200, "unit": "g" },
+        { "name": "Majonez", "amount": 250, "unit": "g" }
+      ],
+      "steps": [
+        "Skuvajte krompir, šargarepu i grašak.",
+        "Ohlađeno povrće isecite na sitne kocke.",
+        "Umešajte majonez i ostavite u frižider sat vremena."
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Palačinke",
+      "categoryId": "deserti",
+      "timeMin": 30,
+      "difficulty": "Lako",
+      "servings": 4,
+      "calories": 300,
+      "rating": 4.8,
+      "ingredients": [
+        { "name": "Brašno", "amount": 250, "unit": "g" },
+        { "name": "Mleko", "amount": 500, "unit": "ml" },
+        { "name": "Jaja", "amount": 2, "unit": "kom" },
+        { "name": "Šećer", "amount": 1, "unit": "kašika" }
+      ],
+      "steps": [
+        "Umutite jaja sa mlekom i šećerom.",
+        "Postepeno dodajte brašno i mutite dok smesa ne bude glatka.",
+        "Pecite tanke palačinke u zagrejanom tiganju."
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Vasina torta",
+      "categoryId": "deserti",
+      "timeMin": 120,
+      "difficulty": "Teško",
+      "servings": 12,
+      "calories": 560,
+      "rating": 4.6,
+      "ingredients": [
+        { "name": "Orasi", "amount": 300, "unit": "g" },
+        { "name": "Šećer", "amount": 250, "unit": "g" },
+        { "name": "Jaja", "amount": 6, "unit": "kom" },
+        { "name": "Čokolada", "amount": 200, "unit": "g" },
+        { "name": "Pomorandža", "amount": 1, "unit": "kom" }
+      ],
+      "steps": [
+        "Od belanaca, šećera i oraha ispecite koru.",
+        "Žumanca kuvajte na pari sa šećerom i čokoladom.",
+        "U ohlađen fil umešajte rendanu koru pomorandže.",
+        "Filujte koru i ostavite tortu da se hladi preko noći."
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Tufahije",
+      "categoryId": "deserti",
+      "timeMin": 60,
+      "difficulty": "Srednje",
+      "servings": 6,
+      "calories": 380,
+      "rating": 4.4,
+      "ingredients": [
+        { "name": "Jabuke", "amount": 6, "unit": "kom" },
+        { "name": "Orasi", "amount": 150, "unit": "g" },
+        { "name": "Šećer", "amount": 300, "unit": "g" },
+        { "name": "Šlag", "amount": 200, "unit": "ml" }
+      ],
+      "steps": [
+        "Jabuke oljuštite i izdubite im sredinu.",
+        "Kuvajte ih u šećernom sirupu dok ne omekšaju.",
+        "Napunite ih mlevenim orasima.",
+        "Ohlađene prelijte sirupom i ukrasite šlagom."
+      ]
+    }
+  ]
+}
