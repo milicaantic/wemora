@@ -164,8 +164,8 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - **bez testova nema zelenog**: ekran bez testova čeka (timeout iz `core/config.ts`)
 - događaji nose samo ID-jeve; rezultat ide u `results/<unitId>.json`
 **Gotovo kada:**
-- [ ] test nad lažnim događajima: dva nacrta u isto vreme se proveravaju jedan za drugim
-- [ ] test: nacrt bez testova ne biva promovisan
+- [x] test nad lažnim događajima: dva nacrta u isto vreme se proveravaju jedan za drugim
+- [x] test: nacrt bez testova ne biva promovisan
 **PR:** `c/gatekeeper-participant`
 
 ### Integracija (svi)

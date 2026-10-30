@@ -1,0 +1,156 @@
+import { mkdtempSync, readFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
+import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
+import { beforeAll, describe, expect, it } from "vitest"
+import { PlanSchema, UnitResultSchema, type CheckDraft, type CheckDraftInput, type GateResult, type RunConfig, type Scenario } from "../contracts"
+import { initLog } from "../core/log"
+import { MockRunner } from "../core/runner"
+import { board, emit, initializeRuntime, join } from "../core/runtime"
+import { createInitialState } from "../core/state"
+import { createGatekeeper } from "./gatekeeperParticipant"
+
+// Svi testovi koji traže runtime su u ovom fajlu: Mozaik dozvoljava jedan runtime po procesu.
+
+const plan = PlanSchema.parse(JSON.parse(readFileSync("examples/recepti/wemora/plan.manual.json", "utf8")))
+const test = (unitId: string): Scenario => ({ id: `${unitId}-t1`, unitId, obligation: "o", steps: [{ goto: "/" }] })
+
+// Lažni checkDraft: beleži preklapanja, pada za jedinice iz `failFor`, baca za `throwFor`.
+const calls: { unitId: string; round: number; draftDir: string; tests: number }[] = []
+let active = 0
+let maxActive = 0
+const failFor = new Set<string>()
+const throwFor = new Set<string>()
+const fakeCheck: CheckDraft = async ({ unit, round, draftDir, tests }: CheckDraftInput) => {
+  active++
+  maxActive = Math.max(maxActive, active)
+  calls.push({ unitId: unit.id, round, draftDir, tests: tests.length })
+  await new Promise((r) => setTimeout(r, 30))
+  active--
+  if (throwFor.has(unit.id)) throw new Error("export pukao")
+  const g = (gate: GateResult["gate"], ok: boolean, message: string): GateResult => ({ unitId: unit.id, round, gate, ok, message })
+  return failFor.has(unit.id)
+    ? [g("parse", true, "ok"), g("labels", false, 'nema elementa sa accessibilityLabel "Pretraga"')]
+    : [g("parse", true, "ok"), g("scenarios", true, "ok")]
+}
+
+class AnyOf extends SituationSpecification {
+  isSatisfiedBy({ event }: SituationContext): boolean {
+    return event.type === "gate.failed" || event.type === "unit.promoted"
+  }
+}
+
+const outcomes: { type: string; unitId: string; round?: number }[] = []
+let runDir = ""
+let builder: Participant
+
+function waitFor(type: string, unitId: string, ms = 5_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const started = Date.now()
+    const tick = () => {
+      if (outcomes.some((o) => o.type === type && o.unitId === unitId)) return resolve()
+      if (Date.now() - started > ms) return reject(new Error(`nema ${type} za ${unitId}`))
+      setTimeout(tick, 10)
+    }
+    tick()
+  })
+}
+
+const submit = (unitId: string, round = 1) => {
+  board().units[unitId] = { status: "building", round, model: null, builderId: "builder-7", testerId: null, testAttempts: 0 }
+  emit("draft.submitted", { unitId, round }, builder.getId())
+}
+
+beforeAll(() => {
+  runDir = mkdtempSync(path.join(tmpdir(), "wemora-gk-"))
+  initLog(runDir)
+  const config: RunConfig = { webDir: "examples/recepti", runDir, maxBuilders: 2, maxTesters: 1, budgetUsd: 0, mock: true }
+  const state = createInitialState("gatekeeper-test", config)
+  state.plan = plan
+  initializeRuntime({ state, inferenceRunnerConfig: { runner: new MockRunner({}) } })
+
+  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck, testsWaitTimeoutMs: 150 }))
+  builder = createHuman({ name: "builder-7", capabilities: [], handlers: [] })
+  join(builder)
+  join(
+    createHuman({
+      name: "listener",
+      capabilities: [],
+      handlers: [
+        {
+          specification: new AnyOf(),
+          processor: { apply: ({ event }) => void outcomes.push({ type: event.type, ...(event.payload as { unitId: string; round?: number }) }) },
+        },
+      ],
+    }),
+  )
+})
+
+describe("Gatekeeper-učesnik", () => {
+  it("dva nacrta u isto vreme se proveravaju jedan za drugim", async () => {
+    board().tests["recipe-list"] = [test("recipe-list")]
+    board().tests["categories"] = [test("categories")]
+    maxActive = 0
+    submit("recipe-list")
+    submit("categories")
+    await waitFor("unit.promoted", "recipe-list")
+    await waitFor("unit.promoted", "categories")
+    expect(maxActive).toBe(1)
+    expect(calls.filter((c) => ["recipe-list", "categories"].includes(c.unitId)).map((c) => c.unitId)).toEqual(["recipe-list", "categories"])
+    expect(calls[0]!.draftDir).toBe(path.join(runDir, "staging", "builder-7", "recipe-list"))
+  })
+
+  it("nacrt bez testova ne biva promovisan: čeka, pa posle timeout-a gate.failed", async () => {
+    submit("favorites")
+    await waitFor("gate.failed", "favorites")
+    expect(outcomes.some((o) => o.type === "unit.promoted" && o.unitId === "favorites")).toBe(false)
+    expect(calls.some((c) => c.unitId === "favorites")).toBe(false)
+    const result = UnitResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "favorites.json"), "utf8")))
+    expect(result.status).toBe("failed")
+    expect(result.gates[0]!.message).toContain("nema validiranih testova")
+  })
+
+  it("tests.ready pušta nacrt koji je čekao testove", async () => {
+    submit("recipe-detail")
+    await new Promise((r) => setTimeout(r, 30))
+    expect(calls.some((c) => c.unitId === "recipe-detail")).toBe(false)
+    board().tests["recipe-detail"] = [test("recipe-detail")]
+    emit("tests.ready", { unitId: "recipe-detail" }, builder.getId())
+    await waitFor("unit.promoted", "recipe-detail")
+    expect(calls.find((c) => c.unitId === "recipe-detail")?.tests).toBe(1)
+  })
+
+  it("zajednička jedinica ne čeka testove", async () => {
+    submit("data")
+    await waitFor("unit.promoted", "data")
+    expect(board().results["data"]!.status).toBe("unproven")
+  })
+
+  it("pad kapije: rezultat na tabli i na disku, pa gate.failed sa rundom", async () => {
+    failFor.add("shopping-list")
+    board().tests["shopping-list"] = [test("shopping-list")]
+    submit("shopping-list", 2)
+    await waitFor("gate.failed", "shopping-list")
+    expect(outcomes.find((o) => o.type === "gate.failed" && o.unitId === "shopping-list")?.round).toBe(2)
+    const result = UnitResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "shopping-list.json"), "utf8")))
+    expect(result).toMatchObject({ status: "failed", rounds: 2 })
+    expect(result.reason).toBe('labels: nema elementa sa accessibilityLabel "Pretraga"')
+    // Conductor iz table čita poruku za sledeću rundu
+    expect(board().results["shopping-list"]!.gates.find((g) => !g.ok)?.message).toContain("Pretraga")
+  })
+
+  it("promovisan ekran sa testovima: status iz computeStatus (bez pokrivenosti → partial)", async () => {
+    expect(board().results["recipe-list"]!.status).toBe("partial")
+  })
+
+  it("greška u proveri ne ruši učesnika: gate.failed i red ide dalje", async () => {
+    throwFor.add("layout")
+    submit("layout")
+    await waitFor("gate.failed", "layout")
+    expect(board().results["layout"]!.gates[0]!.message).toContain("export pukao")
+    throwFor.delete("layout")
+    submit("layout", 2)
+    await new Promise((r) => setTimeout(r, 100))
+    expect(outcomes.filter((o) => o.unitId === "layout").map((o) => o.type)).toEqual(["gate.failed", "unit.promoted"])
+  })
+})

@@ -19,7 +19,12 @@ Faza: F2
   - spisak promovisanih jedinica (za regresiju) čuva Gatekeeper u memoriji, u okviru prolaza
   - testovi: lažni `runScenarios` (7 slučajeva) + G1 test sada ide kroz pravi `checkDraft`
   - usput (D-015): builder koristi `OwnershipGuard` sa listom (`layout` sme i `app/_layout.tsx`); `roundsExhausted` izbačen iz testova statusa
-- sledeće: C2.4 Gatekeeper-učesnik
+- C2.4 Gatekeeper-učesnik: gotovo na grani `c/gatekeeper-participant` (napravljena od `c/check-draft`), čeka PR
+  - `src/agents/gatekeeperParticipant.ts`: `createGatekeeper(id) → Participant` (`createHuman`, handleri po `event.type`)
+  - `draft.submitted` → red čekanja, nacrti jedan po jedan; ekran bez testova čeka `tests.ready`, posle `testsWaitTimeoutMs` → `gate.failed` (bez promocije; „posle drugog timeouta kao unproven“ je C3.2)
+  - rezultat: tabla + `results/<unitId>.json` (`UnitResult`), pa `gate.failed { unitId, round }` ili `unit.promoted { unitId }`; status promovisanog ekrana iz `computeStatus`
+  - **za A:** u `src/orchestration/agents.ts` zameniti `gatekeeper: notYet(...)` sa `gatekeeper: createGatekeeper` (uvoz iz `../agents/gatekeeperParticipant`)
+- sledeće: integracija (`npm run migrate:mock -- examples/todomvc`), čeka A12 i jedan ID ekrana za TodoMVC (D)
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.
