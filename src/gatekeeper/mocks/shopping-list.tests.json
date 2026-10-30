@@ -1,0 +1,24 @@
+[
+  {
+    "id": "shopping-list-add-item",
+    "unitId": "shopping-list",
+    "obligation": "add-item",
+    "steps": [
+      { "goto": "/kupovina" },
+      { "fill": { "label": "Namirnica", "value": "Hleb" } },
+      { "tap": { "role": "button", "name": "Dodaj" } },
+      { "expectVisible": { "text": "Hleb" } },
+      { "expectVisible": { "text": "Kupljeno: 0 od 1" } },
+      { "expectNotVisible": { "text": "Lista za kupovinu je prazna" } }
+    ]
+  },
+  {
+    "id": "shopping-list-empty",
+    "unitId": "shopping-list",
+    "obligation": "empty-state",
+    "steps": [
+      { "goto": "/kupovina" },
+      { "expectVisible": { "text": "Lista za kupovinu je prazna" } }
+    ]
+  }
+]

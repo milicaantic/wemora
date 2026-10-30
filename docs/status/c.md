@@ -7,15 +7,16 @@ Faza: F1
 - C1.2 Merenje exporta (PR #9): statički web export svuda (D-006)
 
 ## U radu
-- C1.3 `scaffold()`: gotovo na grani `c/scaffold`, čeka PR
-  - ruta po ekranu iz `routeMap` (`/recepti/[id]` → `src/app/recepti/[id].tsx`), prazan ekran u `src/screens/<id>/`, prazan `src/shared/<id>/`
-  - `node_modules` u aplikaciji je link na `templates/expo/node_modules` (ne kopija)
-  - šablon: zaglavlje `Stack`-a sakriveno, da prazan ekran nema tekst (ime rute)
-  - ručno provereno: 5 ruta Recepata se otvara, sve prazne
-- sledeće: C1.4 kapije 1–4
+- C1.3 `scaffold()`: na grani `c/scaffold` (pushovano), čeka PR
+- C1.4 kapije 1–4: gotovo na grani `c/gates` (napravljena od `c/scaffold`), čeka PR
+  - `src/gatekeeper/gates/`: `runGates()` pušta parse → forbiddenApis → tsc → labels, staje na prvoj grešci
+  - odluka D-008 (predlog): TypeScript umesto Babela; `labels` proverava samo tekst koji postoji u originalu
+  - testovi kapija 3–4 traže `npm install` u `templates/expo` (inače se preskaču); traju ~25 s
+- sledeće: C1.5 `promote`, `rollback`, `serveApp`
 
 ## Mockovi koje koristim
-- nema: test koristi D-ov `examples/recepti/wemora/plan.manual.json`
+- `src/gatekeeper/mocks/drafts.ts` (dobri/loši nacrti) i `shopping-list.tests.json` (ručni testovi)
+- scaffold i kapije koriste D-ov `examples/recepti/wemora/plan.manual.json`
 
 ## Blokira me
 - ništa (B treba da potvrdi D-005: obavezan `role` u ugovoru za buildera)

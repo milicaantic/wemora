@@ -110,3 +110,14 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: `parseApp` (`src/analysis/`) parsira `.js`, `.jsx`, `.ts` i `.tsx` sa `typescript` paketom (`ts.createSourceFile`, a za sintaksne greške `ts.transpileModule` sa `reportDiagnostics`). Nova zavisnost ne treba.
 - Zašto: `typescript` je već u `package.json` i koristi ga `scripts/check-layers.ts`. `wemora-plan.md` §6 kaže „ts-morph ili Babel“, ali oba bi bila nova zavisnost za isti posao. Kapija `parse` (C, `architecture.md` §10) može da ostane na Babel-u ili da koristi isti API; to je odluka C.
 - Posledice: `typescript` se koristi i u toku rada, ne samo pri proveri tipova. Sada je u `devDependencies`, kao i `tsx` kojim se CLI pokreće, pa se ništa ne lomi; ako tim odluči da pravi produkcioni paket, `typescript` prelazi u `dependencies`.
+
+## D-008: Kapije 1–4 čitaju kod TypeScriptom; `labels` proverava samo tekst koji postoji u originalu
+- Datum: 2026-10-30
+- Ko: C
+- Status: predlog (čeka potvrdu tima; `architecture.md` §10 kaže „Babel parsira“)
+- Odluka:
+  1. Kapije `parse`, `forbiddenApis` i `labels` čitaju nacrt TypeScript compiler API-jem (kao parser u D-007), ne Babelom. Kapija `tsc` koristi TypeScript iz šablona (`templates/expo`), nad privremenom kopijom `app/` sa nacrtom.
+  2. `forbiddenApis` odbija **svaki** JSX tag malim slovom (`div`, `span`, `p`, `button`, `input`…), jer u RN nema HTML elemenata, i za svaki predlaže RN zamenu.
+  3. `labels` proverava labelu polja (`fill.label`), naziv elementa sa ulogom (`tap { role, name }`) i tekst (`tap { text }`, `expectVisible`) **samo ako se ta vrednost doslovno pojavljuje u originalnom web kodu jedinice** (`Unit.sources`). Ostalo dolazi iz podataka i preskače se. Traži se u nacrtu i u `app/src/shared/` (već promovisane zajedničke jedinice). `expectNotVisible` se ne proverava.
+- Zašto: (1) Babel nije u glavnom `package.json`, a TypeScript jeste; isti parser kao D-007. (2) `div` i `span` iz `architecture.md` su samo primeri; svaki HTML tag ruši RN. (3) Testovi sadrže tekst iz podataka („Sarma“, „Kupljeno: 0 od 1“, „Dodaj u omiljene: Sarma“) koji nikad ne može da bude u kodu ekrana; bez ovog pravila kapija bi odbijala dobre nacrte.
+- Posledice: `architecture.md` §10 („Babel parsira“) treba uskladiti (A). `checkDraft` (C2.3) mora da prosledi apsolutne putanje `Unit.sources`.
