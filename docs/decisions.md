@@ -102,6 +102,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   - `serveApp` (C1.5): export + mali statički server sa SPA rezervom (nepoznata putanja → `index.html`), primer u `templates/spike-a/check.ts`.
   - Prvi export u prolazu traje ~50 s (hladan keš). Keš je zajednički za sve foldere, pa ga treba „zagrejati“ jednom na početku prolaza, npr. odmah posle `scaffold()`.
   - Nikad ne pozivati export sa `--clear` u Gatekeeperu.
+  - Napomena (D-009): red „nov folder, postojeći keš ~12 s“ ne važi; taj export je davao aplikaciju bez ruta. Svaka aplikacija sada ima svoj keš.
 
 ## D-007: Parser koristi TypeScript compiler API, ne Babel ni ts-morph
 - Datum: 2026-10-30
@@ -121,3 +122,13 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   3. `labels` proverava labelu polja (`fill.label`), naziv elementa sa ulogom (`tap { role, name }`) i tekst (`tap { text }`, `expectVisible`) **samo ako se ta vrednost doslovno pojavljuje u originalnom web kodu jedinice** (`Unit.sources`). Ostalo dolazi iz podataka i preskače se. Traži se u nacrtu i u `app/src/shared/` (već promovisane zajedničke jedinice). `expectNotVisible` se ne proverava.
 - Zašto: (1) Babel nije u glavnom `package.json`, a TypeScript jeste; isti parser kao D-007. (2) `div` i `span` iz `architecture.md` su samo primeri; svaki HTML tag ruši RN. (3) Testovi sadrže tekst iz podataka („Sarma“, „Kupljeno: 0 od 1“, „Dodaj u omiljene: Sarma“) koji nikad ne može da bude u kodu ekrana; bez ovog pravila kapija bi odbijala dobre nacrte.
 - Posledice: `architecture.md` §10 („Babel parsira“) treba uskladiti (A). `checkDraft` (C2.3) mora da prosledi apsolutne putanje `Unit.sources`.
+
+## D-009: Svaka Expo aplikacija ima svoj Metro keš
+- Datum: 2026-10-30
+- Ko: C
+- Status: prihvaćeno (C; popravka greške, ne menja ugovore)
+- Odluka: `templates/expo/metro.config.js` postavlja Metro keš u `<app>/.expo/metro-cache`, umesto zajedničkog keša u sistemskom `tmp`.
+- Zašto: aplikacije iz `scaffold()` dele `node_modules` šablona preko linka. Sa zajedničkim kešom, export nove aplikacije (novi folder) uzima iz keša spisak ruta **prethodne** aplikacije: export uspeva, ali stranica javlja „No routes found“ i nijedan ekran se ne otvara. Sa `--clear` radi, bez njega ne. Uhvatio ga je zajednički G1 test (`src/gatekeeper/g1.test.ts`).
+- Posledice:
+  - prvi export nove aplikacije je hladan (~50–100 s), sledeći nad istom aplikacijom ~6 s (D-006 i dalje važi: Gatekeeper ceo prolaz koristi isti `app/`);
+  - `npm test` traje ~2,5 min zbog jednog hladnog exporta u G1 testu; testovi za `serveApp` su spojeni u isti fajl da se keš zagreva jednom.
