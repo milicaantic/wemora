@@ -26,7 +26,6 @@ const input = (over: Partial<StatusInput>): StatusInput => ({
   tests: [test("add-item"), test("empty-state")],
   results: [result("add-item", true), result("empty-state", true)],
   coverage: FULL,
-  roundsExhausted: false,
   ...over,
 })
 
@@ -61,11 +60,6 @@ describe("computeStatus", () => {
     expect(computeStatus(input({ results: [result("add-item", true)] }))).toBe("failed")
   })
 
-  it("failed i kad runde nisu potrošene (roundsExhausted ne menja status)", () => {
-    const results = [result("add-item", false), result("empty-state", true)]
-    expect(computeStatus(input({ results, roundsExhausted: false }))).toBe("failed")
-    expect(computeStatus(input({ results, roundsExhausted: true }))).toBe("failed")
-  })
 
   it("važi poslednji rezultat istog testa", () => {
     const passedLater = [result("add-item", false), result("add-item", true), result("empty-state", true)]
@@ -86,12 +80,10 @@ describe("computeStatus", () => {
 })
 
 describe("nula testova NIKAD nije proven", () => {
-  it("ni sa savršenom pokrivenošću, uspešnim rezultatima i potrošenim rundama", () => {
-    for (const roundsExhausted of [true, false]) {
-      for (const coverage of [FULL, null]) {
-        const status = computeStatus({ tests: [], results: [result("add-item", true)], coverage, roundsExhausted })
-        expect(status).toBe("unproven")
-      }
+  it("ni sa savršenom pokrivenošću i uspešnim rezultatima", () => {
+    for (const coverage of [FULL, null]) {
+      const status = computeStatus({ tests: [], results: [result("add-item", true)], coverage })
+      expect(status).toBe("unproven")
     }
   })
 })

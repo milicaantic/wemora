@@ -1,6 +1,6 @@
 // Kapija G1, „prvi zajednički test“ (B + C), mali ceo put bez AI-ja:
-// scaffold za Recepte → ručno napisan RN ekran prolazi kapije 1–4 → promote → serveApp →
-// B-ov scenario "dodaj namirnicu" (runScenarios, telefon 390×844) prolazi.
+// scaffold za Recepte → ručno napisan RN ekran ide kroz pravi checkDraft: kapije 1–4 → promote →
+// serveApp → B-ov scenario "dodaj namirnicu" (runScenarios, telefon 390×844) prolazi.
 // Kontrola: isti scenario pada nad praznim ekranom, pa znamo da stvarno nešto proverava.
 // Ovde su i testovi za serveApp: jedna aplikacija, pa se Metro keš zagreva samo jednom (D-009).
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
@@ -11,8 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { PlanSchema, ScenarioSchema, type Scenario } from "../contracts"
 import { scaffold } from "../scaffold/index"
 import { runScenarios } from "../scenarios/index"
-import { runGates } from "./gates/index"
-import { promote, serveApp } from "./index"
+import { checkDraft, serveApp } from "./index"
 import { GOOD, SCREEN_FILE } from "./mocks/drafts"
 
 const root = (p: string) => fileURLToPath(new URL(`../../${p}`, import.meta.url))
@@ -67,24 +66,23 @@ describe.skipIf(!hasTemplateModules)("G1: B-ov scenario preko C-ovog serveApp na
     expect((await runOnApp()).ok).toBe(false)
   }, 240_000)
 
-  it("ručni ekran prolazi kapije 1–4, ide u app/ i B-ov scenario prolazi", async () => {
-    const gates = await runGates({
+  it("ručni ekran ide kroz pravi checkDraft (kapije 1–5) i ostaje u app/", async () => {
+    const results = await checkDraft({
+      unit: plan.units.find((u) => u.id === "shopping-list")!,
+      round: 1,
       draftDir,
-      appDir: join(run, "app"),
       tests: [addItem],
-      originalFiles: [root("examples/recepti/src/pages/ShoppingListPage.tsx")],
+      webDir: root("examples/recepti"),
     })
-    expect(gates.map((g) => [g.gate, g.ok])).toEqual([
+    expect(results.find((r) => !r.ok)?.message).toBeUndefined()
+    expect(results.map((r) => [r.gate, r.ok])).toEqual([
       ["parse", true],
       ["forbiddenApis", true],
       ["tsc", true],
       ["labels", true],
+      ["scenarios", true],
     ])
-
-    await promote("shopping-list", draftDir)
-    const result = await runOnApp()
-    expect(result.error).toBeUndefined()
-    expect(result.ok).toBe(true)
+    expect(readFileSync(join(run, "app/src/screens/shopping-list/index.tsx"), "utf8")).toBe(GOOD)
   }, 240_000)
 })
 

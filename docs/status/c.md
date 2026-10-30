@@ -12,15 +12,14 @@ Faza: F2
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- C2.1 promptovi: spojeno (PR #33); čeka se B-ova potvrda ugovora o labelama
-- AsyncStorage u šablonu: PR #32, čeka review
-- C2.2 agent builder: gotovo na grani `c/builder`, čeka PR
-  - `src/agents/builder.ts`: `createBuilder(id)` → `AgentHandle<BuildTask>`; nacrt u `output/<run>/staging/<builderId>/<unitId>/`; svež kontekst po rundi; alati `read_source`, `read_app` (app sa primenjenim nacrtom), `write_file` (OwnershipGuard), `check_draft` (kapije 1–4, samo poruke), `submit_draft`
-  - ako model ne pozove `submit_draft`, nacrt se ipak predaje kad se petlja završi (da Conductor ne čeka timeout)
-  - `gatekeeper/index.ts` sada izvozi `runGates` (za `check_draft`)
-  - **za A (A12):** MockRunner primeri u `src/agents/mocks/todomvc/builder.json`: `builder:todo-list:1` (fali labela „New Todo Input“), `builder:todo-list:2` (popravka), `builder` (rezervni); ključ `todo-list` preimenovati ako lažni arhitekta koristi drugi ID
-  - **za A:** `OwnershipGuard` prima jedan prefiks; jedinica `layout` po PD3 treba i `app/_layout.tsx`. Predlog: `new OwnershipGuard(["shared/layout/", "app/_layout.tsx"])`. Do tada `layout` piše samo u `shared/layout/`.
-- sledeće: C2.3 `checkDraft` (čeka `contracts/f1` od A: `unit`, `round`, `webDir`)
+- C2.3 `checkDraft`: gotovo na grani `c/check-draft`, čeka PR
+  - `src/gatekeeper/check.ts`: ekran → kapije 1–4 → promote → kapija 5 (`runScenarios`, 390×844, namerne razlike jedinice) → regresija (testovi svih već promovisanih jedinica) → rollback ako 5 ili regresija padne; zajednička jedinica → kapije 1–3 → promote → regresija
+  - nacrt se privremeno ubacuje pre kapije 5, pa jedan web export nad istim `app/` (topao keš) služi i kapiji 5 i regresiji; rollback vraća `app/` tačno
+  - ekran bez testova ulazi kao nedokazan (C3.2); regresija javlja `brokenTests`
+  - spisak promovisanih jedinica (za regresiju) čuva Gatekeeper u memoriji, u okviru prolaza
+  - testovi: lažni `runScenarios` (7 slučajeva) + G1 test sada ide kroz pravi `checkDraft`
+  - usput (D-015): builder koristi `OwnershipGuard` sa listom (`layout` sme i `app/_layout.tsx`); `roundsExhausted` izbačen iz testova statusa
+- sledeće: C2.4 Gatekeeper-učesnik
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.

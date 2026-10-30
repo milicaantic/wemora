@@ -154,8 +154,8 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 **Redosled:** kapije 1–4 → kapija 5 `scenarios` (B-ov `runScenarios()` nad Expo web buildom sa nacrtom, viewport 390×844) → `promote` u `app/` → regresija (testovi svih već promovisanih jedinica) → `rollback` ako regresija padne.
 **Zajedničke jedinice (talas 0):** samo kapije 1–3 (i opciono 6), bez UI testova.
 **Gotovo kada:**
-- [ ] vraća `GateResult[]` sa porukom koju builder razume; kod regresije i listu pokvarenih testova
-- [ ] test sa mockom `runScenarios` (dok B ne spoji pravi)
+- [x] vraća `GateResult[]` sa porukom koju builder razume; kod regresije i listu pokvarenih testova
+- [x] test sa mockom `runScenarios` (dok B ne spoji pravi)
 
 ### C2.4 `agents/gatekeeperParticipant.ts`
 **Šta:** deterministički učesnik (`createHuman`, handleri filtriraju po `event.type`). Na `draft.submitted` pušta `checkDraft` i šalje `gate.failed { unitId, round }` ili `unit.promoted { unitId }`. Na `tests.ready` beleži da jedinica može da se proverava.
