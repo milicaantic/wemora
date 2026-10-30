@@ -5,15 +5,17 @@ Poslednja izmena: 2026-10-30
 ## Gotovo (spojeno u main)
 - F0 (PR #3): `docs/tasks/b.md`, folderi, B0 (review ugovora, potvrda D-001–D-003), B1 (`playwright@1.64.1`)
 - B2 + B3 (PR #7): `scenarios/compile.ts`, `run.ts` (`runScenarios`), `serve.ts` (`serveStatic`)
+- B4 + B5 (PR #11): `validate.ts` (`validateScenario`), `interactive.ts` (`extractInteractive`), `mocks/blank/`, 3 ručna scenarija za Recepte u `mocks/recepti/` (ručno provereni nad Receptima), popravka `expectNotVisible` dok se ekran učitava
 
-## Gotovo, čeka PR (grana `b/validate-setup`)
-- B4 `scenarios/validate.ts`: `validateScenario()` (izvoz kroz `index.ts`), sa 3 pravila (vidi „Odluke“). `createValidateScenario(run)` za testove. Razlozi odbijanja su pisani za model testera.
-- B4 `mocks/blank/index.html`: prazan ekran za F1 (u F2 ga menja placeholder iz C-ovog scaffolda, B9).
-- B4 `mocks/recepti/*.json`: 3 ručna scenarija — `recipe-list/search-by-name`, `favorites/shows-favorites` (sa `setup`), `shopping-list/add-item`. **Ručno provereno nad pokrenutim Receptima (G1):** sva 3 prolaze `runScenarios` i `validateScenario`; slabija verzija pretrage (bez provere koja se menja) je odbijena.
-- B5 `scenarios/interactive.ts`: `extractInteractive()` iz ARIA snapshota (desktop). Nad Receptima `/` daje 9 elemenata, `/kupovina` 2. (B5 je po dogovoru u ovoj grani, a ne u `b/interactive-coverage` uz B6.)
-- B3 popravka u `run.ts`: `expectNotVisible` čeka da mreža utihne (300 ms bez zahteva), jer je inače lažno prolazio dok ekran prikazuje „Učitavanje…“. Nađeno ručnom proverom nad Receptima; dodat test sa zakasnelim podacima.
-- `scenarios/viewports.ts`: `DESKTOP` 1280×800, `MOBILE` 390×844.
-- Testovi: 59 u celom repou (scenarios 38), stabilni u 3 uzastopna puštanja.
+## Gotovo, čeka PR (grana `b/interactive-coverage`)
+- B6 `scenarios/coverage.ts`: `computeCoverage()` (izvoz kroz `index.ts`). Obaveze pokrivene po `scenario.obligation`; element je pokriven ako ga koristi `tap` ili `fill` (i u `setup`), po istom pravilu poklapanja kao izvršilac (`compile.ts` sada izvozi `actedOn`, `toTarget`, `sameElement`). `notPortable` elementi nikad nisu „missing“. Svaki element je u tačno jednoj od tri liste. Scenariji drugih jedinica se ne računaju; `movedTo` još ne utiče (Q6).
+- Testovi: `coverage.test.ts` (3), uključujući D-ov plan za Recepte i elemente koje je B5 izvukao iz pokrenutih Recepata. Ceo repo: 123 testa.
+- B7 (G1, ručno, bez PR-a): **ceo put bez AI-ja radi.** Scenario `shopping-list/add-item`:
+  1. prolazi `validateScenario` (original: pokrenuti Recepti; prazan ekran: RN placeholder kao iz scaffolda, Expo web export);
+  2. prolazi nad ručno napisanim RN ekranom (`TextInput accessibilityLabel`, `Pressable role="button"`, `role="list"`), Expo web export, 390×844;
+  3. pada nad placeholderom sa porukom `fill field labelled "Namirnica": not found on screen within 5000 ms`;
+  4. `computeCoverage` za `shopping-list`: 1/4 obaveze, 2/2 elementa.
+  - **Napomena:** C-ov `serveApp()` još nije spojen, pa je umesto njega korišćen isti put po D-006 (`expo export --platform web` + moj `serveStatic`). Kad C spoji `serveApp`, proveru treba ponoviti sa njim. RN ekran je bio u privremenom folderu, ne u repou.
 
 ## Odluke (B4/B5, dogovoreno sa B; tim još treba da potvrdi)
 - **Pravilo 3** (`architecture.md` §11): za svaku radnju (`tap`/`fill`) iza koje slede provere, **bar jedna** od tih provera mora da padne kad se pusti pre radnje. Doslovno čitanje („svaka provera“) odbija i primer iz `wemora-plan.md` §4.1. Radnje su samo `tap` i `fill`, ne `goto`. Treba zapis u `docs/decisions.md`.
@@ -26,8 +28,8 @@ Poslednja izmena: 2026-10-30
 - ništa
 
 ## Sledeće
-- B6 `computeCoverage()` (PR `b/interactive-coverage`)
-- B7 zajednički test sa C (G1): moj scenario preko C-ovog `serveApp()` nad ručnim RN ekranom
+- F1 je za B završen. Posle G1: B8 agent tester (F2), čim A spoji `agents/_shared/` (A8) i `MockRunner` (A7)
+- ponoviti B7 sa C-ovim `serveApp()` kad bude spojen
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
