@@ -1,0 +1,76 @@
+{
+  "architect": [
+    {
+      "json": {
+        "units": [
+          {
+            "id": "app-entry",
+            "kind": "shared",
+            "wave": 0,
+            "sources": ["src/index.js"],
+            "writes": [],
+            "dependsOn": [],
+            "obligations": [],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "todo-list",
+            "kind": "screen",
+            "wave": 1,
+            "route": "*",
+            "sources": [
+              "src/todo/app.css",
+              "src/todo/app.jsx",
+              "src/todo/components/footer.jsx",
+              "src/todo/components/header.jsx",
+              "src/todo/components/input.jsx",
+              "src/todo/components/item.jsx",
+              "src/todo/components/main.jsx",
+              "src/todo/constants.js",
+              "src/todo/reducer.js"
+            ],
+            "writes": [],
+            "dependsOn": ["app-entry"],
+            "obligations": [
+              {
+                "id": "empty-state",
+                "description": "With no todos the screen shows the heading 'todos' and the field 'New Todo Input', and no 'items left!' counter."
+              },
+              {
+                "id": "add-todo",
+                "description": "Typing 'Buy milk' in 'New Todo Input' and pressing Enter adds 'Buy milk' to the list and shows '1 item left!'."
+              },
+              {
+                "id": "complete-todo",
+                "description": "Checking the toggle of 'Buy milk' shows '0 items left!' and the button 'Clear completed'."
+              },
+              {
+                "id": "filter-todos",
+                "description": "With one active and one completed todo, 'Active' shows only the active one, 'Completed' only the completed one, and 'All' both."
+              },
+              {
+                "id": "clear-completed",
+                "description": "Tapping 'Clear completed' removes the completed todos and keeps the active ones."
+              }
+            ],
+            "intentionalDifferences": [
+              {
+                "kind": "notPortable",
+                "element": { "role": "button", "name": "Delete todo" },
+                "reason": "The delete button appears only on mouse hover over a todo; touch screens have no hover."
+              },
+              {
+                "kind": "notPortable",
+                "element": { "role": "textbox", "name": "Edit todo" },
+                "reason": "Editing starts on double click on a todo; phones have no double click."
+              }
+            ],
+            "size": 0
+          }
+        ],
+        "flows": []
+      }
+    }
+  ]
+}

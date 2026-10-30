@@ -40,7 +40,7 @@ Poslednja izmena: 2026-10-30
   - upiše `board().reports[partId]` i `analysis/<partId>.json` (niz `AnalyzerReport[]`), oslobodi se, pa `emit("analysis.done", { partId })`; drugi `assign` dok radi se ignoriše (log `task.ignored`);
   - 7 testova u `src/agents/analyzer.test.ts` sa `MockRunner`-om nad TodoMVC-om (sve 4 stavke iz `docs/tasks/d.md` + zauzet agent, prekid, nepoznat deo).
 
-## Gotovo, čeka spajanje (grana `d/architect`)
+## Gotovo, spojeno u main (PR #36, grana `d/architect`)
 - D13: domen za arhitektu u `src/analysis/`, izvezen iz `index.ts` za `agents/architect.ts` (D14):
   - `expoRouteFor(webPath, allPaths)` (`expoRoute.ts`): `/recepti/:id` → `/recepti/[id]`, `/docs/*` → `/docs/[...rest]`, `*` → `/` kad je jedina ruta (TodoMVC).
   - `ArchitectOutputSchema` = `PlanSchema` bez `routeMap` (šema za model, bez otvorenog objekta koji Anthropic odbija); `normalizePlan(output, parsed)` (`normalizePlan.ts`) posle modela, pre `validatePlan`: putanje sa `/`, izbacuje fajlove kojih nema, `size` iz fajlova, talasi iz `dependsOn` (ciklus ostavlja `validatePlan`-u), podrazumevani `writes`, `routeMap` za svaku rutu, stabilan redosled. Dva puta zaredom daje isto.
@@ -54,7 +54,16 @@ Poslednja izmena: 2026-10-30
   - mock ključevi: `taskId` je `"plan"`, a broj pokušaja ide u `TaskMeta.round`, pa skripta za MockRunner ima `architect:plan:1`, `architect:plan:2`… ili samo `architect` za sve pokušaje;
   - 5 testova u `src/agents/architect.test.ts` sa `MockRunner`-om nad Receptima podeljenim na 2 dela: ispravan plan, pa loš plan (bez `/kupovina`) + ispravan, tri loša plana (`plan.failed` tačno jednom), `normalizePlan` popravlja `size`/`wave`/`writes`, zauzet agent + prekid.
   - Provereno sa A-ovim pravim Conductor-om (A10) nad TodoMVC-om, uz pravi parser, analizator i arhitektu i A-ove lažne buildere, testere i Gatekeeper: ispravan plan → `plan.ready` → obe jedinice `promoted`, ishod `finished`; loš plan → `plan.failed` → ishod `plan.failed`, prolaz se odmah završava.
-  - **Za A:** u `src/orchestration/agents.ts` arhitekta je još zamena `notYet(…, "D14")`; posle spajanja ovog PR-a ide `architect: createArchitect` (A-ov fajl, jedan red).
+  - **Za A:** u `src/orchestration/agents.ts` arhitekta je još zamena `notYet(…, "D14")`; sada ide `architect: createArchitect` (A-ov fajl, jedan red).
+
+## Gotovo, čeka spajanje (grana `d/mock-replies`)
+- D15: MockRunner odgovori za moje agente po D-013:
+  - `src/agents/mocks/todomvc/analyzer.json` (`analyzer:part-1`: `list_files`, 4× `read_file`, izveštaj za rutu `*`) i `architect.json` (`architect`: plan sa `app-entry` + `todo-list`, 5 obaveza, `notPortable` za „Delete todo“ i izmenu na dvoklik);
+  - `src/agents/mocks/recepti/analyzer.json` (`list_files`, 6× `read_file`, 5 izveštaja) i `architect.json` (`plan.manual.json` bez `routeMap`, sa `size: 0` i praznim `writes`, kao što bi model vratio);
+  - ključ `analyzer:part-1` važi za jednog analizatora (F2, `FIXED_TEAM`); sa više delova (F3) analizator bez ključa ide na rezervni izveštaj, a ključ `architect` važi za svaki pokušaj;
+  - 7 testova u `src/agents/mocks/d.mocks.test.ts`: fajlovi prolaze `MockFixtureSchema` i `loadMockFixtureDir`, svaki `read_file` je dozvoljen, izveštaji prolaze `finalizeReports` za sve rute, plan posle `normalizePlan` prolazi `validatePlan`, a plan za Recepte je posle normalizacije isti kao `plan.manual.json`.
+  - `npm run migrate:mock -- examples/todomvc`: analizator radi iz mock-a (bez rezervnog izveštaja), prolaz staje kod arhitekte jer je u `agents.ts` još zamena. Sa A-ovim Conductor-om i mojim agentima (privremena skripta, ostali agenti lažni) obe aplikacije stižu do `plan.ready` iz prvog pokušaja i do `finished`.
+  - **Za C:** po D-013 builderov mock ide u `src/agents/mocks/todomvc/builder.json`; sada je `src/agents/mocks/builder.todomvc.json`, pa ga `--mock` ne učitava.
 
 ## Kapija G1: prošla 2026-10-30 (proverio D)
 Na čistom klonu `main`-a `6289b3c` (posle toga su u `main` stigle samo izmene dokumentacije, do `ea67e09`):
@@ -73,8 +82,8 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - ništa
 
 ## Sledeće
-- PR `d/architect` (D13, D14)
-- D15: MockRunner odgovori po D-013: `src/agents/mocks/todomvc/analyzer.json` i `architect.json` (i isto za Recepte)
+- PR `d/mock-replies` (D15)
+- D16: pravi prolaz do plana nad Receptima (`--budget 1`) i poređenje sa `plan.manual.json`, kad A u `agents.ts` uključi arhitektu
 - izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
 
 ## Za A (D12, D14)

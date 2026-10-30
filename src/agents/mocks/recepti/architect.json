@@ -1,0 +1,310 @@
+{
+  "architect": [
+    {
+      "json": {
+        "units": [
+          {
+            "id": "data",
+            "kind": "shared",
+            "wave": 0,
+            "sources": [
+              "src/api/client.ts",
+              "src/api/useAsync.ts",
+              "src/format.ts",
+              "src/store/favorites.ts",
+              "src/store/localStore.ts",
+              "src/store/shoppingList.ts"
+            ],
+            "writes": [],
+            "dependsOn": [],
+            "obligations": [],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "layout",
+            "kind": "shared",
+            "wave": 0,
+            "sources": [
+              "src/App.tsx",
+              "src/components/FavoriteButton.tsx",
+              "src/components/Layout.css",
+              "src/components/Layout.tsx",
+              "src/components/Sidebar.tsx",
+              "src/components/Status.tsx",
+              "src/main.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data"
+            ],
+            "obligations": [],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "recipe-list",
+            "kind": "screen",
+            "wave": 1,
+            "route": "/",
+            "sources": [
+              "src/pages/RecipeListPage.css",
+              "src/pages/RecipeListPage.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data",
+              "layout"
+            ],
+            "obligations": [
+              {
+                "id": "shows-recipes",
+                "description": "Shows every recipe from the API with its name, category, time, difficulty and rating (e.g. 'Sarma', 'Glavna jela', '180 min', 'Teško', '4,9')."
+              },
+              {
+                "id": "search-by-name",
+                "description": "Typing in the field 'Pretraga' shows only recipes whose name contains the text, ignoring case ('sarma' shows 'Sarma' and hides 'Musaka'); with no match it shows 'Nema recepata za zadatu pretragu'."
+              },
+              {
+                "id": "filter-by-category",
+                "description": "Tapping a category button ('Deserti') shows only recipes of that category ('Palačinke' visible, 'Sarma' hidden); 'Sve kategorije' shows all recipes again."
+              },
+              {
+                "id": "sort-by-time",
+                "description": "Tapping 'Sortiraj po vremenu' orders recipes from the shortest to the longest preparation time; tapping it again restores the original order."
+              },
+              {
+                "id": "toggle-favorite",
+                "description": "Tapping 'Dodaj u omiljene: <name>' marks the recipe as a favorite and the button becomes 'Ukloni iz omiljenih: <name>'."
+              },
+              {
+                "id": "open-detail",
+                "description": "Tapping a recipe name opens that recipe's detail screen (tapping 'Sarma' shows 'Porcije: 8')."
+              }
+            ],
+            "intentionalDifferences": [
+              {
+                "kind": "hiddenBehind",
+                "element": {
+                  "role": "button",
+                  "name": "Sve kategorije"
+                },
+                "reveal": {
+                  "role": "button",
+                  "name": "Filteri"
+                }
+              },
+              {
+                "kind": "hiddenBehind",
+                "element": {
+                  "role": "button",
+                  "name": "Supe"
+                },
+                "reveal": {
+                  "role": "button",
+                  "name": "Filteri"
+                }
+              },
+              {
+                "kind": "hiddenBehind",
+                "element": {
+                  "role": "button",
+                  "name": "Glavna jela"
+                },
+                "reveal": {
+                  "role": "button",
+                  "name": "Filteri"
+                }
+              },
+              {
+                "kind": "hiddenBehind",
+                "element": {
+                  "role": "button",
+                  "name": "Salate"
+                },
+                "reveal": {
+                  "role": "button",
+                  "name": "Filteri"
+                }
+              },
+              {
+                "kind": "hiddenBehind",
+                "element": {
+                  "role": "button",
+                  "name": "Deserti"
+                },
+                "reveal": {
+                  "role": "button",
+                  "name": "Filteri"
+                }
+              },
+              {
+                "kind": "movedTo",
+                "what": "calories column (e.g. '520 kcal')",
+                "toUnit": "recipe-detail"
+              },
+              {
+                "kind": "notPortable",
+                "element": {
+                  "role": "tooltip",
+                  "name": "Sastojci"
+                },
+                "reason": "The ingredients tooltip appears on mouse hover over a table row; touch screens have no hover. Ingredients are shown on the recipe detail screen."
+              }
+            ],
+            "size": 0
+          },
+          {
+            "id": "recipe-detail",
+            "kind": "screen",
+            "wave": 1,
+            "route": "/recepti/:id",
+            "sources": [
+              "src/pages/RecipeDetailPage.css",
+              "src/pages/RecipeDetailPage.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data",
+              "layout"
+            ],
+            "obligations": [
+              {
+                "id": "shows-recipe",
+                "description": "Shows the recipe name, ingredients with amounts, preparation steps and calories ('/recepti/4' shows 'Sarma', 'Mleveno meso: 1000 g' and '520 kcal po porciji')."
+              },
+              {
+                "id": "scale-servings",
+                "description": "'Povećaj porcije' and 'Smanji porcije' change 'Porcije: N' and scale every ingredient amount ('Porcije: 9' shows 'Mleveno meso: 1125 g')."
+              },
+              {
+                "id": "toggle-favorite",
+                "description": "Tapping 'Dodaj u omiljene' turns the button into 'Ukloni iz omiljenih', and tapping it again turns it back."
+              },
+              {
+                "id": "add-to-shopping-list",
+                "description": "Tapping 'Dodaj sastojke u listu za kupovinu' shows 'Sastojci su dodati u listu za kupovinu'."
+              },
+              {
+                "id": "not-found",
+                "description": "An unknown recipe id ('/recepti/999') shows 'Recept nije pronađen'."
+              }
+            ],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "categories",
+            "kind": "screen",
+            "wave": 1,
+            "route": "/kategorije",
+            "sources": [
+              "src/pages/CategoriesPage.css",
+              "src/pages/CategoriesPage.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data",
+              "layout"
+            ],
+            "obligations": [
+              {
+                "id": "pick-category",
+                "description": "Before a choice the screen shows 'Izaberite kategoriju'; tapping a category ('Supe') shows its recipes ('Pileća supa') and no recipes of other categories ('Sarma')."
+              },
+              {
+                "id": "open-recipe",
+                "description": "Tapping a recipe name in the chosen category opens its detail screen."
+              }
+            ],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "favorites",
+            "kind": "screen",
+            "wave": 1,
+            "route": "/omiljeni",
+            "sources": [
+              "src/pages/FavoritesPage.css",
+              "src/pages/FavoritesPage.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data",
+              "layout"
+            ],
+            "obligations": [
+              {
+                "id": "empty-state",
+                "description": "With no favorites the screen shows 'Nemate omiljenih recepata'."
+              },
+              {
+                "id": "shows-favorites",
+                "description": "Recipes marked as favorites (prepared through the UI in setup steps) are listed by name."
+              },
+              {
+                "id": "remove-favorite",
+                "description": "Tapping 'Ukloni iz omiljenih: <name>' removes the recipe from the screen."
+              }
+            ],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
+            "id": "shopping-list",
+            "kind": "screen",
+            "wave": 1,
+            "route": "/kupovina",
+            "sources": [
+              "src/pages/ShoppingListPage.css",
+              "src/pages/ShoppingListPage.tsx"
+            ],
+            "writes": [],
+            "dependsOn": [
+              "data"
+            ],
+            "obligations": [
+              {
+                "id": "empty-state",
+                "description": "With no items the screen shows 'Lista za kupovinu je prazna'."
+              },
+              {
+                "id": "add-item",
+                "description": "Filling 'Namirnica' with 'Hleb' and tapping 'Dodaj' adds an item 'Hleb' and shows 'Kupljeno: 0 od 1'."
+              },
+              {
+                "id": "mark-bought",
+                "description": "Checking an item's checkbox updates the counter ('Kupljeno: 1 od 1')."
+              },
+              {
+                "id": "clear-bought",
+                "description": "Tapping 'Obriši kupljene' removes checked items and keeps the others."
+              }
+            ],
+            "intentionalDifferences": [],
+            "size": 0
+          }
+        ],
+        "flows": [
+          {
+            "id": "favorite-flow",
+            "description": "Open a recipe, tap 'Dodaj u omiljene', go to 'Omiljeni': the recipe is listed there.",
+            "unitIds": [
+              "recipe-detail",
+              "favorites"
+            ]
+          },
+          {
+            "id": "shopping-flow",
+            "description": "Open a recipe, tap 'Dodaj sastojke u listu za kupovinu', go to 'Lista za kupovinu': its ingredients are listed with amounts.",
+            "unitIds": [
+              "recipe-detail",
+              "shopping-list"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

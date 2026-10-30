@@ -1,0 +1,105 @@
+{
+  "analyzer:part-1": [
+    { "call": { "name": "list_files", "args": {} } },
+    { "call": { "name": "read_file", "args": { "path": "src/pages/RecipeListPage.tsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/pages/RecipeDetailPage.tsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/pages/CategoriesPage.tsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/pages/FavoritesPage.tsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/pages/ShoppingListPage.tsx" } } },
+    { "call": { "name": "read_file", "args": { "path": "src/api/client.ts" } } },
+    {
+      "json": {
+        "reports": [
+          {
+            "route": "/",
+            "screen": "Recipe list",
+            "summary": "Lists all recipes in an 8-column table. The user can search by name, filter by category, sort by time, mark favorites and open a recipe.",
+            "files": ["src/pages/RecipeListPage.css", "src/pages/RecipeListPage.tsx", "src/api/client.ts", "src/components/FavoriteButton.tsx"],
+            "components": ["RecipeListPage", "FavoriteButton", "Loading", "ErrorMessage"],
+            "dataSources": ["GET /api/recipes via getRecipes()", "GET /api/categories via getCategories()", "favorites in localStorage via src/store/favorites.ts"],
+            "navigatesTo": ["/recepti/:id"],
+            "webApis": ["hover", "table"],
+            "mobileIssues": [
+              "8-column table is too wide for a phone screen",
+              "the category filter buttons take a whole row next to the search field",
+              "the ingredients tooltip appears on mouse hover over a row; phones have no hover"
+            ],
+            "suggestedObligations": [
+              "shows every recipe with its name, category, time, difficulty and rating ('Sarma', 'Glavna jela', '180 min', 'Teško', '4,9')",
+              "typing 'sarma' in 'Pretraga' shows only 'Sarma'; with no match it shows 'Nema recepata za zadatu pretragu'",
+              "tapping 'Deserti' shows only desserts ('Palačinke' visible, 'Sarma' hidden); 'Sve kategorije' shows all again",
+              "tapping 'Sortiraj po vremenu' orders recipes from the shortest time",
+              "tapping 'Dodaj u omiljene: Sarma' turns the button into 'Ukloni iz omiljenih: Sarma'"
+            ]
+          },
+          {
+            "route": "/recepti/:id",
+            "screen": "Recipe detail",
+            "summary": "Shows one recipe: ingredients with amounts in one column and preparation steps in another, servings that scale the amounts, favorite and add-to-shopping-list buttons.",
+            "files": ["src/pages/RecipeDetailPage.css", "src/pages/RecipeDetailPage.tsx", "src/api/client.ts", "src/store/shoppingList.ts"],
+            "components": ["RecipeDetailPage", "FavoriteButton", "Loading", "ErrorMessage"],
+            "dataSources": ["GET /api/recipes/:id via getRecipe()", "shopping list in localStorage via src/store/shoppingList.ts"],
+            "navigatesTo": ["/"],
+            "webApis": [],
+            "mobileIssues": ["ingredients and preparation steps are two columns side by side"],
+            "suggestedObligations": [
+              "'/recepti/4' shows 'Sarma', 'Mleveno meso: 1000 g' and '520 kcal po porciji'",
+              "'Povećaj porcije' changes 'Porcije: 8' to 'Porcije: 9' and 'Mleveno meso: 1125 g'",
+              "tapping 'Dodaj sastojke u listu za kupovinu' shows 'Sastojci su dodati u listu za kupovinu'",
+              "an unknown id ('/recepti/999') shows 'Recept nije pronađen'"
+            ]
+          },
+          {
+            "route": "/kategorije",
+            "screen": "Categories",
+            "summary": "A list of categories next to the recipes of the chosen category (master–detail).",
+            "files": ["src/pages/CategoriesPage.css", "src/pages/CategoriesPage.tsx", "src/api/client.ts"],
+            "components": ["CategoriesPage", "Loading", "ErrorMessage"],
+            "dataSources": ["GET /api/categories via getCategories()", "GET /api/recipes via getRecipes()"],
+            "navigatesTo": ["/recepti/:id"],
+            "webApis": [],
+            "mobileIssues": ["the category list and the recipes are side by side"],
+            "suggestedObligations": [
+              "before a choice the screen shows 'Izaberite kategoriju'",
+              "tapping 'Supe' shows 'Pileća supa' and no recipes of other categories ('Sarma')",
+              "tapping a recipe name opens its detail screen"
+            ]
+          },
+          {
+            "route": "/omiljeni",
+            "screen": "Favorites",
+            "summary": "A three-column card grid with the recipes marked as favorites.",
+            "files": ["src/pages/FavoritesPage.css", "src/pages/FavoritesPage.tsx", "src/store/favorites.ts"],
+            "components": ["FavoritesPage", "FavoriteButton", "Loading", "ErrorMessage"],
+            "dataSources": ["favorites in localStorage via src/store/favorites.ts", "GET /api/recipes via getRecipes()"],
+            "navigatesTo": ["/recepti/:id"],
+            "webApis": [],
+            "mobileIssues": ["three cards side by side do not fit a phone screen"],
+            "suggestedObligations": [
+              "with no favorites the screen shows 'Nemate omiljenih recepata'",
+              "recipes marked as favorites are listed by name",
+              "tapping 'Ukloni iz omiljenih: Sarma' removes 'Sarma' from the screen"
+            ]
+          },
+          {
+            "route": "/kupovina",
+            "screen": "Shopping list",
+            "summary": "A form to add items and a table of items with a bought checkbox, a counter and a button to clear bought items.",
+            "files": ["src/pages/ShoppingListPage.css", "src/pages/ShoppingListPage.tsx", "src/store/shoppingList.ts"],
+            "components": ["ShoppingListPage"],
+            "dataSources": ["shopping list in localStorage via src/store/shoppingList.ts"],
+            "navigatesTo": [],
+            "webApis": ["table", "localStorage"],
+            "mobileIssues": ["the items are an HTML table", "the list is stored in localStorage"],
+            "suggestedObligations": [
+              "with no items the screen shows 'Lista za kupovinu je prazna'",
+              "filling 'Namirnica' with 'Hleb' and tapping 'Dodaj' adds 'Hleb' and shows 'Kupljeno: 0 od 1'",
+              "checking an item updates the counter to 'Kupljeno: 1 od 1'",
+              "tapping 'Obriši kupljene' removes checked items and keeps the others"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
