@@ -22,16 +22,16 @@ Ovo je **globalni opis sistema za agente koji pišu kod**. Pravila čitanja:
 | 5 CLI | `src/cli.ts` | sve ispod |
 | 4 Orkestracija | `src/orchestration/` | agents, domen, core, contracts |
 | 3 Agenti | `src/agents/` | domen, core, contracts, `@mozaik-ai/core` |
-| 2 Domen | `src/analysis/`, `scenarios/`, `gatekeeper/`, `scaffold/`, `report/`, `verify/` | core (bez runtime-a), contracts, drugi domen **samo preko njegovog `index.ts`** |
+| 2 Domen | `src/analysis/`, `scenarios/`, `gatekeeper/`, `scaffold/`, `report/`, `verify/` | core, ali samo fajlovi koji ne zavise od Mozaika (`config.ts`, `log.ts`), contracts, drugi domen **samo preko njegovog `index.ts`** |
 | 1 Osnova | `src/contracts/`, `src/core/` | contracts: ništa; core: contracts, `@mozaik-ai/core` (samo `runtime.ts`, `state.ts`, `runner.ts`) |
 
-**Zabranjeno:** domen uvozi `@mozaik-ai/core`, `src/agents/` ili `src/orchestration/`. Proverava `scripts/check-layers.sh` u `npm run build`.
+**Zabranjeno:** domen uvozi `@mozaik-ai/core`, `src/agents/` ili `src/orchestration/`, direktno ili preko drugih fajlova (npr. domen → `core/runner.ts` → Mozaik). Proverava `scripts/check-layers.ts` u `npm run build` (D-004).
 
 ## 3. Komponente
 
 | Komponenta | Vrsta | Folder | Vlasnik | Ulaz | Izlaz |
 |---|---|---|---|---|---|
-| Parser | domen | `analysis/` | D | putanja web projekta | `ParsedApp`: rute, fajlovi, tokeni, web API-ji, podela na N delova |
+| Parser | domen | `analysis/` | D | putanja web projekta | `ParsedApp`: rute, fajlovi, tokeni, web API-ji, jedan deo; podelu na N delova pravi `splitParts(parsed, n)` (D-010) |
 | Analizator | AI agent | `agents/analyzer.ts` | D | jedan deo `ParsedApp` | `AnalyzerReport[]` (po ekranu) |
 | Arhitekta | AI agent | `agents/architect.ts` | D | svi `AnalyzerReport` + `ParsedApp` | `Plan` |
 | validatePlan | domen | `analysis/` | D | `Plan`, `ParsedApp` | lista grešaka (prazna = ok) |
@@ -47,9 +47,9 @@ Ovo je **globalni opis sistema za agente koji pišu kod**. Pravila čitanja:
 ## 4. Tok jednog prolaza
 
 1. `cli migrate` → `core` napravi `output/<run-id>/`, inicijalizuje runtime i tablu.
-2. `parseApp()` → `ParsedApp`. Conductor računa broj analizatora (§9) i deli rute na delove.
+2. `parseApp()` → `ParsedApp`. Conductor računa broj analizatora N (§9) i deli rute pozivom `splitParts(parsed, N)` iz `analysis/`.
 3. Analizatori rade paralelno → svaki upiše `analysis/<deo>.json` i objavi `analysis.done`.
-4. Kad su stigli **svi** `analysis.done` → arhitekta pravi `Plan` → `validatePlan()`. Ako ima grešaka, arhitekta dobija listu i ponavlja (najviše 2 puta, zatim prolaz staje sa greškom). Plan se upiše u `plan.json` i objavi se `plan.ready`.
+4. Kad su stigli **svi** `analysis.done` → Conductor pokreće arhitektu → arhitekta pravi `Plan` → `validatePlan()`. Ako ima grešaka, arhitekta dobija listu i ponavlja (najviše 2 puta, zatim prolaz staje sa greškom). Plan se upiše u `plan.json` i objavi se `plan.ready`.
 5. `scaffold()` → `app/`.
 6. Conductor: red zadataka po talasima. Testeri odmah kreću na ekrane (sve talase), a builderi na talas 0.
 7. Tester → validirani testovi u `tests/<unitId>.json` → `tests.ready`.
@@ -60,12 +60,12 @@ Ovo je **globalni opis sistema za agente koji pišu kod**. Pravila čitanja:
 
 ## 5. Događaji
 
-Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a podaci su na tabli i na disku.
+Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a podaci su na tabli i na disku. Domenske funkcije (npr. `scaffold()`) ne slušaju događaje, nego ih poziva Conductor (D-010).
 
 | Događaj | Šalje | Payload | Reaguje |
 |---|---|---|---|
-| `analysis.done` | analizator | `{ partId }` | arhitekta (kad su stigli svi) |
-| `plan.ready` | arhitekta-učesnik | `{}` | Conductor, scaffold |
+| `analysis.done` | analizator | `{ partId }` | Conductor (kad su stigli svi, pokreće arhitektu) |
+| `plan.ready` | arhitekta-učesnik | `{}` | Conductor (poziva `scaffold()`) |
 | `tests.ready` | tester | `{ unitId }` | Gatekeeper |
 | `draft.submitted` | builder | `{ unitId, round }` | Gatekeeper |
 | `gate.failed` | Gatekeeper | `{ unitId, round }` | Conductor |

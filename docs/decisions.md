@@ -32,7 +32,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Status: predlog (čeka potvrdu tima; `docs/tasks/a.md`, P1)
 - Odluka: `src/contracts/` uvozi samo `zod` i sopstvene fajlove.
 - Zašto: `architecture.md` §2 kaže da `contracts/` ne uvozi ništa, a tim-plan F0 traži zod šeme u `contracts/`.
-- Posledice: `scripts/check-layers.sh` propušta `zod` u `contracts/`.
+- Posledice: `scripts/check-layers.ts` (D-004) propušta `zod` u `contracts/`.
 
 ## D-003: Oblik table se u ugovorima zove `MigrationStateFields`
 - Datum: 2026-10-30
@@ -48,7 +48,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Status: prihvaćeno (A; niko u timu nema Git Bash)
 - Odluka: provera slojeva je TypeScript skripta koju `npm run build` pokreće preko `tsx`. Domen ne sme da zavisi od `@mozaik-ai/core` ni posredno, preko drugih fajlova.
 - Zašto: na Windowsu `npm run build` ide kroz `cmd.exe`, a bez Git Bash-a `bash` ne postoji ili je WSL. Uvoze čita TypeScript (`ts.preProcessFile`), koji je već instaliran, pa nema nove zavisnosti. Posredna provera rešava `docs/tasks/a.md` P3 bez spiska dozvoljenih `core/` fajlova.
-- Posledice: `architecture.md` §2, `CLAUDE.md` i `tim-plan.md` još pominju `scripts/check-layers.sh`, pa ih treba uskladiti (A).
+- Posledice: `architecture.md` §2, `CLAUDE.md` i `tim-plan.md` usklađeni 2026-10-30 (grana `a/align-f1`).
 
 ## D-005: Spike A — Playwright selektori rade na Expo webu, uz obavezan `role`
 - Datum: 2026-10-30
@@ -132,3 +132,22 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Posledice:
   - prvi export nove aplikacije je hladan (~50–100 s), sledeći nad istom aplikacijom ~6 s (D-006 i dalje važi: Gatekeeper ceo prolaz koristi isti `app/`);
   - `npm test` traje ~2,5 min zbog jednog hladnog exporta u G1 testu; testovi za `serveApp` su spojeni u isti fajl da se keš zagreva jednom.
+
+## D-010: Conductor vodi tok posle analize: deli rute, čeka sve `analysis.done`, poziva `scaffold()`
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A i D; `docs/status/d.md`: „Odgovori na P4 i P5: slažem se sa predlozima“)
+- Odluka:
+  1. `parseApp()` vraća `ParsedApp` sa jednim delom. Conductor računa broj analizatora N (`architecture.md` §9) i deli rute pozivom `splitParts(parsed, N)` iz `analysis/` (D).
+  2. Conductor čeka **sve** `analysis.done`, pa tek onda pokreće arhitektu. Arhitekta ne sluša `analysis.done`.
+  3. Na `plan.ready` reaguje Conductor i poziva `scaffold()`. Domenske funkcije ne slušaju događaje.
+- Zašto: N zavisi od `totalTokens`, koji daje tek `parseApp`, pa podela mora biti posebna funkcija (`docs/tasks/a.md`, P4). Conductor već zna N i dodeljuje sve zadatke (P5). `scaffold()` je domen, a domen ne sme da uvozi Mozaik (`architecture.md` §2, invarijanta 1), pa ne može da bude učesnik.
+- Posledice: usklađeni `architecture.md` §3, §4 i §5 i `tim-plan.md` (D, korak 2). `tim-plan.md` F2 (A) je već tako pisao. Kod: `splitParts` postoji (D7, PR #10), Conductor dolazi u A10.
+
+## D-011: Test fajlovi u `src/core/` smeju da uvoze Mozaik
+- Datum: 2026-10-30
+- Ko: A
+- Status: prihvaćeno (A; tiče se samo `src/core/` i `scripts/check-layers.ts`, oba su A-ova)
+- Odluka: pravilo `core-mozaik` u `scripts/check-layers.ts` važi za kod u `src/core/`, ali ne i za `*.test.ts` u njemu. Pravilo za domen (`domain-no-mozaik`) i dalje važi i za testove.
+- Zašto: testovi za `core/runtime.ts` i `core/runner.ts` trebaju prave Mozaik učesnike (`createHuman`, `createAgent`) da provere događaje i petlju. Testovi se ne izvršavaju u prolazu, pa ne utiču na to da `verify` radi bez Mozaika.
+- Posledice: nema izmena u `architecture.md`; test u `scripts/check-layers.test.ts` proverava oba slučaja (uvedeno u A5).
