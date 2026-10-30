@@ -19,6 +19,7 @@ import {
   computeCoverage,
   coverageNote,
   extractInteractive,
+  openablePath,
   readTests,
   scenarioProblem,
   testerBrief,
@@ -151,9 +152,10 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     const saved = [...(board().tests[unitId] ?? readTests(board().config.runDir, unitId))]
     let interactive: InteractiveElement[] = []
     // A route with parameters (/recepti/:id) cannot be opened as written; the brief then lists no elements.
-    if (!unit.route.includes(":")) {
+    const open = openablePath(unit.route)
+    if (open !== null) {
       try {
-        interactive = await extract(deps.originalUrl, unit.route)
+        interactive = await extract(deps.originalUrl, open)
       } catch (error) {
         log({ agent: id, event: "tester.interactive_failed", data: { unitId, error: message(error) } })
       }
