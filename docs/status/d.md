@@ -1,6 +1,6 @@
 # Status: osoba D
 Faza: F2
-Poslednja izmena: 2026-10-30
+Poslednja izmena: 2026-10-31
 
 ## Gotovo (spojeno u main)
 - D0: review ugovora za moj deo. Tipovi odgovaraju planu, promena ugovora ne treba; nalazi su ispod (PR #4).
@@ -65,14 +65,15 @@ Poslednja izmena: 2026-10-30
   - `npm run migrate:mock -- examples/todomvc`: analizator radi iz mock-a (bez rezervnog izveštaja), prolaz staje kod arhitekte jer je u `agents.ts` još zamena. Sa A-ovim Conductor-om i mojim agentima (privremena skripta, ostali agenti lažni) obe aplikacije stižu do `plan.ready` iz prvog pokušaja i do `finished`.
   - C je premestio builderov mock u `src/agents/mocks/todomvc/builder.json` (PR #39).
 
-## D16 (grana `d/fix`): integracija urađena, pravi prolazi čekaju API ključ
+## D16 (PR #43, grana `d/fix`): integracija urađena, pravi prolazi čekaju API ključ
 - **`migrate:mock` sa svim pravim agentima** (čist klon `main`-a `27f45ee`, instaliran `templates/expo`, original pokrenut, `--original-url`):
   - TodoMVC: analizator iz mock-a → `analysis.done` → arhitekta `plan.accepted` iz 1. pokušaja → `plan.ready`; `plan.json` (2 jedinice, `routeMap` `{"*":"/"}`), `analysis/`, `report.html` postoje. Prolaz zatim staje: `the gatekeeper agent is not available yet (C, C2.4)`.
   - Recepti: isto; plan ima istih 7 jedinica i iste `size` kao `plan.manual.json`; staje na istom mestu (Gatekeeper, C2.4).
   - Moje G2 stavke za mock: `plan.json` i `analysis/` ✅, `report.html` ✅. Pravi prolaz nad TodoMVC-om: čeka API ključ.
 - **Popravke u mojim folderima:**
   - izveštaj prikazuje kako se prolaz završio (poslednja linija `run.finished` od Conductor-a): „Prolaz je stao zbog greške: …“, „…arhitekta nije napravio plan…“ uz greške iz `plan.errors.json`, ili „…potrošen je budžet…“; kad je prolaz `finished`, nema trake. Ranije je izveštaj prolaza koji je stao pokazivao samo „nema rezultata“ bez razloga. 3 nova testa.
-  - `validatePlan` pravilo 9: zajednička jedinica `layout` sme da ima i `src/app/_layout.tsx` u `writes` (C, PD3/PD4); ostale jedinice ne. Prompt arhitekte to kaže modelu. Ranije bi takav plan bio odbijen i potrošio pokušaj. `normalizePlan` ne dodaje taj fajl sam: builder ga za sada ne može da upiše (OwnershipGuard ima jedan prefiks, `agents/builder.ts`, čeka A).
+  - `validatePlan` pravilo 9: zajednička jedinica `layout` sme da ima i `src/app/_layout.tsx` u `writes` (C, PD3/PD4); ostale jedinice ne. Prompt arhitekte to kaže modelu. Ranije bi takav plan bio odbijen i potrošio pokušaj. `normalizePlan` ne dodaje taj fajl sam; po D-015 `OwnershipGuard` prima listu putanja, pa builder može da ga upiše kad je u `writes`.
+- Posle ovoga su A i C povezali Gatekeeper-učesnika (C2.4, PR #47 i #49), pa prolaz više ne staje posle plana. Ceo `migrate:mock` kroz Gatekeeper još nisam ponovio.
 - **Čeka:** `ANTHROPIC_API_KEY` u `.env` (nema ga ni u `.env` ni u okruženju). Tada: dva prava prolaza do plana nad Receptima (`npm run migrate -- examples/recepti --budget 1 --original-url …`), poređenje plana sa `plan.manual.json` (jedinice, zajedničke `data`/`layout`, zavisnosti, obaveze sa tekstom iz originala, `hiddenBehind`/`notPortable`) i popravka prompta; pa pravi prolaz `--budget 1` nad TodoMVC-om.
 
 ## Kapija G1: prošla 2026-10-30 (proverio D)
@@ -92,9 +93,13 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - ništa
 
 ## Sledeće
-- PR `d/fix` (D16: izveštaj sa ishodom prolaza, izuzetak za `_layout.tsx`)
+- ponoviti `migrate:mock` nad TodoMVC-om kroz ceo tok (sada sa Gatekeeper-om) i javiti šta pada
 - D16: pravi prolazi kad stigne API ključ (vidi gore)
 - izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
+
+## Odgovori D (2026-10-31)
+- **C: ID ekrana za TodoMVC je `todo-list`** (zajednička jedinica je `app-entry`). To vraća moj `src/agents/mocks/todomvc/architect.json` (PR #38). Tvoj `builder.json` (`builder:todo-list:1`, `builder:todo-list:2`, `screens/todo-list/index.tsx`) i B-ov `tester.json` (`tester:todo-list`, obaveza `empty-state`) već odgovaraju, pa ne treba ništa menjati.
+- **A: review ugovora za D** (`ParsedApp`, `AnalyzerReport`, `Plan`, `SplitParts`): ok, bez izmena. Urađeno u D0 (PR #4) i potvrđeno kroz D6–D16: parser, `splitParts`, `validatePlan`, analizator, arhitekta i mock prolaz rade sa ugovorom kakav jeste.
 
 ## Za A (D12, D14)
 - **ID agenta:** Mozaik daje agentu nasumičan UUID (`agent.getId()`), pa je `producerId` u `analysis.done` taj UUID, a `handle.id` je ime koje daje Conductor (npr. `analyzer-1`) i ide u `TaskMeta.agentId` (log, trošak, mock ključevi). Conductor povezuje događaj sa agentom preko `handle.participant.getId()`.
