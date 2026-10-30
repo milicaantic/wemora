@@ -1,5 +1,5 @@
 # Status: osoba D
-Faza: F1
+Faza: F2
 Poslednja izmena: 2026-10-30
 
 ## Gotovo (spojeno u main)
@@ -20,20 +20,27 @@ Poslednja izmena: 2026-10-30
 - D8: `validatePlan(plan, parsed)` u `src/analysis/validatePlan.ts`. Vraća listu grešaka na engleskom (prazna = ok), poređanu po pravilima, uvek istim redom. Svaka poruka imenuje jedinicu, fajl ili rutu i kaže šta da se promeni, jer je čita model arhitekta. Pravila: šema (`PlanSchema`), ID-jevi jedinica (jedinstveni, kebab-case), `kind` ↔ `route`, svaka ruta iz parsera u tačno jednom ekranu, izvorni fajlovi postoje i pripadaju najviše jednoj jedinici, fajl komponente ide uz svoj ekran, `dependsOn` (postoji, bez sebe, bez ciklusa, sa putanjom ciklusa u poruci), talasi (zajedničke u talasu 0 i zavise samo od zajedničkih; ekran posle svojih zavisnosti), `writes` (samo `src/screens/<id>/` ili `src/shared/<id>/`, bez preklapanja), obaveze (ekran ih ima, zajednička nema, kebab-case, bez duplikata), namerne razlike (samo na ekranima, `movedTo` na postojeći ekran), `routeMap` (svaka ruta, `[param]` umesto `:param`, bez duplikata i viška), tokovi (postojeći ekrani, bez duplikata). (PR #12)
   - 23 testa u `validatePlan.test.ts`: ručni plan za Recepte prolazi, a svaka vrsta greške se hvata nad njegovom pokvarenom kopijom; plan za TodoMVC (ruta `*`) prolazi.
   - Pravilo za `writes` prati C-ov šablon. Ako C dozvoli `layout` jedinici da menja `src/app/_layout.tsx` (PD3), pravilo 9 dobija taj izuzetak.
-
-## Gotovo, čeka spajanje (grana `d/report-v1`)
 - D9: `buildReport(runDir)` u `src/report/` (`load.ts` čita i proverava zod-om, `model.ts` računa, `render.ts` pravi HTML, `html.ts` escape, `styles.ts`). Pravi jedan samostalan `report.html` (bez skripti i spoljnih fajlova, svetla i tamna tema, radi i na telefonu): sažetak u 4 boje statusa (+ „nema rezultata“), po ekranu pokrivenost („6/6 obaveze, 5/5 elemenata“), razlog za svaki status osim „dokazan“, namerne razlike kao rečenice i tabela scenarija (✓/✗/— sa korakom i greškom), zatim zajedničke jedinice i upozorenja. Fajl koji fali ili ne prolazi šemu postaje upozorenje, a ne greška. Isti prolaz uvek daje isti HTML; vreme dolazi iz `run.jsonl`, ne sa sata. Sav tekst ide kroz escape.
   - 18 testova u `src/report/report.test.ts` nad lažnim prolazom `src/report/mocks/run/` (plan Recepata, sva 4 statusa, ekran bez rezultata, pokvaren JSON, loša linija u logu, `<script>` u poruci) i nad praznim folderom. Izgled proveren snimcima ekrana u Chromium-u (desktop, telefon, tamna tema).
   - Vremenska osa, trošak po agentu i mera ubrzanja dolaze u v2 (D17).
-- D10: kostur `README.md` (engleski, uz rezime na srpskom: predlog PD7). Sve komande koje navodi rade danas (`npm ci`, `build`, `test`, Playwright, mock-api, Recepti, TodoMVC); `migrate`, `verify` i `sabotage` su označeni kao „in progress“.
+- D10: kostur `README.md` (engleski, uz rezime na srpskom: predlog PD7). Sve komande koje navodi rade danas (`npm ci`, `build`, `test`, Playwright, mock-api, Recepti, TodoMVC); `migrate`, `verify` i `sabotage` su označeni kao „in progress“. (D9–D10: PR #14)
+
+## Gotovo, čeka spajanje (grana `d/analyzer`)
+- D11: domen za analizatora u `src/analysis/`, izvezen iz `index.ts` za `agents/analyzer.ts` (D12):
+  - `createFileAccess(parsed, partId)` (`fileAccess.ts`): `list()` i `read(path)` samo za fajlove dela i zajedničke fajlove. Prihvata `./x` i `\`; odbija apsolutne putanje, izlaz iz projekta i tuđe fajlove porukom za model; fajl duži od 40 000 znakova seče uz napomenu.
+  - `analyzerBrief(parsed, partId)` (`analyzerBrief.ts`): poruka zadatka sa rutama dela, njihovim fajlovima, web API-jima i zajedničkim fajlovima; bez sadržaja fajlova.
+  - `analyzerOutputSchema(parsed, partId)` (`reports.ts`): šema za `runStructured` (`{ reports: [...] }`, bez `partId`) plus pravilo „tačno jedan izveštaj po ruti dela“, pa se pogrešne rute vraćaju modelu kao greška šeme. `z.toJSONSchema` i dalje radi.
+  - `finalizeReports(raw, parsed, partId)`: proverava izlaz i dopunjuje ga onim što parser sigurno zna (`partId`, fajlovi i web API-ji rute), izbacuje fajlove van dela, sortira; greška je poruka za model.
+  - `fallbackReports(parsed, partId, why)`: izveštaji samo iz parsera kad model ne uspe, sa ekranom po imenu fajla i problemima za telefon izvedenim iz web API-ja; prolaz se nastavlja.
+  - 21 test u `analyzer-domain.test.ts` nad Receptima podeljenim na 2 dela.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/report-v1` (D9, D10) → review A
-- kapija G1 (proveravam ja): lista u `docs/tim-plan.md` §5
-- F2: D11–D14 (domen i agenti analizator i arhitekta), posle G1
+- kapija G1 (proveravam ja): lista u `docs/tim-plan.md` §5, kad A, B i C spoje F1
+- D13: domen za arhitektu (`normalizePlan`, `expoRouteFor`, brief)
+- D12/D14: agenti analizator i arhitekta, kad stignu A-ovi `core/` i `agents/_shared/` (A5, A7, A8)
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).

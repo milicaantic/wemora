@@ -4,3 +4,17 @@ export { parseApp } from "./parse"
 export { splitParts } from "./split"
 export { validatePlan } from "./validatePlan"
 export { UnsupportedInputError, type UnsupportedInputCode } from "./errors"
+
+// Used by the analyzer agent (agents/analyzer.ts); the rules live here so they are tested without Mozaik.
+export { createFileAccess, allowedFiles, MAX_FILE_CHARS, type FileAccess } from "./fileAccess"
+export { analyzerBrief } from "./analyzerBrief"
+export {
+  AnalyzerOutputSchema,
+  ModelReportSchema,
+  analyzerOutputSchema,
+  finalizeReports,
+  fallbackReports,
+  routeProblems,
+  type AnalyzerOutput,
+  type ModelReport,
+} from "./reports"
