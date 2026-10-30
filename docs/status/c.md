@@ -1,5 +1,5 @@
 # Status: osoba C
-Faza: F1
+Faza: F2
 
 ## Gotovo (spojeno u main)
 - C0.1 Expo šablon (PR #2): Expo SDK 58, Expo Router, TS, `web.output: "single"`, tačne verzije + lock
@@ -12,8 +12,13 @@ Faza: F1
 - C1.4 kapije 1–4 (PR #16): `runGates()` u `src/gatekeeper/gates/`; D-008 (predlog): TypeScript umesto Babela, `labels` proverava samo tekst iz originala
 
 ## U radu
-- ništa; čeka se kapija G1 (D) i potvrde ispod
-- sledeće: F2 (C2.1 promptovi), posle G1
+- Kapija G1 prošla (D, 2026-10-30).
+- AsyncStorage 2.2.0 u `templates/expo` (grana `c/async-storage`, samo `package.json` + lock): zamena za `localStorage`; provereno da podatak preživi ponovno otvaranje stranice (B-ov test za omiljene to traži).
+- C2.1 promptovi: gotovo na grani `c/prompts` (posle `c/async-storage`), čeka PR i **B-ovu potvrdu ugovora o labelama** (`builder.md`, odeljak „The label contract“)
+  - `src/agents/prompts/builder.md`: uloga, alati, raspored fajlova, ugovor o labelama, podaci, navigacija, namerne razlike, zabrane, runda posle greške
+  - `src/agents/prompts/web-to-rn.md`: tabela web → RN, React Router → Expo Router, API, store sa AsyncStorage, layout (`app/_layout.tsx`, donja traka od `Link`-ova)
+  - svi primeri koda iz promptova provereni u pravoj aplikaciji iz scaffolda: tsc, kapije 1–2, ARIA imena, čuvanje posle ponovnog otvaranja
+- sledeće: C2.2 `agents/builder.ts`
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.
