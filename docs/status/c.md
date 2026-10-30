@@ -15,8 +15,9 @@ Faza: F2
 - F2, moj deo koda je gotov i spojen: C2.1 (PR #33), C2.2 (PR #37, #39), C2.3 (PR #44), C2.4 (PR #47)
 - usklađeno sa D-016 (grana `c/checklist`): Gatekeeper nema svoj tajmer, na `tests.missing` ekran ide bez testova i ulazi kao `unproven`; zakasneli nacrt iz ranije runde se ignoriše (i dok čeka u redu); prekinut builder ne šalje `draft.submitted`
 - dopuna prompta za B (D-005): checkbox → `role="checkbox"` + `aria-checked` + labela; web link → uvek `Link`, nikad `Pressable` + `router.push`
-- čeka druge: A da poveže `createGatekeeper` u `src/orchestration/agents.ts`; D da odluči ID ekrana za TodoMVC (`todos` ili `todo-list`), pa menjam `src/agents/mocks/todomvc/builder.json`
-- sledeće: integracija (`npm run migrate:mock -- examples/todomvc`), kapija G2
+- `src/agents/mocks/todomvc/builder.json` (grana `c/mock-app-entry`): dodat `builder:app-entry:1` (zajednička jedinica iz D-ovog plana); runda 1 za `todo-list` sada uvek pada (ostatak `<div>` → kapija 2), runda 2 popravlja
+- **integracija:** `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` prolazi do kraja: `app-entry` promovisan (unproven), `todo-list` runda 1 `gate.failed` („`<div>` ne postoji u React Native, koristi `<View>`“), runda 2 promovisan (partial)
+- sledeće: kapija G2 (proverava A), pa F3
 
 ## Odgovori C za kraj F1 (rešeno sa moje strane)
 - **G1, zajednički test sa B:** spojeno (PR #22), `src/gatekeeper/g1.test.ts`; bug sa rutama popravljen (D-009). Čeka se da D ponovi G1.

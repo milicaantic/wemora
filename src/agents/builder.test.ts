@@ -290,11 +290,22 @@ describe("MockRunner primeri za TodoMVC (za A12)", () => {
   const written = (key: string) =>
     todomvc[key]!.flatMap((r) => ("call" in r && r.call.name === "write_file" ? [String(r.call.args.content)] : []))
 
-  it("ima rundu 1 (pada na labeli), rundu 2 (popravka) i rezervni odgovor", () => {
-    expect(Object.keys(todomvc)).toEqual(["builder:todo-list:1", "builder:todo-list:2", "builder"])
+  it("ima app-entry, rundu 1 (pada na kapiji 2), rundu 2 (popravka) i rezervni odgovor", () => {
+    expect(Object.keys(todomvc)).toEqual(["builder:app-entry:1", "builder:todo-list:1", "builder:todo-list:2", "builder"])
+    // runda 1 uvek pada (ostatak web koda <div> → kapija 2), bez obzira na testove
+    expect(written("builder:todo-list:1")[0]).toContain("<div")
     expect(written("builder:todo-list:1")[0]).not.toContain('accessibilityLabel="New Todo Input"')
+    expect(written("builder:todo-list:2")[0]).not.toContain("<div")
     expect(written("builder:todo-list:2")[0]).toContain('accessibilityLabel="New Todo Input"')
   })
+
+  it.skipIf(!hasTemplateModules)("nacrt za zajedničku jedinicu app-entry prolazi kapije 1–4", async () => {
+    const draftDir = path.join(runDir, "staging", "mock-check", "app-entry")
+    mkdirSync(path.join(draftDir, "shared/app-entry"), { recursive: true })
+    writeFileSync(path.join(draftDir, "shared/app-entry/index.ts"), written("builder:app-entry:1")[0]!)
+    const results = await runGates({ draftDir, appDir: path.join(runDir, "app"), tests: [], originalFiles: [] })
+    expect(results.every((r) => r.ok)).toBe(true)
+  }, 120_000)
 
   it.skipIf(!hasTemplateModules)("nacrt iz runde 2 prolazi kapije 1–4", async () => {
     const draftDir = path.join(runDir, "staging", "mock-check", "todo-list")

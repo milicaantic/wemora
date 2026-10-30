@@ -1,4 +1,38 @@
 {
+  "builder:app-entry:1": [
+    {
+      "call": {
+        "name": "read_source",
+        "args": {
+          "path": "src/index.js"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "shared/app-entry/index.ts",
+          "content": "// Web: src/index.js mounts <App> with createRoot inside a HashRouter with one route \"*\".\n// Mobile: Expo Router does this. app/_layout.tsx is the root and the todo-list screen is the route \"/\".\n// Nothing else to port; screens can read the app routes from here.\nexport const APP_ROUTES = [\"/\"] as const\n"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "check_draft",
+        "args": {}
+      }
+    },
+    {
+      "call": {
+        "name": "submit_draft",
+        "args": {}
+      }
+    },
+    {
+      "text": "The web entry only mounts the app and the router; Expo Router does that on mobile."
+    }
+  ],
   "builder:todo-list:1": [
     {
       "call": {
@@ -13,7 +47,7 @@
         "name": "write_file",
         "args": {
           "path": "screens/todo-list/index.tsx",
-          "content": "import { useState } from \"react\"\nimport { FlatList, Pressable, StyleSheet, Text, TextInput, View } from \"react-native\"\n\ntype Todo = { id: number; title: string; completed: boolean }\n\nexport default function TodoList() {\n  const [todos, setTodos] = useState<Todo[]>([])\n  const [title, setTitle] = useState(\"\")\n  const left = todos.filter((t) => !t.completed).length\n\n  function add() {\n    if (title.trim() === \"\") return\n    setTodos([...todos, { id: Date.now(), title: title.trim(), completed: false }])\n    setTitle(\"\")\n  }\n\n  return (\n    <View style={styles.page}>\n      <Text role=\"heading\" style={styles.title}>todos</Text>\n      <TextInput\n        placeholder=\"What needs to be done?\"\n        value={title}\n        onChangeText={setTitle}\n        onSubmitEditing={add}\n        style={styles.input}\n      />\n      <FlatList\n        role=\"list\"\n        data={todos}\n        keyExtractor={(t) => String(t.id)}\n        renderItem={({ item }) => (\n          <View role=\"listitem\" style={styles.row}>\n            <Pressable\n              role=\"checkbox\"\n              aria-checked={item.completed}\n              onPress={() => setTodos(todos.map((t) => (t.id === item.id ? { ...t, completed: !t.completed } : t)))}\n            >\n              <Text>{item.completed ? \"☑\" : \"☐\"}</Text>\n            </Pressable>\n            <Text style={styles.grow}>{item.title}</Text>\n            <Pressable role=\"button\" accessibilityLabel=\"Delete todo\" onPress={() => setTodos(todos.filter((t) => t.id !== item.id))}>\n              <Text>×</Text>\n            </Pressable>\n          </View>\n        )}\n      />\n      {todos.length > 0 && (\n        <View style={styles.row}>\n          <Text style={styles.grow}>{left} {left === 1 ? \"item\" : \"items\"} left!</Text>\n          <Pressable role=\"button\" onPress={() => setTodos(todos.filter((t) => !t.completed))}>\n            <Text>Clear completed</Text>\n          </Pressable>\n        </View>\n      )}\n    </View>\n  )\n}\n\nconst styles = StyleSheet.create({\n  page: { flex: 1, padding: 16, gap: 12 },\n  title: { fontSize: 48, textAlign: \"center\" },\n  input: { borderWidth: 1, borderColor: \"#ccc\", padding: 12, fontSize: 18 },\n  row: { flexDirection: \"row\", alignItems: \"center\", gap: 12, paddingVertical: 8 },\n  grow: { flex: 1 },\n})\n"
+          "content": "import { useState } from \"react\"\nimport { FlatList, Pressable, StyleSheet, Text, TextInput, View } from \"react-native\"\n\ntype Todo = { id: number; title: string; completed: boolean }\n\nexport default function TodoList() {\n  const [todos, setTodos] = useState<Todo[]>([])\n  const [title, setTitle] = useState(\"\")\n  const left = todos.filter((t) => !t.completed).length\n\n  function add() {\n    if (title.trim() === \"\") return\n    setTodos([...todos, { id: Date.now(), title: title.trim(), completed: false }])\n    setTitle(\"\")\n  }\n\n  return (\n    <View style={styles.page}>\n      <div className=\"header\">\n        <Text role=\"heading\" style={styles.title}>todos</Text>\n      </div>\n      <TextInput\n        placeholder=\"What needs to be done?\"\n        value={title}\n        onChangeText={setTitle}\n        onSubmitEditing={add}\n        style={styles.input}\n      />\n      <FlatList\n        role=\"list\"\n        data={todos}\n        keyExtractor={(t) => String(t.id)}\n        renderItem={({ item }) => (\n          <View role=\"listitem\" style={styles.row}>\n            <Pressable\n              role=\"checkbox\"\n              aria-checked={item.completed}\n              onPress={() => setTodos(todos.map((t) => (t.id === item.id ? { ...t, completed: !t.completed } : t)))}\n            >\n              <Text>{item.completed ? \"☑\" : \"☐\"}</Text>\n            </Pressable>\n            <Text style={styles.grow}>{item.title}</Text>\n            <Pressable role=\"button\" accessibilityLabel=\"Delete todo\" onPress={() => setTodos(todos.filter((t) => t.id !== item.id))}>\n              <Text>×</Text>\n            </Pressable>\n          </View>\n        )}\n      />\n      {todos.length > 0 && (\n        <View style={styles.row}>\n          <Text style={styles.grow}>{left} {left === 1 ? \"item\" : \"items\"} left!</Text>\n          <Pressable role=\"button\" onPress={() => setTodos(todos.filter((t) => !t.completed))}>\n            <Text>Clear completed</Text>\n          </Pressable>\n        </View>\n      )}\n    </View>\n  )\n}\n\nconst styles = StyleSheet.create({\n  page: { flex: 1, padding: 16, gap: 12 },\n  title: { fontSize: 48, textAlign: \"center\" },\n  input: { borderWidth: 1, borderColor: \"#ccc\", padding: 12, fontSize: 18 },\n  row: { flexDirection: \"row\", alignItems: \"center\", gap: 12, paddingVertical: 8 },\n  grow: { flex: 1 },\n})\n"
         }
       }
     },
@@ -58,7 +92,7 @@
       }
     },
     {
-      "text": "Added accessibilityLabel \"New Todo Input\" to the input."
+      "text": "Replaced the leftover <div> with a View and added accessibilityLabel \"New Todo Input\" to the input."
     }
   ],
   "builder": [

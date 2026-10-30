@@ -169,7 +169,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 **PR:** `c/gatekeeper-participant`
 
 ### Integracija (svi)
-- [ ] `npm run migrate:mock -- examples/todomvc` prolazi do kraja
+- [x] `npm run migrate:mock -- examples/todomvc` prolazi do kraja (uz `--original-url http://localhost:7002`)
 - [ ] isto sa pravim modelom (`--budget 1`)
 
 ### Kapija G2 (proverava A) — moj deo
