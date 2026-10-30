@@ -654,7 +654,7 @@ Svako pitanje ima predlog, ali se ništa ne menja dok tim ne odluči. Promene ar
 - **P15. Zavisnosti.** `package.json` nema `zod`, `vitest`, Playwright ni parser. Treba odobriti `zod` 4 i `vitest` (A0.0). B, C i D da jave svoje: Playwright, kao i Babel ili ts-morph (wemora-plan §6 kaže „ts-morph ili Babel“, a kapija `parse` u §10 kaže Babel).
 
 **Potpisi i dokumenti**
-- **P16. C-ovi potpisi iz tim-plan §1 kojima nešto fali.** `promote(unitId, draftDir)` i `rollback(unitId)` ne dobijaju `runDir`/`appDir`, a `serveApp` nema način da ugasi server. Nije jasno ni da li su builderov `check_draft` (kapije 1–4) i Gatekeeper-ov `checkDraft` (sve kapije) ista funkcija ili dve. C treba da potvrdi pre spajanja A0.
+- **P16. C-ovi potpisi iz tim-plan §1 kojima nešto fali.** *Rešeno 2026-10-30 (D-015): `checkDraft({ unit, round, draftDir, tests, webDir })`; `promote`/`rollback` rade bez izmene (C); `serveApp` već ima `close()`.* `promote(unitId, draftDir)` i `rollback(unitId)` ne dobijaju `runDir`/`appDir`, a `serveApp` nema način da ugasi server. Nije jasno ni da li su builderov `check_draft` (kapije 1–4) i Gatekeeper-ov `checkDraft` (sve kapije) ista funkcija ili dve. C treba da potvrdi pre spajanja A0.
 - **P17. Folderi u `docs/`.** Postoji folder `docs/statuts/`, a `tim-plan.md` i `CLAUDE.md` koriste `docs/status/`, što je verovatno greška u kucanju. `docs/decisions.md` se pominje, a ne postoji; predlog je da ga napravi A1.
 - **P18. Razlike između `wemora-plan.md` i `architecture.md`.** Važi arhitektura, ovde je potrebna samo potvrda:
   - wemora-plan §4.4 pominje `seed` podatke u skladištu, a §11 kaže da se stanje priprema `setup` koracima preko UI-ja. Zato ugovor nema `seed`.

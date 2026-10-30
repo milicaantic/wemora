@@ -45,7 +45,10 @@ export type Sabotage = (runDir: string, unitId: string) => Promise<void>
 
 // C: scaffold/, gatekeeper/
 export type Scaffold = (plan: Plan, outDir: string) => Promise<void>
-export type CheckDraft = (unitId: string, draftDir: string, tests: Scenario[]) => Promise<GateResult[]>
+/** Everything the Gatekeeper needs for one draft (D-015): `round` goes into every GateResult,
+ *  `unit.sources` (resolved against `webDir`) feed gate 4, `unit.intentionalDifferences` feed gate 5. */
+export type CheckDraftInput = { unit: Unit; round: number; draftDir: string; tests: Scenario[]; webDir: string }
+export type CheckDraft = (input: CheckDraftInput) => Promise<GateResult[]>
 export type Promote = (unitId: string, draftDir: string) => Promise<void>
 export type Rollback = (unitId: string) => Promise<void>
 export type ServedApp = { url: string; close: () => Promise<void> }
@@ -54,6 +57,7 @@ export type StatusInput = {
   tests: Scenario[]
   results: ScenarioResult[]
   coverage: Coverage | null
-  roundsExhausted: boolean
+  /** Not used by computeStatus (C1.6); optional until C drops it from its tests, then removed (D-015). */
+  roundsExhausted?: boolean
 }
 export type ComputeStatus = (input: StatusInput) => ScreenStatus

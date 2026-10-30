@@ -105,6 +105,30 @@ describe("OwnershipGuard", () => {
   })
 })
 
+describe("OwnershipGuard with a list (folders end with /, the rest are single files)", () => {
+  // What C's builder passes for the layout unit (PD3): its shared folder plus the Expo Router layout file.
+  const guard = new OwnershipGuard(["shared/layout/", "app/_layout.tsx"])
+
+  it.each(["shared/layout/Menu.tsx", "./shared/layout/nested/Tab.tsx", "app/_layout.tsx"])("lets %j through", (target) => {
+    expect(guard.isSatisfiedBy(writeCall(target))).toBe(false)
+  })
+
+  it.each(["app/index.tsx", "app/_layout.tsx/../index.tsx", "shared/layouts/x.tsx", "shared/layout", "screens/list/a.tsx"])(
+    "rejects %j",
+    (target) => {
+      expect(guard.isSatisfiedBy(writeCall(target))).toBe(true)
+    },
+  )
+
+  it("names every allowed path in the rejection", async () => {
+    const next = await guard.handle(writeCall("app/index.tsx"))
+    const items = (next.input as InferenceInput).context.getItems()
+    expect((items[1] as FunctionCallOutputItem).output.text).toBe(
+      "Rejected: you may only write inside shared/layout/, app/_layout.tsx",
+    )
+  })
+})
+
 describe("runTask", () => {
   it("keeps a guarded agent from writing outside its folder", async () => {
     const invoke = vi.fn(async () => "written")
