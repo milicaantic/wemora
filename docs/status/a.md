@@ -20,12 +20,16 @@ Poslednja izmena: 2026-10-30
 - A7: `src/core/runner.ts`: `BudgetedRunner` (retry iznad SDK-ovog, budžet, nikad ne baca grešku, `onUsage`/`onRateLimited`), `MockRunner` (odgovori po `kind:taskId:round`), `loadMockFixture`, `registerContext`, registracija `claude-haiku-5-5`; 16 testova, uključujući pravi Mozaik `runLoop` nad `MockRunner`-om. U `config.ts` dodati `apiRetries` i `apiRetryBaseMs`.
 - A8: `src/agents/_shared/`: `freshContext`, `OwnershipGuard`, `CancelGuard`, `composeGuards`, `defineTool`, `toModelSchema` (čišćenje JSON Scheme za Anthropic), `runTask`, `runStructured` (zod provera + najviše 2 ponovna pokušaja), `AgentHandle` i tipovi zadataka; 25 testova kroz pravi Mozaik runtime nad `MockRunner`-om.
 
+- A9: `src/orchestration/queue.ts`: `readyUnits`, `nextForBuilder`, `nextForTester`, `unlockedBy`, `blockedBy`, `isFinished` (čista logika po §9, P7 i P8 po predlogu); 15 testova.
+- Moja stavka za G1: `npx vitest run src/core src/agents/_shared src/orchestration scripts` → 102/102.
+
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `a/runner` → `main` (A7, A8)
-- A9: red zadataka (`orchestration/queue.ts`), poslednji zadatak F1
+- PR `a/runner` → `main` (A7, A8, A9)
+- kraj F1: obavestiti tim (spisak ispod), uskladiti ugovore i dokumente; kapija G1 (proverava D)
+- F2: A10 (Conductor)
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`

@@ -429,7 +429,8 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   6. dva poziva `freshContext` daju različite `id`, a memorija agenta ostaje iste dužine posle `runTask`.
 - **Zavisnosti i mock:** A5 (`runLoop`), A7 (`MockRunner`, `registerContext`). `AgentHandle` i tipove zadataka potvrđuju B, C i D (P6); do potvrde ih koriste samo testovi.
 
-### A9 — Red zadataka
+### A9 — Red zadataka ✅ 2026-10-30
+**Napomene iz implementacije:** jedinica koje nema na tabli računa se kao `waiting`. Kad su pravila §9 izjednačena, odlučuje niži talas, pa ID, da redosled uvek bude isti. `nextForTester` preskače i ekrane koji su već `promoted` ili `failed`. P7 i P8 su urađeni po predlogu i čekaju potvrdu tima. 15 testova.
 - **Fajlovi:** `src/orchestration/queue.ts`, `src/orchestration/queue.test.ts`.
 - **Izvozi:**
   ```ts
