@@ -28,9 +28,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Personal plans (not shared)
-docs/tasks/d.local.md
-
 # Expo sablon (templates/expo)
 templates/expo/node_modules/
 templates/expo/dist/
