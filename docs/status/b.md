@@ -7,10 +7,13 @@ Poslednja izmena: 2026-10-30
 - B2 + B3 (PR #7): `scenarios/compile.ts`, `run.ts` (`runScenarios`), `serve.ts` (`serveStatic`)
 - B4 + B5 (PR #11): `validate.ts` (`validateScenario`), `interactive.ts` (`extractInteractive`), `mocks/blank/`, 3 ručna scenarija za Recepte u `mocks/recepti/` (ručno provereni nad Receptima), popravka `expectNotVisible` dok se ekran učitava
 
-## Gotovo, čeka PR (grana `b/interactive-coverage`)
-- B6 `scenarios/coverage.ts`: `computeCoverage()` (izvoz kroz `index.ts`). Obaveze pokrivene po `scenario.obligation`; element je pokriven ako ga koristi `tap` ili `fill` (i u `setup`), po istom pravilu poklapanja kao izvršilac (`compile.ts` sada izvozi `actedOn`, `toTarget`, `sameElement`). `notPortable` elementi nikad nisu „missing“. Svaki element je u tačno jednoj od tri liste. Scenariji drugih jedinica se ne računaju; `movedTo` još ne utiče (Q6).
-- Testovi: `coverage.test.ts` (3), uključujući D-ov plan za Recepte i elemente koje je B5 izvukao iz pokrenutih Recepata. Ceo repo: 123 testa.
-- B7 (G1, ručno, bez PR-a): **ceo put bez AI-ja radi.** Scenario `shopping-list/add-item`:
+- B6 (PR #13): `coverage.ts` (`computeCoverage`); `compile.ts` izvozi `actedOn`, `toTarget`, `sameElement` (pravilo poklapanja je isto kao u izvršiocu)
+
+## Gotovo, čeka PR (grana `b/export-serve`)
+- `scenarios/index.ts` izvozi `serveStatic`, na zahtev C-a: `gatekeeper/` ne sme da uvozi `scenarios/serve.ts` direktno (pravilo `domain-via-index`), pa je C pravio svoj server. Posle spajanja C prelazi na `serveStatic`, a `serveApp`, Gatekeeper i `verify` serviraju aplikaciju isto. `serve.test.ts` sada uvozi preko `index.ts`. Ponašanje (SPA fallback, `close()`) menjam samo uz dogovor sa C (b.md Q21).
+
+## Urađeno ručno (F1, bez PR-a)
+- B7 (G1): **ceo put bez AI-ja radi.** Scenario `shopping-list/add-item`:
   1. prolazi `validateScenario` (original: pokrenuti Recepti; prazan ekran: RN placeholder kao iz scaffolda, Expo web export);
   2. prolazi nad ručno napisanim RN ekranom (`TextInput accessibilityLabel`, `Pressable role="button"`, `role="list"`), Expo web export, 390×844;
   3. pada nad placeholderom sa porukom `fill field labelled "Namirnica": not found on screen within 5000 ms`;

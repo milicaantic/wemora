@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { ServedApp } from "../contracts"
-import { serveStatic } from "./serve"
+// Through the public API: other domain folders may import scenarios/ only via index.ts.
+import { serveStatic } from "./index"
 
 let app: ServedApp
 

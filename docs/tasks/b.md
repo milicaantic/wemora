@@ -382,5 +382,5 @@ Svako pitanje ima predlog, ali ništa ne menjam dok tim ne odluči. Promene arhi
 - **Q18. Playwright** (veza P15). Predlog: `playwright` (biblioteka), tačno pinovan; README (D) dobija korak `npx playwright install chromium`. `npm test` posle toga radi bez mreže.
 - **Q19. Spike A.** Čekam C-ovu odluku u `docs/decisions.md`. Ako se prelazi na `testID`, menjaju se prevodilac (B2) i ugovor za buildera.
 - **Q20. Vremenski limit po koraku testa.** Predlog: konstanta u `core/config.ts` (`DEFAULTS`, A), koju domen sme da uvozi (P3).
-- **Q21. Javni izvozi van tim-plan §1.** Tester treba ARIA snapshot, a `verify` statički server, oba iz `scenarios/index.ts`. Predlog: to su izvozi mog `index.ts` koje koristim samo ja, pa ne idu u `contracts/api.ts`.
+- **Q21. Javni izvozi van tim-plan §1.** Tester treba ARIA snapshot, a `verify` statički server, oba iz `scenarios/index.ts`. Predlog: to su izvozi mog `index.ts`, pa ne idu u `contracts/api.ts`. *Delimično rešeno:* `serveStatic` se izvozi iz `index.ts` i koristi ga i C (`serveApp`, D-006), pa mu se ponašanje (SPA fallback, `close()`) menja samo uz dogovor sa C.
 - **Q22. Prvi korak scenarija.** Predlog: `steps` (ili `setup`, ako postoji) mora početi sa `goto`, inače je početno stanje nedefinisano. Ovo je novo pravilo validacije, pa tražim potvrdu.
