@@ -68,6 +68,7 @@ Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a
 | `plan.ready` | arhitekta-učesnik | `{}` | Conductor (poziva `scaffold()`) |
 | `plan.failed` | arhitekta-učesnik | `{}` | Conductor (završava prolaz, D-012) |
 | `tests.ready` | tester | `{ unitId }` | Gatekeeper |
+| `tests.missing` | Conductor | `{ unitId }` | Gatekeeper (promoviše ekran kao `unproven`, D-016) |
 | `draft.submitted` | builder | `{ unitId, round }` | Gatekeeper |
 | `gate.failed` | Gatekeeper | `{ unitId, round }` | Conductor |
 | `unit.promoted` | Gatekeeper | `{ unitId }` | Conductor, Gatekeeper (tokovi) |
@@ -134,7 +135,7 @@ Testeri uzimaju jedinice istim redom.
 
 **Runde i eskalacija:** runde 1–2 na `claude-haiku-5-5`, runde 3–4 na `claude-sonnet-5-5`. Posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde jedne jedinice, svaku sa svežim kontekstom (prompt + izvor + trenutni kod + poslednja greška).
 
-**Timeouti (podrazumevano):** builder 10 min po rundi, tester 8 min po jedinici. Gatekeeper čeka testove 10 min, zatim Conductor dodeljuje jedinicu drugom testeru. Posle drugog isteka ekran se promoviše kao `nedokazan`.
+**Timeouti (podrazumevano):** builder 10 min po rundi, tester 8 min po jedinici. Gatekeeper čeka testove 10 min, zatim Conductor dodeljuje jedinicu drugom testeru. Posle drugog isteka ekran se promoviše kao `nedokazan`. Tačno ponašanje je u D-016: Conductor prekida agenta (`cancel`); istek buildera je neuspela runda; posle drugog isteka testova Conductor šalje `tests.missing`; događaji iz ranije runde se ignorišu.
 
 ## 10. Gatekeeper
 

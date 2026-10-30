@@ -20,6 +20,16 @@ export type FakeScript = {
   /** The analyzer sends an inference.stream event, which the event log must skip. */
   emitStream?: boolean
   parseError?: string
+  /** Per screen: the tester's first N attempts send nothing, as if its loop hung (Infinity = always). */
+  silentTests?: Record<string, number>
+  /** Per unit: the builder's first N rounds submit nothing (Infinity = never). */
+  silentRounds?: Record<string, number>
+  /** A cancelled agent stays busy for one more tick, like a real loop that stops at its next step. */
+  slowCancel?: boolean
+  /** The Gatekeeper holds a screen's draft until tests.ready, or promotes it as unproven on tests.missing. */
+  waitForTests?: boolean
+  /** A cancelled builder still sends draft.submitted for the round it was cancelled in, one tick later. */
+  lateDraftOnCancel?: boolean
 }
 
 export type FakeCalls = {
@@ -29,6 +39,8 @@ export type FakeCalls = {
   builder: Array<BuildTask & { builderId: string }>
   scaffold: number
   buildReport: number
+  /** Agents the Conductor cancelled, as "tester-1: <reason>". */
+  cancels: string[]
   /** What happened, in order: "analysis.done:p1", "architect", "scaffold", "tester:u1", "builder:u1:1"… */
   order: string[]
 }
@@ -38,8 +50,13 @@ const later = (work: () => void): void => {
   setTimeout(work, 0)
 }
 
-function fakeHandle<T>(id: string, kind: AgentKind, act: (task: T, participantId: string) => void): AgentHandle<T> {
+type Act<T> = (task: T, participantId: string) => "silent" | void
+
+type CancelOptions = { slow?: boolean; afterCancel?: (task: unknown, participantId: string) => void }
+
+function fakeHandle<T>(id: string, kind: AgentKind, act: Act<T>, onCancel: (reason: string) => void, options: CancelOptions = {}): AgentHandle<T> {
   let busy = false
+  let current: T | null = null
   const participant = createHuman({ name: id, capabilities: [kind], handlers: [] })
   return {
     id,
@@ -48,52 +65,80 @@ function fakeHandle<T>(id: string, kind: AgentKind, act: (task: T, participantId
     isBusy: () => busy,
     assign(task) {
       busy = true
+      current = task
       later(() => {
         busy = false
-        act(task, participant.getId())
+        // A silent task keeps the agent busy until the Conductor cancels it.
+        if (act(task, participant.getId()) === "silent") busy = true
       })
     },
-    cancel() {},
+    cancel(reason) {
+      onCancel(`${id}: ${reason}`)
+      const cancelled = current
+      if (options.slow) later(() => (busy = false))
+      else busy = false
+      if (options.afterCancel && cancelled !== null) later(() => options.afterCancel?.(cancelled, participant.getId()))
+    },
   }
 }
 
-class DraftSubmitted extends SituationSpecification {
+class GatekeeperEvents extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
-    return event.type === "draft.submitted"
+    return event.type === "draft.submitted" || event.type === "tests.ready" || event.type === "tests.missing"
   }
 }
 
 export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: FakeCalls } {
-  const calls: FakeCalls = { analyzer: [], architect: [], tester: [], builder: [], scaffold: 0, buildReport: 0, order: [] }
+  const calls: FakeCalls = { analyzer: [], architect: [], tester: [], builder: [], scaffold: 0, buildReport: 0, cancels: [], order: [] }
   const screens = script.plan.units.filter((u) => u.kind === "screen")
+  const testerAttempts = new Map<string, number>()
+  const onCancel = (entry: string) => calls.cancels.push(entry)
   let promotions = 0
 
   function fakeGatekeeper(id: string): Participant {
+    const held = new Set<string>()
+    const tested = new Set<string>()
+    const promote = (unitId: string) => {
+      emit("unit.promoted", { unitId }, gatekeeper.getId())
+      if (++promotions === script.budgetAfterPromotions) emit("budget.exceeded", {}, gatekeeper.getId())
+    }
+    const onDraft = (unitId: string, round: number) => {
+      // Like the real Gatekeeper should: a draft from an earlier round comes from a loop that timed out.
+      if (round !== board().units[unitId]?.round) return
+      if (round <= (script.failRounds?.[unitId] ?? 0)) {
+        const message = `missing label "Pretraga" in round ${round}`
+        board().results[unitId] = {
+          unitId,
+          status: "failed",
+          rounds: round,
+          gates: [{ unitId, round, gate: "labels", ok: false, message }],
+          scenarios: [],
+          coverage: null,
+        }
+        emit("gate.failed", { unitId, round }, gatekeeper.getId())
+        return
+      }
+      const isScreen = screens.some((u) => u.id === unitId)
+      if (script.waitForTests && isScreen && !tested.has(unitId)) held.add(unitId)
+      else promote(unitId)
+    }
+    const onTests = (unitId: string, missing: boolean) => {
+      tested.add(unitId)
+      if (missing) board().statuses[unitId] = "unproven"
+      if (held.delete(unitId)) promote(unitId)
+    }
     const gatekeeper: Participant = createHuman({
       name: id,
       capabilities: ["gatekeeper"],
       handlers: [
         {
-          specification: new DraftSubmitted(),
+          specification: new GatekeeperEvents(),
           processor: {
             apply: ({ event }) =>
               later(() => {
-                const { unitId, round } = event.payload as { unitId: string; round: number }
-                if (round <= (script.failRounds?.[unitId] ?? 0)) {
-                  const message = `missing label "Pretraga" in round ${round}`
-                  board().results[unitId] = {
-                    unitId,
-                    status: "failed",
-                    rounds: round,
-                    gates: [{ unitId, round, gate: "labels", ok: false, message }],
-                    scenarios: [],
-                    coverage: null,
-                  }
-                  emit("gate.failed", { unitId, round }, gatekeeper.getId())
-                  return
-                }
-                emit("unit.promoted", { unitId }, gatekeeper.getId())
-                if (++promotions === script.budgetAfterPromotions) emit("budget.exceeded", {}, gatekeeper.getId())
+                const { unitId, round } = event.payload as { unitId: string; round?: number }
+                if (event.type === "draft.submitted") onDraft(unitId, round ?? 0)
+                else onTests(unitId, event.type === "tests.missing")
               }),
           },
         },
@@ -126,7 +171,7 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
           board().reports[task.partId] = []
           calls.order.push(`analysis.done:${task.partId}`)
           emit("analysis.done", { partId: task.partId }, pid)
-        }),
+        }, onCancel),
       architect: (id) =>
         fakeHandle<ArchitectTask>(id, "architect", (task, pid) => {
           calls.architect.push(task)
@@ -134,20 +179,44 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
           if (script.planFails) return emit("plan.failed", {}, pid)
           board().plan = script.plan
           emit("plan.ready", {}, pid)
-        }),
+        }, onCancel),
       tester: (id) =>
-        fakeHandle<TestTask>(id, "tester", (task, pid) => {
-          calls.tester.push(task)
-          calls.order.push(`tester:${task.unitId}`)
-          board().tests[task.unitId] = [{ id: `${task.unitId}-t1`, unitId: task.unitId, obligation: "o", steps: [{ goto: "/" }] }]
-          emit("tests.ready", { unitId: task.unitId }, pid)
-        }),
+        fakeHandle<TestTask>(
+          id,
+          "tester",
+          (task, pid) => {
+            calls.tester.push(task)
+            calls.order.push(`tester:${task.unitId}`)
+            const attempt = (testerAttempts.get(task.unitId) ?? 0) + 1
+            testerAttempts.set(task.unitId, attempt)
+            if (attempt <= (script.silentTests?.[task.unitId] ?? 0)) return "silent"
+            board().tests[task.unitId] = [{ id: `${task.unitId}-t1`, unitId: task.unitId, obligation: "o", steps: [{ goto: "/" }] }]
+            emit("tests.ready", { unitId: task.unitId }, pid)
+          },
+          onCancel,
+          { slow: script.slowCancel },
+        ),
       builder: (id) =>
-        fakeHandle<BuildTask>(id, "builder", (task, pid) => {
-          calls.builder.push({ ...task, builderId: id })
-          calls.order.push(`builder:${task.unitId}:${task.round}`)
-          emit("draft.submitted", { unitId: task.unitId, round: task.round }, pid)
-        }),
+        fakeHandle<BuildTask>(
+          id,
+          "builder",
+          (task, pid) => {
+            calls.builder.push({ ...task, builderId: id })
+            calls.order.push(`builder:${task.unitId}:${task.round}`)
+            if (task.round <= (script.silentRounds?.[task.unitId] ?? 0)) return "silent"
+            emit("draft.submitted", { unitId: task.unitId, round: task.round }, pid)
+          },
+          onCancel,
+          {
+            slow: script.slowCancel,
+            afterCancel: script.lateDraftOnCancel
+              ? (task, pid) => {
+                  const { unitId, round } = task as BuildTask
+                  emit("draft.submitted", { unitId, round }, pid)
+                }
+              : undefined,
+          },
+        ),
       gatekeeper: fakeGatekeeper,
     },
   }

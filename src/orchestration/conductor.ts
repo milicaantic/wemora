@@ -12,11 +12,12 @@ import {
   type UnitState,
   type UnitStatus,
 } from "../contracts"
-import { FIXED_TEAM, modelForRound } from "../core/config"
+import { DEFAULTS, FIXED_TEAM, modelForRound } from "../core/config"
 import { log } from "../core/log"
 import { board, emit, join, leave } from "../core/runtime"
 import { createEventLogger } from "./eventLogger"
 import { blockedBy, isFinished, nextForBuilder, nextForTester, type QueueView } from "./queue"
+import { realClock, Timers, type Clock } from "./timeouts"
 
 // The Conductor runs one migration (architecture.md §4, D-010): it starts agents, hands out tasks and
 // reacts to their events. It never does the work itself; agents and domain functions come in through deps.
@@ -38,8 +39,10 @@ export type ConductorDeps = {
   agents: AgentFactories
 }
 
-/** Team size and rounds. F2 uses FIXED_TEAM; A14 and A15 replace it with the §9 formulas. */
-export type ConductorOptions = Partial<{ analyzers: number; builders: number; testers: number; maxRounds: number }>
+/** Team size and rounds (F2 uses FIXED_TEAM; A14 and A15 replace it with the §9 formulas), and the clock for timeouts. */
+export type ConductorOptions = Partial<{ analyzers: number; builders: number; testers: number; maxRounds: number }> & {
+  clock?: Clock
+}
 
 export type RunOutcome = "finished" | "plan.failed" | "budget.exceeded" | "error"
 
@@ -75,6 +78,7 @@ export class Conductor {
   private readonly builders: Worker<BuildTask>[] = []
   private readonly gatekeepers: Participant[] = []
   private readonly counters = new Map<AgentKind, number>()
+  private readonly timers: Timers
   // Events are handled one at a time, in arrival order, outside Mozaik's synchronous publish.
   private chain: Promise<void> = Promise.resolve()
   private resolveRun: (summary: RunSummary) => void = () => {}
@@ -89,7 +93,9 @@ export class Conductor {
     private readonly deps: ConductorDeps,
     options: ConductorOptions = {},
   ) {
-    this.team = { ...FIXED_TEAM, ...options }
+    const { clock, ...team } = options
+    this.team = { ...FIXED_TEAM, ...team }
+    this.timers = new Timers(clock ?? realClock)
     this.participant = createHuman({
       name: "conductor",
       capabilities: ["orchestrate"],
@@ -145,10 +151,15 @@ export class Conductor {
         return this.finish("plan.failed", "the architect could not produce a valid plan")
       case EVENTS.testsReady:
         return this.onTestsReady(worker, event.payload as EventPayloads["tests.ready"])
+      case EVENTS.testsMissing:
+        return // sent by the Conductor itself for the Gatekeeper (D-016)
       case EVENTS.draftSubmitted:
-        return this.setUnit((event.payload as EventPayloads["draft.submitted"]).unitId, { status: "submitted" })
-      case EVENTS.gateFailed:
-        return this.onGateFailed(event.payload as EventPayloads["gate.failed"])
+        return this.onDraftSubmitted(event.payload as EventPayloads["draft.submitted"])
+      case EVENTS.gateFailed: {
+        const { unitId, round } = event.payload as EventPayloads["gate.failed"]
+        if (this.isStale(unitId, round, EVENTS.gateFailed)) return
+        return this.roundFailed(unitId, round, this.lastGateError(unitId, round))
+      }
       case EVENTS.unitPromoted:
         return this.onPromoted(event.payload as EventPayloads["unit.promoted"])
       case EVENTS.budgetExceeded:
@@ -193,14 +204,24 @@ export class Conductor {
     await this.checkFinished()
   }
 
+  // Tests may also arrive late from a tester that already timed out; they still count, but only the tester
+  // that currently holds the screen is freed.
   private onTestsReady(worker: AnyWorker | undefined, { unitId }: EventPayloads["tests.ready"]): void {
-    const tester = worker ?? this.testers.find((t) => t.task === unitId)
+    this.timers.clear(`tests:${unitId}`)
+    const tester = this.testers.find((t) => t.task === unitId && (!worker || t === worker))
     if (tester) this.release(tester)
     this.dispatch()
   }
 
+  private onDraftSubmitted({ unitId, round }: EventPayloads["draft.submitted"]): void {
+    if (this.isStale(unitId, round, EVENTS.draftSubmitted)) return
+    this.timers.clear(`build:${unitId}`)
+    this.setUnit(unitId, { status: "submitted" })
+  }
+
   // Same builder, next round, fresh context; after the last round the unit and everything that needs it fail.
-  private async onGateFailed({ unitId, round }: EventPayloads["gate.failed"]): Promise<void> {
+  private async roundFailed(unitId: string, round: number, lastError: string): Promise<void> {
+    this.timers.clear(`build:${unitId}`)
     const builder = this.builders.find((b) => b.task === unitId)
     if (round >= this.team.maxRounds || !builder) {
       this.failUnit(unitId, builder ? `failed after ${round} round(s)` : "no builder holds this unit")
@@ -210,10 +231,45 @@ export class Conductor {
     const next = round + 1
     const model = modelForRound(next)
     this.setUnit(unitId, { status: "building", round: next, model })
-    this.assign(builder, { unitId, round: next, model, lastError: this.lastGateError(unitId, round) }, unitId)
+    this.assign(builder, { unitId, round: next, model, lastError }, unitId)
+  }
+
+  // A tester that sends nothing for testsWaitTimeoutMs is cancelled and the screen goes back to the queue,
+  // after untried screens; after the last attempt the Gatekeeper hears tests.missing (D-016).
+  private onTestsTimeout(unitId: string): void {
+    const tester = this.testers.find((t) => t.task === unitId)
+    if (!tester || this.finished) return
+    tester.handle.cancel(`timeout: no tests.ready within ${DEFAULTS.testsWaitTimeoutMs / 60_000} min`)
+    this.release(tester)
+    const attempts = (board().units[unitId]?.testAttempts ?? 0) + 1
+    this.setUnit(unitId, { testAttempts: attempts, testerId: null })
+    log({ agent: "conductor", event: "tests.timeout", data: { unitId, tester: tester.handle.id, attempt: attempts } })
+    if (attempts >= DEFAULTS.maxTestAttempts) emit("tests.missing", { unitId }, this.participant.getId())
+    this.dispatch()
+  }
+
+  // A builder that submits nothing for builderRoundTimeoutMs is cancelled; that round counts as failed (P10).
+  private async onBuildTimeout(unitId: string): Promise<void> {
+    const builder = this.builders.find((b) => b.task === unitId)
+    const unit = board().units[unitId]
+    if (!builder || !unit || unit.status !== "building" || this.finished) return
+    const minutes = DEFAULTS.builderRoundTimeoutMs / 60_000
+    builder.handle.cancel(`timeout: no draft within ${minutes} min`)
+    log({ agent: "conductor", event: "build.timeout", data: { unitId, builder: builder.handle.id, round: unit.round } })
+    await this.roundFailed(unitId, unit.round, `no draft was submitted within ${minutes} min in round ${unit.round}; submit sooner`)
+  }
+
+  // An event for an earlier round comes from a loop that already timed out; the current round decides.
+  private isStale(unitId: string, round: number, type: string): boolean {
+    const current = board().units[unitId]?.round
+    if (current === undefined || round === current) return false
+    log({ agent: "conductor", event: "event.stale", data: { type, unitId, round, current } })
+    return true
   }
 
   private async onPromoted({ unitId }: EventPayloads["unit.promoted"]): Promise<void> {
+    this.timers.clear(`build:${unitId}`)
+    this.timers.clear(`tests:${unitId}`)
     this.setUnit(unitId, { status: "promoted" })
     const builder = this.builders.find((b) => b.task === unitId)
     if (builder) this.release(builder)
@@ -267,6 +323,7 @@ export class Conductor {
   private async finish(outcome: RunOutcome, error?: string): Promise<void> {
     if (this.finished) return
     this.finished = true
+    this.timers.clearAll()
     const { runId, config } = board()
     log({ agent: "conductor", event: "run.finished", data: { outcome, error } })
     let reportPath: string | null = null
@@ -319,6 +376,18 @@ export class Conductor {
   private assign<T>(worker: Worker<T>, task: T, label: string): void {
     worker.task = label
     board().agents[worker.handle.id].busyWith = label
+    if (worker.kind === "tester") this.timers.start(`tests:${label}`, DEFAULTS.testsWaitTimeoutMs, () => this.enqueue(() => this.onTestsTimeout(label)))
+    if (worker.kind === "builder") this.timers.start(`build:${label}`, DEFAULTS.builderRoundTimeoutMs, () => this.enqueue(() => this.onBuildTimeout(label)))
+    this.handOver(worker, task, label)
+  }
+
+  // A cancelled loop only stops at its next step, so a new task waits until the agent is really idle.
+  private handOver<T>(worker: Worker<T>, task: T, label: string): void {
+    if (this.finished || worker.task !== label) return
+    if (worker.handle.isBusy()) {
+      this.timers.start(`idle:${worker.handle.id}`, DEFAULTS.idleCheckMs, () => this.enqueue(() => this.handOver(worker, task, label)))
+      return
+    }
     log({ agent: "conductor", event: "task.assigned", data: { to: worker.handle.id, task } })
     worker.handle.assign(task)
   }

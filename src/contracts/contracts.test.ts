@@ -95,6 +95,11 @@ describe("EventPayloadSchemas", () => {
     expect(EventPayloadSchemas["unit.promoted"].safeParse(withData).success).toBe(false)
   })
 
+  it("has tests.missing with only the unit ID (D-016)", () => {
+    expect(EventPayloadSchemas["tests.missing"].safeParse({ unitId: "recipe-list" }).success).toBe(true)
+    expect(EventPayloadSchemas["tests.missing"].safeParse({ unitId: "recipe-list", attempts: 2 }).success).toBe(false)
+  })
+
   it("has plan.failed with an empty payload (D-012)", () => {
     expect(EventPayloadSchemas["plan.failed"].safeParse({}).success).toBe(true)
     expect(EventPayloadSchemas["plan.failed"].safeParse({ errors: ["unit x has no route"] }).success).toBe(false)

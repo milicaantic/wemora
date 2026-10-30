@@ -1,4 +1,5 @@
 import type { MigrationStateFields, Unit, UnitStatus } from "../contracts"
+import { DEFAULTS } from "../core/config"
 
 // Task queue as pure functions over a board snapshot (architecture.md §9): no Mozaik, no clock.
 // The Conductor asks "what next?" and writes the answer to the board itself.
@@ -37,12 +38,16 @@ export function nextForBuilder(view: QueueView): Unit | undefined {
 
 // Testers work on the original app, so every screen of every wave is open from the start (§4 step 6).
 // Rules 1 and 2 do not apply to testers (docs/tasks/a.md, P8); shared units have no UI tests of their own.
+// A screen whose tester timed out comes after screens nobody has tried yet, and stops after the last attempt (A13).
 export function nextForTester(view: QueueView, beingTested: ReadonlySet<string>): Unit | undefined {
   const units = view.plan?.units ?? []
+  const attempts = (unitId: string) => view.units[unitId]?.testAttempts ?? 0
+  const byFlowsAndSize = byFlowsThenSize(view)
   return units
     .filter((unit) => unit.kind === "screen")
     .filter((unit) => !hasTests(view, unit.id) && !beingTested.has(unit.id) && !isFinal(statusOf(view, unit.id)))
-    .sort(byFlowsThenSize(view))[0]
+    .filter((unit) => attempts(unit.id) < DEFAULTS.maxTestAttempts)
+    .sort((a, b) => attempts(a.id) - attempts(b.id) || byFlowsAndSize(a, b))[0]
 }
 
 // Units that became ready because `promotedUnitId` was promoted.
