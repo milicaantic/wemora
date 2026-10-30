@@ -27,3 +27,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Personal plans (not shared)
+docs/tasks/d.local.md
