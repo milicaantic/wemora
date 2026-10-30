@@ -1,0 +1,30 @@
+# Status: osoba D
+Faza: F0
+Poslednja izmena: 2026-10-30
+
+## Gotovo (spojeno u main)
+- ništa još
+
+## Gotovo, čeka spajanje
+- D0: review ugovora za moj deo (`ParsedApp`, `AnalysisPart`, `AnalyzerReport`, `Obligation`, `Unit`, `Flow`, `Plan`, `ParseApp`, `SplitParts`, `ValidatePlan`, `BuildReport`). Tipovi odgovaraju mom planu; promena ugovora ne treba. Nalazi su ispod.
+
+## U radu
+- ništa
+
+## Sledeće
+- D1: `examples/todomvc`
+- D2: ovaj fajl (napravljen u D0)
+
+## Mockovi koje koristim
+- nijedan
+
+## Čeka odluku tima
+- **Structured output i Anthropic (A, `runStructured` u A8).** Mozaik šalje šemu Anthropicu bez izmena (`output_config.format`). `z.toJSONSchema(PlanSchema)` sadrži ključeve koje Anthropic ne podržava: `minLength` (20×), `minimum`/`maximum` (iz `.int()`), `oneOf` (namerne razlike), `minItems: 2` (`Flow.unitIds`) i `additionalProperties: {type: string}` + `propertyNames` (`routeMap`). Šema analizatora ima `minLength` (3×). Predlog: `runStructured` pre slanja čisti JSON Schemu (briše `minLength`, `maxLength`, `minimum`, `maximum`, `propertyNames`, `$schema`, `minItems > 1`; `oneOf` → `anyOf`), a zod proverava odgovor posle, kao i do sada. Ugovori se ne menjaju.
+- **`routeMap` od modela (moje, D13/D14).** Arhitekta ne vraća `routeMap`: šema za model je `PlanSchema.omit({ routeMap: true })`, a `routeMap` računa kod (`expoRouteFor`). Tako nema `additionalProperties` koji nije `false`.
+- **`writes` (C).** Test ugovora koristi `src/screens/<id>/`, dakle putanje relativne u odnosu na `app/`. Tako radim `validatePlan` i `normalizePlan`, osim ako C kaže drugačije.
+- **`Unit.id` kao ime foldera.** `UnitSchema` traži samo `min(1)`. `validatePlan` proverava `^[a-z0-9][a-z0-9-]*$`, pa ugovor ne mora da se menja.
+- **Neuspeo plan (A, PD2).** Nema događaja za „arhitekta nije uspela posle 3 pokušaja“. Predlog: `plan.failed {}` ili timeout u Conductoru uz `plan.errors.json`.
+- Odgovori na P4 (`splitParts`) i P5 (Conductor čeka sve `analysis.done`) iz `docs/tasks/a.md`: slažem se sa predlozima.
+
+## Blokira me
+- ništa
