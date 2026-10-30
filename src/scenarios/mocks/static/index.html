@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- Test page for scenarios/run.test.ts. Below 600px the filters are hidden behind the "Filteri" button. -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Narudžbine</title>
+    <style>
+      #toggle-filters { display: none; }
+      @media (max-width: 600px) {
+        #toggle-filters { display: inline-block; }
+        #filters { display: none; }
+        #filters.open { display: block; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Narudžbine</h1>
+    <p id="width"></p>
+
+    <label for="search">Pretraga</label>
+    <input id="search" />
+
+    <button id="toggle-filters" type="button">Filteri</button>
+    <div id="filters">
+      <label for="status">Status</label>
+      <input id="status" />
+    </div>
+
+    <ul id="orders"></ul>
+
+    <button id="save" type="button">Sačuvaj</button>
+    <p id="saved" hidden>Sačuvano</p>
+
+    <button id="favorite" type="button">Dodaj u omiljene</button>
+    <p id="favorites"></p>
+
+    <script>
+      const orders = [
+        { id: "#1042", customer: "Petar", status: "Poslato" },
+        { id: "#1043", customer: "Marko", status: "Na čekanju" },
+      ]
+      const $ = (id) => document.getElementById(id)
+
+      function render() {
+        const query = $("search").value.toLowerCase()
+        const status = $("status").value.toLowerCase()
+        $("orders").innerHTML = orders
+          .filter((o) => o.customer.toLowerCase().includes(query) && o.status.toLowerCase().includes(status))
+          .map((o) => `<li>${o.id} ${o.customer} (${o.status})</li>`)
+          .join("")
+      }
+
+      $("width").textContent = `Širina: ${window.innerWidth}`
+      $("search").addEventListener("input", render)
+      $("status").addEventListener("input", render)
+      $("toggle-filters").addEventListener("click", () => $("filters").classList.toggle("open"))
+      $("save").addEventListener("click", () => ($("saved").hidden = false))
+
+      const favorites = () => Number(localStorage.getItem("favorites") ?? 0)
+      const showFavorites = () => ($("favorites").textContent = `Omiljeni: ${favorites()}`)
+      $("favorite").addEventListener("click", () => {
+        localStorage.setItem("favorites", String(favorites() + 1))
+        showFavorites()
+      })
+
+      render()
+      showFavorites()
+    </script>
+  </body>
+</html>

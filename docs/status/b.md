@@ -1,26 +1,31 @@
 # Status: osoba B
-Faza: F0
+Faza: F1
 Poslednja izmena: 2026-10-30
 
 ## Gotovo (spojeno u main)
-- ništa
+- F0 (PR #3): `docs/tasks/b.md`, folderi, B0 (review ugovora, potvrda D-001–D-003), B1 (`playwright@1.64.1`)
 
-## Gotovo, čeka commit (grana `b`)
-- `docs/tasks/b.md`: plan zadataka B0–B16 i pitanja za tim
-- folderi `src/scenarios/mocks/`, `src/verify/mocks/`, `src/agents/prompts/`, `scripts/` (sa `.gitkeep`)
-- B0: review ugovora za moj deo (`scenario.ts`, `difference.ts`, `ScenarioResult`, `InteractiveElement`, `Coverage`, B-ovi potpisi u `api.ts`). Tipovi su u redu; A je dobio 3 tražene izmene (ispod). Potvrđujem D-001, D-002 i D-003.
-- B1: `playwright@1.64.1` (biblioteka, tačno pinovana, odobreno u chatu) u `package.json`/`package-lock.json`. Posle `npm ci` svako pokreće `npx playwright install chromium`. Ručna provera: Chromium 156 se pokreće, viewport 390×844, `getByLabel` i `ariaSnapshot()` rade.
-- Napomena: zavisnost ide u isti commit sa docs fajlovima na grani `b`, a ne u poseban PR `b/deps` (tim-plan §2.5), po dogovoru.
+## Gotovo, čeka PR (grana `b/compiler-runner`)
+- B2 `scenarios/compile.ts`: DSL → lista akcija sa indeksom DSL koraka; uslovni `reveal` iz `hiddenBehind` (pre `tap`, `fill` i `expectVisible`); korak nad `notPortable` elementom je greška.
+- B3 `scenarios/run.ts`: `runScenarios()` (izvoz kroz `index.ts`) — jedan Chromium po pozivu, nov kontekst po scenariju, `setup` pa `steps`, nikad ne baca. `createRunScenarios(settings)` za testove sa kraćim vremenima. Skrol do elementa za virtualizovane liste.
+- B3 `scenarios/serve.ts`: `serveStatic(dir)` preko `node:http` (SPA fallback, zaštita od `..`), za testove i kasnije `verify`.
+- Testovi: `compile.test.ts` (6), `run.test.ts` (11, pravi Chromium nad `mocks/static/`), `serve.test.ts` (4). Stabilni u 3 uzastopna puštanja.
+
+## Odluke koje sam doneo u B2/B3 (čekaju potvrdu tima)
+- `failedStep` = indeks u `steps`; pad u `setup` nema `failedStep`, a `error` počinje sa `setup: step N:` (predlog iz B0, ugovor još nema komentar).
+- Poklapanje (b.md Q2): uloga+ime, labela i `tap {text}` tačno i samo među vidljivim elementima (više poklapanja → greška); `expectVisible`/`expectNotVisible` traže podniz bez obzira na velika slova.
+- Vremenski limiti su konstante u `run.ts` (korak 5 s, navigacija 15 s) dok ne dobiju mesto u `core/config.ts` (b.md Q20).
 
 ## U radu
 - ništa
 
 ## Sledeće
-- B2 + B3: prevodilac DSL → Playwright i `runScenarios()` (PR `b/compiler-runner`), čim A spoji `skeleton` (prazan `src/scenarios/index.ts`)
+- B4 `validateScenario()` + 3 ručna scenarija za Recepte (PR `b/validate-setup`)
 - `examples/recepti` još ne postoji (D, F1); pokrećem ga kad stigne
 
 ## Mockovi koje koristim
-- nema
+- `src/scenarios/mocks/static/` (strana sa pretragom, filterom iza dugmeta „Filteri“ i virtualizovana lista) umesto pravih aplikacija, samo u testovima
+- `apiFixture` se prenosi, ali se ne primenjuje dok D ne odgovori na Q1
 
 ## Čeka odluku tima
 - A: komentar za `ScenarioResult.failedStep` (indeks u `steps`; pad u `setup` → bez `failedStep`, `error` počinje sa `setup:`)

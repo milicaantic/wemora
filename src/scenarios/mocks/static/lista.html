@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Virtualized list, like a React Native Web FlatList: only rows near the visible area exist in the DOM. -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Lista</title>
+    <style>
+      body { margin: 0; }
+      #list { height: 100vh; overflow-y: auto; position: relative; }
+      #spacer { position: relative; }
+      .row { position: absolute; left: 0; right: 0; height: 30px; line-height: 30px; }
+    </style>
+  </head>
+  <body>
+    <div id="list"><div id="spacer"></div></div>
+    <script>
+      const ROW = 30
+      const COUNT = 200
+      const list = document.getElementById("list")
+      const spacer = document.getElementById("spacer")
+      spacer.style.height = `${ROW * COUNT}px`
+
+      function render() {
+        const first = Math.max(0, Math.floor(list.scrollTop / ROW) - 2)
+        const last = Math.min(COUNT, first + Math.ceil(list.clientHeight / ROW) + 4)
+        spacer.innerHTML = ""
+        for (let i = first; i < last; i++) {
+          const row = document.createElement("div")
+          row.className = "row"
+          row.style.top = `${i * ROW}px`
+          row.textContent = `Stavka ${i + 1}`
+          spacer.appendChild(row)
+        }
+      }
+
+      list.addEventListener("scroll", render)
+      render()
+    </script>
+  </body>
+</html>

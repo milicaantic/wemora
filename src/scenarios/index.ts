@@ -1,10 +1,8 @@
-import type { ComputeCoverage, ExtractInteractive, RunScenarios, ValidateScenario } from "../contracts"
+import type { ComputeCoverage, ExtractInteractive, ValidateScenario } from "../contracts"
 
-// Public API of scenarios/ (owner: B). Placeholders until F1; signatures come from contracts/api.ts.
+// Public API of scenarios/ (owner: B). Signatures come from contracts/api.ts.
 
-export const runScenarios: RunScenarios = async () => {
-  throw new Error("not implemented: runScenarios")
-}
+export { runScenarios } from "./run"
 
 export const validateScenario: ValidateScenario = async () => {
   throw new Error("not implemented: validateScenario")
