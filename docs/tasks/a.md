@@ -332,7 +332,16 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   3. `handleUnhandledRejection` upiše liniju sa `event: "unhandledRejection"`, a `installSafety` dvaput registruje handler samo jednom. Test zove handler direktno, jer bi pravi `unhandledRejection` uhvatio i vitest.
 - **Zavisnosti i mock:** nema.
 
-### A7 — `BudgetedRunner` i `MockRunner`
+### A7 — `BudgetedRunner` i `MockRunner` ✅ 2026-10-30
+**Odstupanja od plana ispod (urađeno ovako):**
+- `registerContext(context: ModelContext, meta)` prima sam kontekst, ne `contextId`, i čuva ga u `WeakMap`-u, pa završeni zadaci ne ostaju u memoriji.
+- Anthropic SDK već sam radi 2 ponovna pokušaja (429, 5xx, prekid veze), a Mozaik ne dozvoljava da se to isključi. Naš retry je iznad toga: `DEFAULTS.apiRetries = 2`, pauza `apiRetryBaseMs = 5000` × 2^pokušaj. Ne ponavljaju se 400, 401, 403 i 404.
+- Model bez cene u `PRICING` se odbija (bez cene budžet ne može da se sprovede), npr. `claude-haiku-4-5`.
+- Izvozi se i `errorOutput(reason)` (poruka sa `__WEMORA_ERROR__`) za A8.
+- `onUsage`, `onBudgetExceeded` i `onRateLimited` su zaštićeni: ako callback baci grešku, runner je upiše u log i nastavlja.
+- Poznato ograničenje: provera budžeta je pre poziva, pa paralelni agenti mogu malo da pređu limit (najviše za cenu poziva koji su već krenuli).
+- Testovi (16): uz slučajeve ispod, pravi Mozaik `runLoop` nad `MockRunner`-om poziva alat i završava skriptovanim odgovorom.
+
 - **Fajlovi:** `src/core/runner.ts`, `src/core/runner.test.ts`.
 - **Izvozi:**
   ```ts
