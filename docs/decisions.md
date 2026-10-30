@@ -53,7 +53,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-005: Spike A — Playwright selektori rade na Expo webu, uz obavezan `role`
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (čeka B, jer menja ugovor za buildera)
+- Status: prihvaćeno 2026-10-30 (autor C; B: „predlog: prihvatiti“ u `docs/status/b.md`; A kao vlasnik arhitekture). Usklađeno u `architecture.md` §11.
 - Odluka: ostajemo na selektorima po labeli, ulozi i tekstu, **bez** `testID` ugovora. Builder **mora** da stavi `role="button"` na svaki `Pressable` koji je na webu dugme i `role="list"` / `role="listitem"` na liste. Polja dobijaju `accessibilityLabel` sa istom labelom kao na webu.
 - Zašto: ručni RN ekran (Expo SDK 58, `react-native-web` 0.21, statički web export, viewport 390×844), provereno skriptom `templates/spike-a/check.ts`:
 
@@ -115,7 +115,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-008: Kapije 1–4 čitaju kod TypeScriptom; `labels` proverava samo tekst koji postoji u originalu
 - Datum: 2026-10-30
 - Ko: C
-- Status: predlog (D potvrdio 2026-10-30, sve tri tačke; čeka A i B; `architecture.md` §10 kaže „Babel parsira“)
+- Status: prihvaćeno 2026-10-30 (autor C; D potvrdio sve tri tačke; A kao vlasnik arhitekture; B obavešten, njegovi testovi se ne menjaju). Usklađeno u `architecture.md` §10 i `tim-plan.md`. Uslov: `checkDraft` u ugovoru dobija putanje originalnih fajlova jedinice (`contracts/f1`, pre C2.3).
 - Odluka:
   1. Kapije `parse`, `forbiddenApis` i `labels` čitaju nacrt TypeScript compiler API-jem (kao parser u D-007), ne Babelom. Kapija `tsc` koristi TypeScript iz šablona (`templates/expo`), nad privremenom kopijom `app/` sa nacrtom.
   2. `forbiddenApis` odbija **svaki** JSX tag malim slovom (`div`, `span`, `p`, `button`, `input`…), jer u RN nema HTML elemenata, i za svaki predlaže RN zamenu.

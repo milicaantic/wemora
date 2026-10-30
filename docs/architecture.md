@@ -138,10 +138,10 @@ Testeri uzimaju jedinice istim redom.
 ## 10. Gatekeeper
 
 **Kapije, redom** (prva koja padne vraća grešku builderu):
-1. `parse`: Babel parsira sve fajlove nacrta.
-2. `forbiddenApis`: nema `div`, `span`, `window`, `document`, `localStorage`, `react-dom`, `react-router-dom` u nacrtu.
+1. `parse`: TypeScript parser čita sve fajlove nacrta (D-008).
+2. `forbiddenApis`: u nacrtu nema HTML tagova (svaki JSX tag malim slovom, npr. `div`, `span`, `p`, `button`), `window`, `document`, `localStorage`, `react-dom` ni `react-router-dom` (D-008).
 3. `tsc`: nacrt + `app/` bez grešaka tipova.
-4. `labels`: svaka labela i tekst iz testova jedinice postoji u kodu nacrta.
+4. `labels`: svaka labela i tekst iz testova jedinice **koji postoji u originalnom web kodu jedinice** postoji i u kodu nacrta; tekst koji dolazi iz podataka se preskače (D-008). Pravi dokaz ostaje kapija 5.
 5. `scenarios`: svi testovi jedinice prolaze nad Expo web buildom.
 6. (opciono) `androidExport`: `expo export --platform android` uspeva.
 
@@ -177,7 +177,7 @@ Testeri uzimaju jedinice istim redom.
 
 **Testovi toka** (`Flow`) prelaze više jedinica i puštaju se tek kad su sve promovisane.
 
-**Ugovor za buildera:** labele polja i tekst dugmadi ostaju isti kao u originalu. Izgled sme da se menja.
+**Ugovor za buildera:** labele polja i tekst dugmadi ostaju isti kao u originalu. Izgled sme da se menja. Da bi testovi našli elemente na Expo webu (D-005): dugme je `Pressable role="button"` sa `Text`, lista je `role="list"` sa stavkama `role="listitem"`, a polje je `TextInput accessibilityLabel` sa istom labelom kao na webu.
 
 ## 12. AI agenti
 
