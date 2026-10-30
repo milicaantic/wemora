@@ -216,7 +216,8 @@ export function createBuilder(id: string): AgentHandle<BuildTask> {
         guard: composeGuards(new OwnershipGuard(started.job.allowed), guard),
       })
       if (!result.ok) log({ agent: id, event: "build.loop_failed", data: { unitId: task.unitId, round: task.round, error: result.error } })
-      // Without submit_draft the round would hang until the timeout; the Gatekeeper judges the draft as it is.
+      // Without submit_draft the round would hang until the timeout; the Gatekeeper judges the draft as it is
+      // (unless the round was cancelled, see below).
       if (!started.job.submitted) log({ agent: id, event: "build.auto_submitted", data: { unitId: task.unitId, round: task.round } })
     } catch (error) {
       log({ agent: id, event: "build.failed", data: { unitId: task.unitId, round: task.round, error: message(error) } })
@@ -226,6 +227,11 @@ export function createBuilder(id: string): AgentHandle<BuildTask> {
     // Free before emitting: the Gatekeeper's answer may reach the Conductor in the same call.
     busyWith = null
     cancel = null
+    // A cancelled round sends nothing: the Conductor already counted it as failed (D-016).
+    if (guard.isCancelled()) {
+      log({ agent: id, event: "build.cancelled", data: { unitId: task.unitId, round: task.round } })
+      return
+    }
     try {
       emit("draft.submitted", { unitId: task.unitId, round: task.round }, agent.getId())
     } catch (error) {

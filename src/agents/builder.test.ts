@@ -78,6 +78,14 @@ const fixture: MockFixture = {
   ],
   // model zaboravi submit_draft
   "builder:recipe-detail:1": [{ text: "I think I am done." }],
+  // dugačka runda koju Conductor prekida
+  "builder:recipe-detail:2": [
+    { call: { name: "read_app", args: { path: "." } } },
+    { call: { name: "read_app", args: { path: "." } } },
+    { call: { name: "read_app", args: { path: "." } } },
+    { call: { name: "submit_draft", args: {} } },
+    { text: "Done." },
+  ],
   "builder:recipe-list:1": [{ call: { name: "read_app", args: { path: "." } } }, { text: "Done." }],
   // provera kapija iz alata
   "builder:shopping-list:3": [
@@ -220,6 +228,17 @@ describe("builder agent", () => {
     builder.assign({ unitId: "recipe-detail", round: 1, model: "claude-haiku-5-5", lastError: null })
     await waitForSubmit("recipe-detail", 1)
     expect(builder.isBusy()).toBe(false)
+  })
+
+  it("prekinuta runda ne šalje draft.submitted (D-016)", async () => {
+    const builder = newBuilder()
+    builder.assign({ unitId: "recipe-detail", round: 2, model: "claude-haiku-5-5", lastError: null })
+    builder.cancel("builder round timeout")
+    const started = Date.now()
+    while (builder.isBusy() && Date.now() - started < 5_000) await new Promise((r) => setTimeout(r, 10))
+    await new Promise((r) => setTimeout(r, 100))
+    expect(builder.isBusy()).toBe(false)
+    expect(submitted.some((s) => s.unitId === "recipe-detail" && s.round === 2)).toBe(false)
   })
 
   it("zauzet builder ignoriše drugi zadatak", async () => {

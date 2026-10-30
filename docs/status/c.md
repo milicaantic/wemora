@@ -13,7 +13,8 @@ Faza: F2
 
 ## U radu
 - F2, moj deo koda je gotov i spojen: C2.1 (PR #33), C2.2 (PR #37, #39), C2.3 (PR #44), C2.4 (PR #47)
-- otvoreno od B: dopuna prompta buildera (D-005): checkbox → `role="checkbox"` + `aria-checked` + ime stavke kao `accessibilityLabel`; link → `Link`, ne `Pressable` + `router.push`
+- usklađeno sa D-016 (grana `c/checklist`): Gatekeeper nema svoj tajmer, na `tests.missing` ekran ide bez testova i ulazi kao `unproven`; zakasneli nacrt iz ranije runde se ignoriše (i dok čeka u redu); prekinut builder ne šalje `draft.submitted`
+- dopuna prompta za B (D-005): checkbox → `role="checkbox"` + `aria-checked` + labela; web link → uvek `Link`, nikad `Pressable` + `router.push`
 - čeka druge: A da poveže `createGatekeeper` u `src/orchestration/agents.ts`; D da odluči ID ekrana za TodoMVC (`todos` ili `todo-list`), pa menjam `src/agents/mocks/todomvc/builder.json`
 - sledeće: integracija (`npm run migrate:mock -- examples/todomvc`), kapija G2
 

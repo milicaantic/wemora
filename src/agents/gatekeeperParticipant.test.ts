@@ -69,7 +69,7 @@ beforeAll(() => {
   state.plan = plan
   initializeRuntime({ state, inferenceRunnerConfig: { runner: new MockRunner({}) } })
 
-  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck, testsWaitTimeoutMs: 150 }))
+  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck }))
   builder = createHuman({ name: "builder-7", capabilities: [], handlers: [] })
   join(builder)
   join(
@@ -100,24 +100,49 @@ describe("Gatekeeper-učesnik", () => {
     expect(calls[0]!.draftDir).toBe(path.join(runDir, "staging", "builder-7", "recipe-list"))
   })
 
-  it("nacrt bez testova ne biva promovisan: čeka, pa posle timeout-a gate.failed", async () => {
+  it("nacrt bez testova ne biva promovisan: čeka (bez sopstvenog tajmera)", async () => {
     submit("favorites")
-    await waitFor("gate.failed", "favorites")
-    expect(outcomes.some((o) => o.type === "unit.promoted" && o.unitId === "favorites")).toBe(false)
+    await new Promise((r) => setTimeout(r, 200))
     expect(calls.some((c) => c.unitId === "favorites")).toBe(false)
+    expect(outcomes.some((o) => o.unitId === "favorites")).toBe(false)
+  })
+
+  it("tests.missing: ekran koji čeka ide na proveru bez testova i ulazi kao unproven (D-016)", async () => {
+    // "favorites" čeka iz prethodnog testa
+    emit("tests.missing", { unitId: "favorites" }, builder.getId())
+    await waitFor("unit.promoted", "favorites")
+    expect(calls.find((c) => c.unitId === "favorites")?.tests).toBe(0)
     const result = UnitResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "favorites.json"), "utf8")))
-    expect(result.status).toBe("failed")
-    expect(result.gates[0]!.message).toContain("nema validiranih testova")
+    expect(result.status).toBe("unproven")
+  })
+
+  it("tests.missing pre nacrta: nacrt ide odmah, bez čekanja", async () => {
+    // recipe-detail nema testova
+    emit("tests.missing", { unitId: "recipe-detail" }, builder.getId())
+    submit("recipe-detail", 3)
+    await waitFor("unit.promoted", "recipe-detail")
+    expect(calls.find((c) => c.unitId === "recipe-detail")?.round).toBe(3)
+  })
+
+  it("zakasneli nacrt iz ranije runde se ignoriše (D-016)", async () => {
+    board().tests["shopping-list"] = [test("shopping-list")]
+    board().units["shopping-list"] = { status: "building", round: 2, model: null, builderId: "builder-7", testerId: null, testAttempts: 0 }
+    const before = calls.length
+    emit("draft.submitted", { unitId: "shopping-list", round: 1 }, builder.getId())
+    await new Promise((r) => setTimeout(r, 100))
+    expect(calls.length).toBe(before)
+    expect(outcomes.some((o) => o.unitId === "shopping-list")).toBe(false)
   })
 
   it("tests.ready pušta nacrt koji je čekao testove", async () => {
-    submit("recipe-detail")
+    delete board().tests["categories"]
+    submit("categories", 2)
     await new Promise((r) => setTimeout(r, 30))
-    expect(calls.some((c) => c.unitId === "recipe-detail")).toBe(false)
-    board().tests["recipe-detail"] = [test("recipe-detail")]
-    emit("tests.ready", { unitId: "recipe-detail" }, builder.getId())
-    await waitFor("unit.promoted", "recipe-detail")
-    expect(calls.find((c) => c.unitId === "recipe-detail")?.tests).toBe(1)
+    expect(calls.some((c) => c.unitId === "categories" && c.round === 2)).toBe(false)
+    board().tests["categories"] = [test("categories")]
+    emit("tests.ready", { unitId: "categories" }, builder.getId())
+    await new Promise((r) => setTimeout(r, 100))
+    expect(calls.find((c) => c.unitId === "categories" && c.round === 2)?.tests).toBe(1)
   })
 
   it("zajednička jedinica ne čeka testove", async () => {
