@@ -102,3 +102,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   - `serveApp` (C1.5): export + mali statički server sa SPA rezervom (nepoznata putanja → `index.html`), primer u `templates/spike-a/check.ts`.
   - Prvi export u prolazu traje ~50 s (hladan keš). Keš je zajednički za sve foldere, pa ga treba „zagrejati“ jednom na početku prolaza, npr. odmah posle `scaffold()`.
   - Nikad ne pozivati export sa `--clear` u Gatekeeperu.
+
+## D-007: Parser koristi TypeScript compiler API, ne Babel ni ts-morph
+- Datum: 2026-10-30
+- Ko: D
+- Status: predlog (čeka potvrdu tima)
+- Odluka: `parseApp` (`src/analysis/`) parsira `.js`, `.jsx`, `.ts` i `.tsx` sa `typescript` paketom (`ts.createSourceFile`, a za sintaksne greške `ts.transpileModule` sa `reportDiagnostics`). Nova zavisnost ne treba.
+- Zašto: `typescript` je već u `package.json` i koristi ga `scripts/check-layers.ts`. `wemora-plan.md` §6 kaže „ts-morph ili Babel“, ali oba bi bila nova zavisnost za isti posao. Kapija `parse` (C, `architecture.md` §10) može da ostane na Babel-u ili da koristi isti API; to je odluka C.
+- Posledice: `typescript` se koristi i u toku rada, ne samo pri proveri tipova. Sada je u `devDependencies`, kao i `tsx` kojim se CLI pokreće, pa se ništa ne lomi; ako tim odluči da pravi produkcioni paket, `typescript` prelazi u `dependencies`.

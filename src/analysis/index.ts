@@ -1,14 +1,10 @@
-import type { ParseApp, SplitParts, ValidatePlan } from "../contracts"
+import type { ValidatePlan } from "../contracts"
 
-// Public API of analysis/ (owner: D). Placeholders until F1; signatures come from contracts/api.ts.
+// Public API of analysis/ (owner: D). Signatures come from contracts/api.ts.
 
-export const parseApp: ParseApp = async () => {
-  throw new Error("not implemented: parseApp")
-}
-
-export const splitParts: SplitParts = () => {
-  throw new Error("not implemented: splitParts")
-}
+export { parseApp } from "./parse"
+export { splitParts } from "./split"
+export { UnsupportedInputError, type UnsupportedInputCode } from "./errors"
 
 export const validatePlan: ValidatePlan = () => {
   throw new Error("not implemented: validatePlan")
