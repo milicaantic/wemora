@@ -1,0 +1,17 @@
+<!doctype html>
+<!-- Test page for validate.test.ts (rule 3 with a goto between the action and its check): lists order #1042
+     only after "Dodaj u omiljene" on index.html, like a favorites screen. index.html shows #1042 anyway. -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Omiljeni</title>
+  </head>
+  <body>
+    <h1>Omiljene narudžbine</h1>
+    <ul id="list"></ul>
+    <script>
+      const count = Number(localStorage.getItem("favorites") ?? 0)
+      document.getElementById("list").innerHTML = count > 0 ? "<li>#1042 Petar</li>" : "<li>Nema omiljenih</li>"
+    </script>
+  </body>
+</html>

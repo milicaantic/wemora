@@ -83,7 +83,32 @@ describe("validateScenario", { timeout: 60_000 }, () => {
     const result = await validateScenario(original.url, blank.url, noEffect)
     expect(result.ok).toBe(false)
     expect(result.reason).toContain("The action at step 1")
-    expect(result.reason).toContain("(steps 2)")
+    expect(result.reason).toContain('step 2 {"expectVisible":{"text":"Pretraga"}}')
+    // The hint for the usual mistakes, so the tester does not spend all its attempts on one.
+    expect(result.reason).toContain("check a text only that screen has")
+  })
+
+  it("keeps the goto between an action and its check: the check runs on the screen it was written for", async () => {
+    // index.html shows #1042 anyway; omiljeni.html lists it only after "Dodaj u omiljene". Run before the tap,
+    // the check would land on index.html and pass, so the scenario used to be refused by mistake.
+    const addThenOpen = scenario("add-then-open-favorites", [
+      { goto: "/" },
+      { tap: { role: "button", name: "Dodaj u omiljene" } },
+      { goto: "/omiljeni.html" },
+      { expectVisible: { text: "#1042 Petar" } },
+    ])
+    expect(await validateScenario(original.url, blank.url, addThenOpen)).toEqual({ ok: true })
+
+    // Opening the favorites screen and checking a text that is there either way still changes nothing.
+    const nothing = scenario("open-favorites-heading", [
+      { goto: "/" },
+      { tap: { role: "button", name: "Dodaj u omiljene" } },
+      { goto: "/omiljeni.html" },
+      { expectVisible: { text: "Omiljene narudžbine" } },
+    ])
+    const result = await validateScenario(original.url, blank.url, nothing)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toContain("changes nothing the scenario checks")
   })
 
   it("treats submit as an action for rule 3 (D-017)", async () => {
