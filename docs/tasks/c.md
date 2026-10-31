@@ -143,7 +143,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - `check_draft` — kapije 1–4 (brza provera)
 - `submit_draft` → `draft.submitted { unitId, round }`
 
-**Builder nema nijedan alat za testove.** Model: Haiku 5.5 (runde 1–2), Sonnet 5.5 (3–4, F3). Svaka runda svež kontekst: prompt + izvor + trenutni kod + poslednja greška.
+**Builder nema nijedan alat za testove.** Model: Haiku 4.5 (runde 1–2), Sonnet 4.6 (3–4, F3) (D-023; u kodu `modelForRound` iz `core/config.ts`). Svaka runda svež kontekst: prompt + izvor + trenutni kod + poslednja greška.
 **Gotovo kada:**
 - [x] test: upis van `staging/<builderId>/<unitId>/` je odbijen (guard)
 - [x] test: builder ne može da pročita `tests/`
