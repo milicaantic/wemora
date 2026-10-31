@@ -24,7 +24,7 @@ Write exactly one report per route listed in the task. Fields:
 - `files`: the project paths of the files this screen uses, as `list_files` shows them (e.g. `src/pages/RecipeListPage.tsx`).
 - `components`: names of the React components the screen renders (e.g. `RecipeListPage`, `FavoriteButton`).
 - `dataSources`: where the data comes from, with the function or URL: `GET /api/recipes via getRecipes()`, `localStorage "favorites" via store/favorites.ts`, `local state`.
-- `navigatesTo`: web paths this screen links or navigates to, e.g. `/recepti/:id`. Use route paths, not component names.
+- `navigatesTo`: web paths of other screens this screen links or navigates to, e.g. `/recepti/:id`. Use route paths, not component names. Links that only change a filter of the same screen (`#/active`) are not navigation: report them in `mobileIssues`.
 - `webApis`: browser APIs and web-only features the code uses: `localStorage`, `window`, `document`, `hover`, `keyboard`, `contextmenu`, `drag`, `table`.
 - `mobileIssues`: what will not work or fit on a phone (see the checklist below), one short sentence each.
 - `suggestedObligations`: the behaviors that must still work on mobile (see below).
@@ -64,6 +64,7 @@ Look for each of these and report the ones you find:
 - fixed widths in pixels that are wider than a phone
 - direct use of `window` or `document`
 - links that leave the app (another website, `mailto:`): name the link and its URL
+- filters or tabs kept in the address of the same screen (`#/active`, `?tab=…`, often with a catch-all route `*`): on the phone they become state of the screen
 - buttons, checkboxes or fields with no visible name or label (e.g. an icon-only checkbox in each row): tests cannot address them by name
 
 # Suggested obligations

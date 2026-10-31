@@ -25,7 +25,7 @@
             ],
             "components": ["App", "Header", "Input", "Main", "Item", "Footer"],
             "dataSources": ["local state via useReducer in src/todo/reducer.js", "current filter from the URL hash via useLocation"],
-            "navigatesTo": ["/active", "/completed"],
+            "navigatesTo": [],
             "webApis": ["keyboard", "doubleclick", "hover"],
             "mobileIssues": [
               "a todo is added only by pressing Enter in 'New Todo Input'; there is no add button",
@@ -33,7 +33,7 @@
               "'Delete todo' appears only on mouse hover over a todo",
               "the checkbox of each todo has no name; only '❯ Toggle All Input' can be addressed by name",
               "the credits footer links to the external site http://todomvc.com ('TodoMVC')",
-              "the filters are hash links (#/active, #/completed)"
+              "the filters 'All', 'Active' and 'Completed' are kept in the address (#/, #/active, #/completed) of this one screen (route *); on the phone they become state of the screen"
             ],
             "suggestedObligations": [
               "with no todos only the heading 'todos' and the field 'New Todo Input' are shown",

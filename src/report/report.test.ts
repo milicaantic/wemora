@@ -46,7 +46,8 @@ describe("buildReport over the fixture run", async () => {
     expect(html).toContain("pada u rundi 4 na kapiji scenarios")
     expect(html).toContain("nema validiranih testova ni posle drugog testera")
     expect(html).toContain("nema rezultata: jedinica nije završena")
-    expect(html).toContain("nedostaju obaveze: add-to-shopping-list, not-found")
+    expect(html).toContain("obaveze bez testa: add-to-shopping-list, not-found")
+    expect(html).not.toContain("nedostaju obaveze")
   })
 
   it("lists intentional differences as sentences", () => {

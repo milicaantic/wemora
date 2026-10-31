@@ -33,6 +33,7 @@ Each screen gets 2–5 obligations: behaviors a user can observe on the screen. 
 - `description`: what the user does and what they then see, with the exact texts, labels and button names from the original screen in quotes. Start from the analyzer's `suggestedObligations`.
 - Good: "Typing 'sarma' in 'Pretraga' shows only 'Sarma'; with no match it shows 'Nema recepata za zadatu pretragu'."
 - Bad: "Search works", "Uses the API", "Looks like the original".
+- Filters or tabs that the web app keeps in the address of the same screen (a catch-all route `*` with links like `#/active`, `#/completed`, or `?tab=…`) are state of that screen on the phone. Describe the obligation by tapping the filter, and add to its description: "On the web the filter is in the address (#/active); on the phone it is state of this screen, so tests tap 'Active' instead of opening the address."
 - Tests find elements by their name (label, button text, link text). An element with no name (e.g. an icon-only checkbox in each list row) cannot be used by a test: describe the behavior through a named element that gives the same result, e.g. "with one todo, checking '❯ Toggle All Input' shows '0 items left!'" instead of "checking the todo's checkbox".
 
 # Intentional differences
