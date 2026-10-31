@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { parseApp, splitParts } from "../analysis"
 import type { RunConfig } from "../contracts"
-import { initLog, log } from "../core/log"
+import { initLog, log, onLog } from "../core/log"
 import { BudgetedRunner, loadMockFixtureDir, MockRunner, type UsageRecord } from "../core/runner"
 import { board, initializeRuntime } from "../core/runtime"
 import { installSafety } from "../core/safety"
@@ -12,6 +12,7 @@ import { scaffold } from "../scaffold"
 import { serveOriginal } from "../scenarios"
 import { createAgentFactories } from "./agents"
 import { Conductor, type RunSummary } from "./conductor"
+import { progressLine } from "./progress"
 
 // `wemora migrate`: sets up output/<run-id>/, the log, the runtime with the right runner, and runs the
 // Conductor. Returns the exit code: 0 when every unit reached a final status, 1 otherwise, 2 for bad input.
@@ -78,6 +79,7 @@ async function runWith(
   mkdirSync(runDir, { recursive: true })
   installSafety()
   initLog(runDir)
+  const stopProgress = printProgress()
 
   const config: RunConfig = {
     webDir,
@@ -114,8 +116,34 @@ async function runWith(
   } catch (error) {
     log({ agent: "cli", event: "agents.close_failed", data: { error: error instanceof Error ? error.message : String(error) } })
   }
+  stopProgress()
   printSummary(summary, budgeted?.spentUsd() ?? 0)
   return summary.outcome === "finished" ? 0 : 1
+}
+
+// One short line per phase, team change and verdict, instead of a silent terminal for the whole run.
+// Mozaik prints "mozaik cloud: no API key" for every agent loop; telemetry is off on purpose, so it is hidden.
+function printProgress(): () => void {
+  const startedAt = Date.now()
+  const stopListening = onLog((entry) => {
+    const line = progressLine(entry, startedAt, {
+      statusOf: (unitId) => board().results[unitId]?.status,
+      planSummary: () => {
+        const plan = board().plan
+        return plan ? { units: plan.units.length, screens: plan.units.filter((u) => u.kind === "screen").length, flows: plan.flows.length } : null
+      },
+    })
+    if (line) console.log(line)
+  })
+  const warn = console.warn
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].startsWith("mozaik cloud:")) return
+    warn(...args)
+  }
+  return () => {
+    stopListening()
+    console.warn = warn
+  }
 }
 
 // The ledger on the board and a cost line in run.jsonl for the report (cost per agent).
