@@ -84,6 +84,18 @@ export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[
   if (saved.some((s) => s.id === scenario.id)) return `A scenario with id "${scenario.id}" is already saved. Use a new id.`
 
   const steps = [...(scenario.setup ?? []), ...scenario.steps]
+  // A screen test that opens another screen (often in setup, to make state there) cannot pass the Gatekeeper
+  // before that screen is in the app, so both screens can block each other (A's inbox message 2026-10-31).
+  if (flowId === undefined && unit.route !== undefined) {
+    const elsewhere = steps.find((step) => "goto" in step && !matchesRoute(unit.route!, step.goto))
+    if (elsewhere && "goto" in elsewhere) {
+      return (
+        `"goto ${elsewhere.goto}" opens another screen; a test of this screen opens only ${unit.route}, in setup and in steps. ` +
+        `If the state you need is made on another screen, test what this screen shows without it (e.g. the empty state); ` +
+        `that path belongs to a flow test.`
+      )
+    }
+  }
   for (const difference of unit.intentionalDifferences) {
     if (difference.kind !== "notPortable") continue
     const element = toTarget(difference.element)
@@ -106,6 +118,20 @@ export function openablePath(route: string): string | null {
   if (route.includes(":")) return null
   const path = route.endsWith("*") ? route.slice(0, -1) : route
   return path.startsWith("/") ? path : `/${path}`
+}
+
+/**
+ * Whether a web path opens this route: ":param" matches one segment, a trailing "*" matches the rest.
+ * Query and hash are ignored, so "/?q=sarma" and "/#/active" open "/".
+ */
+export function matchesRoute(route: string, target: string): boolean {
+  const segments = (p: string) => p.split(/[?#]/)[0]!.split("/").filter((s) => s !== "")
+  const want = segments(route)
+  const got = segments(target)
+  const rest = want.at(-1) === "*"
+  if (rest) want.pop()
+  if (rest ? got.length < want.length : got.length !== want.length) return false
+  return want.every((segment, i) => segment.startsWith(":") || segment === got[i])
 }
 
 /** The task message: what to test on this unit and what is already saved. */

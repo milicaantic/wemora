@@ -8,6 +8,7 @@ import {
   flowAsUnit,
   flowBrief,
   flowTestsFile,
+  matchesRoute,
   openablePath,
   readFlowTests,
   readTests,
@@ -64,9 +65,18 @@ describe("scenarioProblem", () => {
     expect(scenarioProblem(search, unit, [search])).toContain('"orders-search" is already saved')
   })
 
+  it("refuses a goto to another screen in setup or steps, but not in a flow test (A's inbox 2026-10-31)", () => {
+    // favorites made its state on the list: it could not pass before the list was in the app.
+    const fromList: Scenario = { ...save, setup: [{ goto: "/" }, { tap: { role: "button", name: "Dodaj u omiljene" } }] }
+    expect(scenarioProblem(fromList, unit, [])).toContain('"goto /" opens another screen; a test of this screen opens only /narudzbine')
+    expect(scenarioProblem({ ...save, steps: [{ goto: "/kupovina" }, ...save.steps.slice(1)] }, unit, [])).toContain("opens another screen")
+    expect(scenarioProblem({ ...save, steps: [{ goto: "/narudzbine?q=Petar" }, ...save.steps.slice(1)] }, unit, [])).toBeNull()
+    expect(scenarioProblem({ ...fromList, flowId: "f" }, unit, [], "f")).toBeNull()
+  })
+
   it("refuses a notPortable element in steps and in setup, by role and name or by text", () => {
-    const byRole: Scenario = { ...save, steps: [{ goto: "/" }, { tap: { role: "button", name: "Info" } }] }
-    const inSetup: Scenario = { ...search, setup: [{ goto: "/" }, { tap: { text: "Info" } }] }
+    const byRole: Scenario = { ...save, steps: [{ goto: "/narudzbine" }, { tap: { role: "button", name: "Info" } }] }
+    const inSetup: Scenario = { ...search, setup: [{ goto: "/narudzbine" }, { tap: { text: "Info" } }] }
     expect(scenarioProblem(byRole, unit, [])).toContain('button "Info", which does not exist on mobile (hover only)')
     expect(scenarioProblem(inSetup, unit, [])).toContain("does not exist on mobile")
   })
@@ -89,6 +99,20 @@ describe("testerBrief", () => {
   it("tells where to open a catch-all route", () => {
     expect(testerBrief({ ...unit, route: "*" }, [], [])).toContain("open it at /")
     expect(testerBrief(unit, [], [])).not.toContain("open it at")
+  })
+})
+
+describe("matchesRoute", () => {
+  it("matches parameters, catch-alls and ignores query and hash", () => {
+    expect(matchesRoute("/", "/")).toBe(true)
+    expect(matchesRoute("/", "/?q=sarma")).toBe(true)
+    expect(matchesRoute("/", "/omiljeni")).toBe(false)
+    expect(matchesRoute("/omiljeni", "/")).toBe(false)
+    expect(matchesRoute("/recepti/:id", "/recepti/1")).toBe(true)
+    expect(matchesRoute("/recepti/:id", "/recepti")).toBe(false)
+    expect(matchesRoute("*", "/#/active")).toBe(true)
+    expect(matchesRoute("/docs/*", "/docs/a/b")).toBe(true)
+    expect(matchesRoute("/docs/*", "/blog")).toBe(false)
   })
 })
 
