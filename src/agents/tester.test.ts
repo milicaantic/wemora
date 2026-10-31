@@ -128,6 +128,14 @@ const fixture: MockFixture = {
   "tester:u-flow-id": [saveCall({ ...search("u-flow-id"), flowId: "checkout" }), saveCall(search("u-flow-id")), { text: "Done." }],
   // "search" saved, "save" given up after 3 failures: "Sačuvaj" still has no test, so the task goes on (A's
   // inbox 2026-10-31). A failure for the element does not give up the covered "search"; then it is covered.
+  // A screen with a parameter in its route: opened at a real path for its elements (A's inbox 2026-10-31).
+  "tester:u-param": [{ text: "Nothing to test." }],
+  // The menu link "Recepti" in setup leads to another screen: refused; the same test without it is saved.
+  "tester:u-menu": [
+    saveCall({ ...save("u-menu"), id: "u-menu-via-list", setup: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "Recepti" } }] }),
+    saveCall(save("u-menu")),
+    { text: "Done." },
+  ],
   "tester:u-elements": [
     saveCall(search("u-elements")),
     call("try_scenario", { scenario: { ...save("u-elements"), id: "bad-e-1" } }),
@@ -196,6 +204,9 @@ function newTester(overrides: Partial<TesterDeps> = {}) {
     },
     ariaSnapshot: async (_url, route, steps = []) =>
       `- searchbox "Pretraga"\n- button "Sačuvaj"\n# snapshot of ${route}${steps.length > 0 ? ` after ${steps.length} step(s)` : ""}`,
+    // No browser: no links and no real path for a route with parameters, unless a test says otherwise.
+    linkTargets: async () => [],
+    findOpenPath: async () => null,
     ...overrides,
   })
   join(tester.participant)
@@ -233,11 +244,13 @@ beforeAll(() => {
     "u-give-up-later",
     "u-flow-id",
     "u-elements",
+    "u-menu",
   ]
   const plan: Plan = {
     units: [
       ...ids.map((id) => unit(id)),
       unit("shared-data", { kind: "shared", route: undefined, obligations: [] }),
+      unit("u-param", { route: "/narudzbine/:id" }),
       unit("f-orders", { intentionalDifferences: [] }),
       unit("f-details", { route: "/narudzbine/:id" }),
       // The TodoMVC screen as D's architect mock plans it (src/agents/mocks/todomvc/architect.json).
@@ -561,5 +574,35 @@ describe("tester agent", () => {
     // Only "save" was given up; the failed element scenario did not give up the covered "search".
     expect(lines.filter((l) => l.event === "tester.obligation_skipped").map((l) => JSON.stringify(l))).toHaveLength(1)
     expect(JSON.stringify(lines.find((l) => l.event === "tester.finished"))).toContain('"reason":"every obligation is saved or given up"')
+  })
+
+  it("opens a screen with a parameter in its route at a real path, for its elements and links", async () => {
+    const asked: { route: string; from: string[] }[] = []
+    const linksAt: string[] = []
+    const tester = newTester({
+      findOpenPath: async (_url, route, from) => {
+        asked.push({ route, from })
+        return "/narudzbine/7"
+      },
+      linkTargets: async (_url, route) => {
+        linksAt.push(route)
+        return []
+      },
+    })
+    tester.assign({ unitId: "u-param" })
+    await untilIdle(tester)
+    expect(asked[0]?.route).toBe("/narudzbine/:id")
+    // The start page first, then screens without parameters.
+    expect(asked[0]?.from.slice(0, 2)).toEqual(["/", "/narudzbine"])
+    expect(extractedRoutes).toContain("/narudzbine/7")
+    expect(linksAt).toEqual(["/narudzbine/7"])
+  })
+
+  it("refuses a setup that taps a menu link to another screen, and says why", async () => {
+    const tester = newTester({ linkTargets: async () => [{ name: "Recepti", path: "/" }] })
+    tester.assign({ unitId: "u-menu" })
+    await untilIdle(tester)
+    expect(runner.toolOutputs.join("\n")).toContain('Not saved: Tapping link "Recepti" in setup opens another screen (/)')
+    expect(readTests(runDir, "u-menu").map((s) => s.id)).toEqual(["u-menu-save"])
   })
 })

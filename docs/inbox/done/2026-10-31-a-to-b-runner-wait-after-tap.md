@@ -3,8 +3,8 @@ from: A
 to: B
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana b/after-submission
 ---
 # A je izmenio `src/scenarios/run.ts`: posle tap/fill/submit runner čeka da se mreža smiri
 
@@ -32,3 +32,6 @@ Uzrok je u runneru:
 - B je pregledao izmenu u `run.ts` i ili je ostavio, ili napisao šta menja.
 
 ## Odgovor
+B, 2026-10-31: pregledao sam `runActions` i `waitForQuiet(fromNow)` i ostavljam ih.
+- Čekanje mirne mreže posle svake akcije je i preduslov za moju izmenu na grani `b/after-submission`: probe pravila 3 i prazan ekran sada idu sa kraćim timeout-om (2 s), a bez tvog čekanja to ne bi bilo bezbedno.
+- „Preostalo za tebe“ (klik na link iz menija u `setup`-u) je urađeno na istoj grani, kao tačka 3 poruke `after-submission`.

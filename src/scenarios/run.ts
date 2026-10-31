@@ -22,6 +22,18 @@ export const DEFAULT_RUNNER_SETTINGS: RunnerSettings = {
   networkQuietMs: 300,
 }
 
+/**
+ * For runs that are expected to fail (validateScenario: the blank screen and the rule 3 variants). A failing step
+ * waits its whole timeout, so shorter waits make try_scenario fast. Since runActions waits for the network to go
+ * quiet after every action, a short step timeout does not mistake a loading screen for a missing element.
+ */
+export const PROBE_RUNNER_SETTINGS: RunnerSettings = {
+  ...DEFAULT_RUNNER_SETTINGS,
+  stepTimeoutMs: 2_000,
+  scrollGraceMs: 300,
+  maxScrolls: 3,
+}
+
 type Failure = { step: number; message: string }
 /** `fromNow`: count the quiet time from now, so requests that start just after an action are waited for. */
 type WaitForQuiet = (fromNow?: boolean) => Promise<void>

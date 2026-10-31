@@ -16,7 +16,7 @@ Use this table for every element. Imports: `View`, `Text`, `TextInput`, `Pressab
 | `input type="password"` | `TextInput` with `secureTextEntry` | the label text |
 | `textarea` | `TextInput multiline` | the label text |
 | `input type="checkbox"` | `<Pressable role="checkbox" aria-checked={checked} accessibilityLabel="…" onPress={toggle}>` | the label text |
-| `select` / `option` | a row of `<Pressable role="button">` per option, or a list in a modal | the label and each option text |
+| `select` / `option` | `<Pressable role="combobox" accessibilityLabel="…">` showing the chosen option's text; on press, the options as `<Pressable role="option">` with the same texts (a list under it or in a modal) | the label text exactly (the web `<label>` of the select), and each option text |
 | row of filter / category `<button>`s | the same row of `<Pressable role="button">`, one per web button, same texts (never a picker or plain text) | every button text |
 | input that reacts to Enter (`onKeyDown`/`onKeyUp` with `"Enter"`) | `<TextInput accessibilityLabel="…" onSubmitEditing={…} />` that calls the same function as the web Enter handler | the label text, exactly |
 | `form onSubmit` | the submit button calls the same function; the `TextInput` calls it in `onSubmitEditing` too (Enter submits the form on the web) | — |
@@ -26,6 +26,8 @@ Use this table for every element. Imports: `View`, `Text`, `TextInput`, `Pressab
 | `table` | a list of cards: one `View` per row, each cell as `<Text>label: value</Text>` or label above value | header texts and cell texts |
 | `img` | `<Image source={{ uri }} style={{ width, height }} accessibilityLabel={alt} />` | the `alt` text |
 | icon or emoji button | `Pressable role="button"` with `accessibilityLabel` = web `aria-label` or `title` | the name |
+| button with visible text on the web (even with an icon) | the same visible text in a `<Text>`; an icon may be added, never instead of the text | the text |
+| nav / sidebar links | a bottom bar of `<Link>`s, one per web link, with exactly the web texts (`Lista za kupovinu`, never shortened to `Kupovina`); let long texts wrap | every link text |
 | loading text or spinner | `<Text>` with the same loading text (add `ActivityIndicator` if you want) | the text |
 | page that scrolls | `ScrollView` (or `FlatList` for the list part) | — |
 | `title` tooltip, hover styles, `:hover` | nothing (hover does not exist) | — |

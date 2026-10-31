@@ -74,6 +74,28 @@ describe("scenarioProblem", () => {
     expect(scenarioProblem({ ...fromList, flowId: "f" }, unit, [], "f")).toBeNull()
   })
 
+  it("refuses a tap on a link to another screen in setup or before the last action, not as the last action", () => {
+    // Like favorites in the run of 21:18: "Recepti" in the menu, a favorite added on the list, back to "Omiljeni".
+    const links = [
+      { name: "Recepti", path: "/" },
+      { name: "Narudžbine", path: "/narudzbine" },
+    ]
+    const viaMenu: Scenario = { ...save, setup: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "Recepti" } }] }
+    expect(scenarioProblem(viaMenu, unit, [], undefined, links)).toContain('Tapping link "Recepti" in setup opens another screen (/)')
+    const actsThere: Scenario = {
+      ...save,
+      steps: [{ goto: "/narudzbine" }, { tap: { text: "Recepti" } }, { tap: { role: "button", name: "Sačuvaj" } }, { expectVisible: { text: "Sačuvano" } }],
+    }
+    expect(scenarioProblem(actsThere, unit, [], undefined, links)).toContain('Tapping link "Recepti" at step 1')
+    // Leaving as the last action, then checking this screen is gone, stays allowed; so does a link to this screen.
+    const leaves: Scenario = { ...save, steps: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "Recepti" } }, { expectNotVisible: { text: "Pretraga" } }] }
+    expect(scenarioProblem(leaves, unit, [], undefined, links)).toBeNull()
+    const sameScreen: Scenario = { ...save, setup: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "Narudžbine" } }] }
+    expect(scenarioProblem(sameScreen, unit, [], undefined, links)).toBeNull()
+    // A flow test may go anywhere.
+    expect(scenarioProblem({ ...viaMenu, flowId: "f" }, unit, [], "f", links)).toBeNull()
+  })
+
   it("refuses a notPortable element in steps and in setup, by role and name or by text", () => {
     const byRole: Scenario = { ...save, steps: [{ goto: "/narudzbine" }, { tap: { role: "button", name: "Info" } }] }
     const inSetup: Scenario = { ...search, setup: [{ goto: "/narudzbine" }, { tap: { text: "Info" } }] }
@@ -92,8 +114,9 @@ describe("testerBrief", () => {
     expect(brief).toContain("orders-search [search]")
   })
 
-  it("explains route parameters", () => {
+  it("explains route parameters, and names the real path when the tester found one", () => {
     expect(testerBrief({ ...unit, route: "/recepti/:id" }, [], [])).toContain("open it with real values")
+    expect(testerBrief({ ...unit, route: "/recepti/:id" }, interactive, [], "/recepti/1")).toContain("open it at /recepti/1 (a real link in the app)")
   })
 
   it("tells where to open a catch-all route", () => {

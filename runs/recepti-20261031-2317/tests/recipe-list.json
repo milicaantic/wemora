@@ -1,0 +1,228 @@
+[
+  {
+    "id": "recipe-list-search-by-name",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "fill": {
+          "label": "Pretraga",
+          "value": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Musaka"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-no-search-match",
+    "unitId": "recipe-list",
+    "obligation": "no-search-match",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "fill": {
+          "label": "Pretraga",
+          "value": "zzznema"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Nema recepata za zadatu pretragu"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-filter-by-category",
+    "unitId": "recipe-list",
+    "obligation": "filter-by-category",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Palačinke"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-navigate-to-detail",
+    "unitId": "recipe-list",
+    "obligation": "navigate-to-detail",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Pileća supa"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Pretraga"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-filter-supe",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Supe"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-filter-glavna-jela",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Glavna jela"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Pileća supa"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-filter-salate",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Salate"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Šopska salata"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-filter-all-categories",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Sve kategorije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-list-add-to-favorites",
+    "unitId": "recipe-list",
+    "obligation": "search-by-name",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene: Pileća supa"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Ukloni iz omiljenih: Pileća supa"
+        }
+      }
+    ]
+  }
+]

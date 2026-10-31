@@ -1,0 +1,17 @@
+[
+  {
+    "id": "favorites-empty-state",
+    "unitId": "favorites",
+    "obligation": "empty-state",
+    "steps": [
+      {
+        "goto": "/omiljeni"
+      },
+      {
+        "expectVisible": {
+          "text": "Nemate omiljenih recepata"
+        }
+      }
+    ]
+  }
+]

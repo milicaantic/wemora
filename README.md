@@ -12,7 +12,7 @@ Wemora reads a React single-page app, plans the migration, and lets a team of AI
 
 ![Wemora report of a real run on the Recepti app: 4 screens proven, 1 partially proven](docs/img/recepti-report-summary.png)
 
-<sub>The report of a real run (Claude Haiku 4.5 and Sonnet 4.6) on the 5-screen Recepti app, committed in [`runs/recepti-20261031-2148`](runs/recepti-20261031-2148/report.html): 4 screens proven and 1 partially proven, every screen in its first round, 6 of 7 cross-screen flows passing, in 14 minutes for $0.88. The report is in Serbian, the team's language.</sub>
+<sub>The report of a real run (Claude Haiku 4.5 and Sonnet 4.6) on the 5-screen Recepti app, committed in [`runs/recepti-20261031-2317`](runs/recepti-20261031-2317/report.html): 4 screens proven and 1 partially proven, every screen in its first round, 24 screen tests and 4 of 5 cross-screen flows passing, in 6 minutes for $0.71. The report is in Serbian, the team's language.</sub>
 
 Built for the **JigJoy × NTP Novi Sad Hackathon** (Freestyle) on the [Mozaik](https://www.npmjs.com/package/@mozaik-ai/core) multi-agent framework.
 
@@ -80,7 +80,7 @@ Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gat
 npm run migrate -- examples/todomvc
 ```
 
-**Recepti** (5 screens, about 15 minutes). The app reads its recipes from a small data server, so start that first and keep it running:
+**Recepti** (5 screens, about 6 to 15 minutes). The app reads its recipes from a small data server, so start that first and keep it running:
 
 ```bash
 cd examples/mock-api && npm start          # terminal 1, http://localhost:3000
@@ -102,7 +102,7 @@ npm run migrate -- examples/recepti        # terminal 2
 
 ### See the agents work in parallel
 
-Open `output/<run-id>/report.html` after a run, or the committed real run [`runs/recepti-20261031-2148/report.html`](runs/recepti-20261031-2148/report.html) without running anything. The report is in Serbian; two sections show the concurrency:
+Open `output/<run-id>/report.html` after a run, or the committed real run [`runs/recepti-20261031-2317/report.html`](runs/recepti-20261031-2317/report.html) without running anything. The report is in Serbian; two sections show the concurrency:
 
 - **„Tok prolaza“ (run timeline):** one row per agent. Overlapping bars are agents working at the same time; the line above says how much faster the run was than the same work done one agent after another.
 - **„Agenti“ (agents):** the most agents at once, and every change of the team (builders, testers) with the time and the reason.
@@ -150,10 +150,24 @@ To keep a finished run and commit it, `npm run archive -- output/<run-id>` copie
 
 ## Check the proof again, with no AI and no API key
 
-[`runs/`](runs/) holds finished migrations: [`recepti-20261031-2148`](runs/recepti-20261031-2148/report.html) (a real run on Recepti) and [`todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html) (TodoMVC with recorded model answers). `verify` builds the mobile app of a run and runs every saved test again. For Recepti, start the data server first (`cd examples/mock-api && npm start`), then:
+[`runs/`](runs/) holds finished migrations: [`recepti-20261031-2317`](runs/recepti-20261031-2317/report.html) (the latest real run on Recepti), [`recepti-20261031-2148`](runs/recepti-20261031-2148/report.html) (an earlier real run) and [`todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html) (TodoMVC with recorded model answers). `verify` builds the mobile app of a run and runs every saved test again. For Recepti, start the data server first (`cd examples/mock-api && npm start`), then:
 
 ```bash
-npm run verify -- runs/recepti-20261031-2148
+npm run verify -- runs/recepti-20261031-2317
+```
+
+```
+categories  [proven]
+  pass  categories-initial-state
+  …
+favorites  [partial]
+  pass  favorites-empty-state
+recipe-detail  [proven]
+  …
+shopping-list  [proven]
+  pass  shopping-list-delete-bought
+
+OK: 24/24 tests pass on 5 screen(s) whose tests passed in the run
 ```
 
 TodoMVC needs nothing else:
@@ -250,9 +264,9 @@ flowchart LR
 
 The report also shows a timeline of all agents, how much faster the parallel run was, how many agents worked over time and why, the cost per agent, and the rounds per screen.
 
-![Timeline of the real Recepti run: an analyzer, an architect, 2 testers and 4 builders, with a 1.7x speedup over running them one after another](docs/img/recepti-report-timeline.png)
+![Timeline of the real Recepti run: an analyzer, an architect, 2 testers and 4 builders, with a 2.1x speedup over running them one after another](docs/img/recepti-report-timeline.png)
 
-In the real Recepti run above, the agents worked 23 minutes in total within a 14-minute run (1.7× faster than one after another). Every screen passed in its first round, so the builders were done after 6 minutes and the testers checked the cross-screen flows. The Conductor logs every change of the team with its reason:
+In the real Recepti run above, the agents worked 12 minutes in total within a 6-minute run (2.1× faster than one after another), with up to 4 builders and 2 testers at once. Every screen passed in its first round, so the builders were done after about 4 minutes and the testers wrote the cross-screen flow tests. The Conductor logs every change of the team with its reason:
 
 ![Agents section of the report: the number of builders and testers over time and the reason for each change](docs/img/recepti-report-agents.png)
 

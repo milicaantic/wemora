@@ -1,0 +1,322 @@
+{
+  "units": [
+    {
+      "id": "data",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/api/client.ts",
+        "src/api/useAsync.ts",
+        "src/components/FavoriteButton.tsx",
+        "src/components/Status.tsx",
+        "src/format.ts",
+        "src/store/favorites.ts",
+        "src/store/localStore.ts",
+        "src/store/shoppingList.ts"
+      ],
+      "writes": [
+        "src/shared/data/"
+      ],
+      "dependsOn": [
+        "theme"
+      ],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 1741
+    },
+    {
+      "id": "layout",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/App.tsx",
+        "src/components/Layout.tsx",
+        "src/components/Sidebar.tsx",
+        "src/main.tsx"
+      ],
+      "writes": [
+        "src/shared/layout/",
+        "src/app/_layout.tsx"
+      ],
+      "dependsOn": [
+        "data",
+        "theme"
+      ],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 593
+    },
+    {
+      "id": "theme",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/components/Layout.css"
+      ],
+      "writes": [
+        "src/shared/theme/"
+      ],
+      "dependsOn": [],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 305
+    },
+    {
+      "id": "categories",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/kategorije",
+      "sources": [
+        "src/pages/CategoriesPage.css",
+        "src/pages/CategoriesPage.tsx"
+      ],
+      "writes": [
+        "src/screens/categories/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "initial-state",
+          "description": "When the screen loads it shows 'Izaberite kategoriju' in the right panel."
+        },
+        {
+          "id": "navigate-to-detail",
+          "description": "Tap a category name (e.g. 'Deserti') to load its recipes, then tap a recipe name link: 'Izaberite kategoriju' and the category list entry 'Deserti' are no longer shown."
+        },
+        {
+          "id": "select-category",
+          "description": "Tapping a category name (e.g. 'Deserti') shows recipes belonging to that category and hides 'Izaberite kategoriju'."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "button",
+            "name": "U ovoj kategoriji nema recepata"
+          },
+          "reason": "The empty-category state depends on which category has no recipes in the live data; cannot be guaranteed to exist during tests."
+        }
+      ],
+      "size": 812
+    },
+    {
+      "id": "favorites",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/omiljeni",
+      "sources": [
+        "src/pages/FavoritesPage.css",
+        "src/pages/FavoritesPage.tsx"
+      ],
+      "writes": [
+        "src/screens/favorites/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "empty-state",
+          "description": "With no recipes marked as favorite the screen shows 'Nemate omiljenih recepata'."
+        },
+        {
+          "id": "navigate-to-detail",
+          "description": "When at least one favorite recipe card is shown, tapping its recipe name link leaves the favorites screen ('Nemate omiljenih recepata' or another favorites-only element is no longer shown). Note: adding a favorite requires the recipe detail screen; this obligation relies on pre-existing favorites in the data or a flow."
+        }
+      ],
+      "intentionalDifferences": [],
+      "size": 453
+    },
+    {
+      "id": "recipe-detail",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/recepti/:id",
+      "sources": [
+        "src/pages/RecipeDetailPage.css",
+        "src/pages/RecipeDetailPage.tsx"
+      ],
+      "writes": [
+        "src/screens/recipe-detail/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "add-to-shopping",
+          "description": "Tapping 'Dodaj sastojke u listu za kupovinu' shows 'Sastojci su dodati u listu za kupovinu'."
+        },
+        {
+          "id": "back-to-list",
+          "description": "Tapping 'Nazad na recepte' leaves the detail page ('Nazad na recepte' is no longer shown)."
+        },
+        {
+          "id": "decrease-servings",
+          "description": "Tap 'Povećaj porcije' once to have more than 1 serving, then tap 'Smanji porcije': the servings count decreases by 1."
+        },
+        {
+          "id": "increase-servings",
+          "description": "Tapping 'Povećaj porcije' increases the displayed servings count and scales the ingredient amounts shown."
+        },
+        {
+          "id": "recipe-meta",
+          "description": "Opening a recipe detail page (e.g. navigating from the recipe list by tapping 'Sarma') shows the recipe name 'Sarma', its category, time, difficulty, rating, and calories in the header."
+        }
+      ],
+      "intentionalDifferences": [],
+      "size": 1043
+    },
+    {
+      "id": "recipe-list",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/",
+      "sources": [
+        "src/pages/RecipeListPage.css",
+        "src/pages/RecipeListPage.tsx"
+      ],
+      "writes": [
+        "src/screens/recipe-list/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "filter-by-category",
+          "description": "Tapping a category filter button (e.g. 'Deserti') shows only recipes in that category; recipes from other categories (e.g. 'Sarma') are no longer shown."
+        },
+        {
+          "id": "navigate-to-detail",
+          "description": "Tapping a recipe name link (e.g. 'Sarma') leaves the list ('Pretraga' is no longer shown)."
+        },
+        {
+          "id": "no-search-match",
+          "description": "Typing 'zzznema' in 'Pretraga' shows 'Nema recepata za zadatu pretragu'."
+        },
+        {
+          "id": "search-by-name",
+          "description": "Typing 'Sarma' in 'Pretraga' shows only the recipe 'Sarma' and hides other recipes."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "tooltip",
+            "name": "Sastojci"
+          },
+          "reason": "Ingredients tooltip appears on mouse hover (onMouseEnter/onMouseLeave); touch screens have no hover. Ingredients are shown on the recipe detail screen."
+        },
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "button",
+            "name": "Sortiraj po vremenu"
+          },
+          "reason": "Sorting only changes the order of rows; a test cannot check order."
+        }
+      ],
+      "size": 1390
+    },
+    {
+      "id": "shopping-list",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/kupovina",
+      "sources": [
+        "src/pages/ShoppingListPage.css",
+        "src/pages/ShoppingListPage.tsx"
+      ],
+      "writes": [
+        "src/screens/shopping-list/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "add-item",
+          "description": "Filling 'Namirnica' with 'Mleko' and tapping 'Dodaj' shows 'Mleko' in the list and the footer shows 'Kupljeno: 0 od 1'."
+        },
+        {
+          "id": "delete-bought",
+          "description": "Fill 'Namirnica' with 'Mleko', tap 'Dodaj', check 'Mleko', then tap 'Obriši kupljene': 'Mleko' is no longer shown in the list."
+        },
+        {
+          "id": "empty-state",
+          "description": "With no items added the screen shows 'Lista za kupovinu je prazna'."
+        },
+        {
+          "id": "mark-bought",
+          "description": "Fill 'Namirnica' with 'Mleko', tap 'Dodaj', then fill 'Namirnica' with 'Hleb', tap 'Dodaj': checking 'Mleko' (the checkbox labeled 'Mleko') marks it as bought and the footer shows 'Kupljeno: 1 od 2'."
+        }
+      ],
+      "intentionalDifferences": [],
+      "size": 758
+    }
+  ],
+  "flows": [
+    {
+      "id": "add-favorite-and-view",
+      "description": "On the recipe detail page tap the favorite button for a recipe, then navigate to '/omiljeni': the recipe card is shown in the favorites list.",
+      "unitIds": [
+        "recipe-detail",
+        "favorites"
+      ]
+    },
+    {
+      "id": "add-ingredients-to-shopping",
+      "description": "On a recipe detail page tap 'Dodaj sastojke u listu za kupovinu', then navigate to '/kupovina': the recipe's ingredients appear in the shopping list.",
+      "unitIds": [
+        "recipe-detail",
+        "shopping-list"
+      ]
+    },
+    {
+      "id": "categories-to-detail",
+      "description": "On the categories screen tap a category name, then tap a recipe name: the detail screen shows that recipe's name and metadata.",
+      "unitIds": [
+        "categories",
+        "recipe-detail"
+      ]
+    },
+    {
+      "id": "favorites-to-detail",
+      "description": "With at least one favorite, on the favorites screen tap a recipe name card link: the detail screen shows that recipe's name and metadata.",
+      "unitIds": [
+        "favorites",
+        "recipe-detail"
+      ]
+    },
+    {
+      "id": "recipe-list-to-detail",
+      "description": "On the recipe list tap a recipe name (e.g. 'Sarma'): the detail screen shows 'Sarma' and its metadata.",
+      "unitIds": [
+        "recipe-list",
+        "recipe-detail"
+      ]
+    }
+  ],
+  "routeMap": {
+    "/": "/",
+    "/kategorije": "/kategorije",
+    "/kupovina": "/kupovina",
+    "/omiljeni": "/omiljeni",
+    "/recepti/:id": "/recepti/[id]"
+  }
+}

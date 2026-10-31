@@ -1,0 +1,96 @@
+{
+  "unitId": "categories",
+  "status": "proven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 1 labela/tekstova; preskočeno 5 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (4)."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "regression",
+      "ok": true,
+      "message": "Već promovisani ekrani i dalje rade (7 testova)."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "categories-initial-state",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 551
+    },
+    {
+      "scenarioId": "categories-select-category",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 905
+    },
+    {
+      "scenarioId": "categories-navigate-to-detail",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 1601
+    },
+    {
+      "scenarioId": "categories-use-supe-button",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 857
+    }
+  ],
+  "coverage": {
+    "unitId": "categories",
+    "obligations": {
+      "covered": [
+        "initial-state",
+        "navigate-to-detail",
+        "select-category"
+      ],
+      "missing": []
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "button",
+          "name": "Supe"
+        }
+      ],
+      "missing": [],
+      "notPortable": []
+    }
+  }
+}

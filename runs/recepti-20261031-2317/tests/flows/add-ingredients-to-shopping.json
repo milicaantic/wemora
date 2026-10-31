@@ -1,0 +1,47 @@
+[
+  {
+    "id": "flow-add-ingredients-to-shopping",
+    "unitId": "recipe-detail",
+    "obligation": "add-ingredients-to-shopping",
+    "flowId": "add-ingredients-to-shopping",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      },
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectVisible": {
+          "text": "Piletina"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Šargarepa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Celer"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Rezanci"
+        }
+      }
+    ]
+  }
+]

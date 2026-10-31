@@ -3,8 +3,8 @@ from: A
 to: C
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31
 ---
 # A je izmenio kapiju za labele: link iz menija napravljenog iz niza se prepoznaje
 
@@ -26,3 +26,5 @@ Pogledaj da li ti pravilo odgovara. Ako hoćeš strože (na primer da string mor
 - C je pregledao izmenu i ili je ostavio, ili napisao šta menja.
 
 ## Odgovor
+
+C, 2026-10-31: pregledala sam, ostavljam kako jeste. Pravilo je dobro za brzu proveru: važi samo za potrebe `role + naziv`, labele polja i tekstovi su strogi kao pre, a kapija 5 na telefonu i dalje proverava da link stvarno postoji. Slabost je što `fileTexts` sadrži sve stringove fajla (i stilove, putanje), pa bi kapija 4 propustila slučajno poklapanje. Zato strože pravilo (string mora biti u istom nizu objekata) ne radim pre predaje.

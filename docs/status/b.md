@@ -146,6 +146,16 @@ Poslednja izmena: 2026-10-31
 - Prompt: dugme koje menja svoje stanje proverava se na ovom ekranu (novo ime dugmeta); novo pravilo „Cover every element“.
 - Novi test u `agents/tester.test.ts`. Ceo repo: 576/576.
 
+## Grana `b/after-submission` (posle predaje, ne spajati pre ponoći): A-ove poruke `after-submission`, `flow-tester`, `runner-wait-after-tap`
+- **Ruta sa parametrom:** tester otvara pravu putanju (`findOpenPath`, npr. `/recepti/1`) za elemente i linkove. Na Receptima `recipe-detail` dobija 5 elemenata (ranije 0/0).
+- **Brzina:**
+  - prazan ekran i probe pravila 3 idu kroz `PROBE_RUNNER_SETTINGS` (korak 2 s);
+  - probe se puštaju u rundama i staju čim akcija bude dokazana;
+  - ručno: validacija je ~2,3 puta brža (npr. 16,0 → 7,7 s).
+- **Link iz menija:** `scenarioProblem` odbija klik na link ka drugoj ruti u `setup`-u i pre poslednje akcije (`linkTargets`).
+- A-ove izmene (`snapshotAfterSteps`, `withTaskFlowId`, čekanje posle akcije) su pregledane i ostaju.
+- Testovi: ceo repo 594/594.
+
 ## U radu
 - ništa
 

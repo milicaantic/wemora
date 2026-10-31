@@ -1,0 +1,12 @@
+{
+  "flowId": "favorites-to-detail",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "favorites-to-detail-flow",
+      "unitId": "favorites",
+      "ok": true,
+      "durationMs": 1962
+    }
+  ]
+}

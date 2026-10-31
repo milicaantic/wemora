@@ -5,7 +5,7 @@ import { createServer, type Server } from "node:http"
 import type { AddressInfo } from "node:net"
 import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { PlanSchema, ScenarioSchema, type Scenario, type ServedApp } from "../contracts"
+import { PlanSchema, ScenarioSchema, type RunScenarios, type Scenario, type ServedApp } from "../contracts"
 import { createRunScenarios } from "./run"
 import { serveStatic } from "./serve"
 import { createValidateScenario } from "./validate"
@@ -189,5 +189,55 @@ describe("Recepti manual scenarios", () => {
     }
     const unit = plan.units.find((u) => u.id === s.unitId)
     expect(unit?.obligations.map((o) => o.id)).toContain(s.obligation)
+  })
+})
+
+// No browser: which runner gets which scenarios, and that the rule 3 probes stop early (A's inbox 2026-10-31).
+describe("validateScenario probes", () => {
+  type Call = { runner: "run" | "probe"; url: string; ids: string[] }
+  const fakes = (passesOnBlank = false) => {
+    const calls: Call[] = []
+    const fake =
+      (runner: Call["runner"]): RunScenarios =>
+      async (url, scenarios) => {
+        calls.push({ runner, url, ids: scenarios.map((s) => s.id) })
+        return scenarios.map((s) => {
+          // On the original: the scenario passes; a variant fails only when it checks "Sačuvano" (the tap shows it).
+          const ok = url === "blank" ? passesOnBlank : !JSON.stringify(s.steps.at(-1)).includes("Sačuvano")
+          return { scenarioId: s.id, unitId: s.unitId, ok, durationMs: 0 }
+        })
+      }
+    return { calls, validate: createValidateScenario(fake("run"), fake("probe")) }
+  }
+  const twoChecks = scenario("two-checks", [
+    { goto: "/" },
+    { tap: { role: "button", name: "Sačuvaj" } },
+    { expectVisible: { text: "Sačuvano" } },
+    { expectVisible: { text: "Narudžbine" } },
+  ])
+
+  it("runs rule 1 with the normal runner, the blank screen and the probes with the probe runner", async () => {
+    const { calls, validate } = fakes()
+    expect(await validate("original", "blank", twoChecks)).toEqual({ ok: true })
+    expect(calls.map((c) => `${c.runner}:${c.url}`)).toEqual(["run:original", "probe:blank", "probe:original"])
+  })
+
+  it("stops probing an action once one variant fails", async () => {
+    const { calls, validate } = fakes()
+    await validate("original", "blank", twoChecks)
+    // The first variant (check "Sačuvano" without the tap) fails, so the one for "Narudžbine" never runs.
+    expect(calls.at(-1)?.ids).toEqual(["two-checks#without-1-2"])
+  })
+
+  it("refuses a scenario that passes on the blank screen before running any probe", async () => {
+    const { calls, validate } = fakes(true)
+    expect((await validate("original", "blank", twoChecks)).reason).toContain("blank placeholder screen")
+    expect(calls.some((c) => c.ids.some((id) => id.includes("#without-")))).toBe(false)
+  })
+
+  it("still finds an action that changes nothing when every variant passes", async () => {
+    const { validate } = fakes()
+    const nothing = scenario("nothing", [{ goto: "/" }, { tap: { role: "button", name: "Sačuvaj" } }, { expectVisible: { text: "Narudžbine" } }])
+    expect((await validate("original", "blank", nothing)).reason).toContain("changes nothing")
   })
 })
