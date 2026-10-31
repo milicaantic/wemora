@@ -70,6 +70,7 @@ Every scenario is checked before it is saved. It must:
 - Never use an element the task lists under "Never use": it does not exist on mobile.
 - Some elements may be hidden behind a button on mobile. Ignore that: write the test as on the original.
 - If a step fails, read the reason, call `aria_snapshot` if needed, fix the scenario and try again. Do not repeat a scenario that already failed.
+- Some obligations cannot be done on the web original with these steps (for example a long press or a hover). After 3 failed attempts at one obligation the tool tells you to give up on it: stop trying it and move to the next obligation. When every obligation is saved or given up, the task ends by itself.
 
 # Finish
 

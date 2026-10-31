@@ -50,6 +50,17 @@ const save = (unitId: string): Scenario => ({
   obligation: "save",
   steps: [{ goto: "/narudzbine" }, { tap: { role: "button", name: "Sačuvaj" } }, { expectVisible: { text: "Sačuvano" } }],
 })
+// Covers "search" and both portable elements ("Pretraga", "Sačuvaj") in one scenario.
+const searchAndSave = (unitId: string): Scenario => ({
+  ...search(unitId),
+  id: `${unitId}-search-and-save`,
+  steps: [
+    { goto: "/narudzbine" },
+    { fill: { label: "Pretraga", value: "Petar" } },
+    { tap: { role: "button", name: "Sačuvaj" } },
+    { expectNotVisible: { text: "#1043" } },
+  ],
+})
 const call = (name: string, args: Record<string, unknown>) => ({ call: { name, args } })
 const saveCall = (scenario: Scenario) => call("save_scenario", { scenario })
 
@@ -71,6 +82,24 @@ const fixture: MockFixture = {
   "tester:u-existing": [saveCall(save("u-existing")), { text: "Added the missing obligation." }],
   "tester:u-busy": [saveCall(search("u-busy")), { text: "Done." }],
   "tester:u-cancel": [call("aria_snapshot", { path: "/narudzbine" }), saveCall(search("u-cancel")), { text: "Done." }],
+  // A full save, then three failed tries at "save": the tester gives it up and ends; the rest is never used.
+  "tester:u-give-up": [
+    saveCall(searchAndSave("u-give-up")),
+    call("try_scenario", { scenario: { ...save("u-give-up"), id: "bad-g1-1" } }),
+    call("try_scenario", { scenario: { ...save("u-give-up"), id: "bad-g1-2" } }),
+    call("try_scenario", { scenario: { ...save("u-give-up"), id: "bad-g1-3" } }),
+    call("try_scenario", { scenario: { ...save("u-give-up"), id: "bad-g1-4" } }),
+    { text: "Done." },
+  ],
+  // Gives up "save" first, is refused a fourth try without validation, then still saves "search".
+  "tester:u-give-up-later": [
+    call("try_scenario", { scenario: { ...save("u-give-up-later"), id: "bad-g2-1" } }),
+    call("try_scenario", { scenario: { ...save("u-give-up-later"), id: "bad-g2-2" } }),
+    saveCall({ ...save("u-give-up-later"), id: "bad-g2-3" }),
+    call("try_scenario", { scenario: { ...save("u-give-up-later"), id: "bad-g2-4" } }),
+    saveCall(search("u-give-up-later")),
+    { text: "Done." },
+  ],
   // A save, then a slow aria_snapshot during which the task is cancelled or runs out of time.
   "tester:u-cancel-late": [saveCall(search("u-cancel-late")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
   "tester:u-own-limit": [saveCall(search("u-own-limit")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
@@ -152,7 +181,20 @@ const logLines = () =>
 beforeAll(() => {
   runDir = mkdtempSync(path.join(tmpdir(), "wemora-tester-"))
   initLog(runDir)
-  const ids = ["u-full", "u-partial", "u-none", "u-existing", "u-busy", "u-cancel", "u-cancel-late", "u-own-limit", "u-blank", "u-blank-down"]
+  const ids = [
+    "u-full",
+    "u-partial",
+    "u-none",
+    "u-existing",
+    "u-busy",
+    "u-cancel",
+    "u-cancel-late",
+    "u-own-limit",
+    "u-blank",
+    "u-blank-down",
+    "u-give-up",
+    "u-give-up-later",
+  ]
   const plan: Plan = {
     units: [
       ...ids.map((id) => unit(id)),
@@ -235,7 +277,9 @@ describe("tester agent", () => {
     expect(outputs).toContain('Not saved: Unknown obligation "nope"')
     expect(outputs).toContain('button "Info", which does not exist on mobile')
     expect(outputs).toContain('Saved "u-full-search". Obligations still without a scenario: save.')
-    expect(outputs).toContain('Saved "u-full-save". All obligations and interactive elements are covered.')
+    // After the last save nothing is left, so the task ends right there and the model gets no further reply.
+    const finished = logLines().find((l) => l.event === "tester.finished" && l.data?.unitId === "u-full")
+    expect(JSON.stringify(finished)).toContain('"reason":"every obligation is saved or given up"')
   })
 
   it("does not validate a scenario again after try_scenario, nor one refused by the cheap checks", () => {
@@ -283,6 +327,40 @@ describe("tester agent", () => {
     await untilIdle(tester)
     expect(readTests(runDir, "u-cancel")).toEqual([])
     expect(ready).not.toContain("u-cancel")
+  })
+
+  it("gives up an obligation after 3 failures, logs each reason, and ends without waiting for its time limit", async () => {
+    const tester = newTester()
+    tester.assign({ unitId: "u-give-up" })
+    await untilIdle(tester)
+
+    const lines = logLines().filter((l) => l.data?.unitId === "u-give-up")
+    const tryFailed = lines.filter((l) => l.event === "tester.try_failed")
+    expect(tryFailed).toHaveLength(3)
+    expect(JSON.stringify(tryFailed[0])).toContain('"obligation":"save"')
+    expect(JSON.stringify(tryFailed[0])).toContain("Passes on the blank placeholder screen too.")
+    expect(JSON.stringify(lines.find((l) => l.event === "tester.obligation_skipped"))).toContain('"failures":3')
+    expect(JSON.stringify(lines.find((l) => l.event === "tester.finished"))).toContain('"reason":"every obligation is saved or given up"')
+    // The fourth try was never asked of the model's tools: the task had ended.
+    expect(validated).not.toContain("bad-g1-4")
+    expect(ready.filter((u) => u === "u-give-up")).toHaveLength(1)
+    expect(readTests(runDir, "u-give-up").map((s) => s.id)).toEqual(["u-give-up-search-and-save"])
+  })
+
+  it("refuses an obligation it gave up without validating it again, and keeps working on the others", async () => {
+    const tester = newTester()
+    tester.assign({ unitId: "u-give-up-later" })
+    await untilIdle(tester)
+
+    expect(validated).toEqual(expect.arrayContaining(["bad-g2-1", "bad-g2-2", "bad-g2-3"]))
+    expect(validated).not.toContain("bad-g2-4")
+    const outputs = runner.toolOutputs.join("\n")
+    expect(outputs).toContain('move to the next one: search')
+    expect(outputs).toContain('You gave up on obligation "save"; do not try it again.')
+    const lines = logLines().filter((l) => l.data?.unitId === "u-give-up-later")
+    expect(lines.filter((l) => l.event === "tester.save_failed")).toHaveLength(1)
+    expect(readTests(runDir, "u-give-up-later").map((s) => s.id)).toEqual(["u-give-up-later-search"])
+    expect(ready).toContain("u-give-up-later")
   })
 
   it("after a cancel from outside sends no tests.ready, but keeps what it saved for the next tester (D-016)", async () => {

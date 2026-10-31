@@ -60,7 +60,19 @@ type Task = {
   interactive: InteractiveElement[]
   // Scenarios (as JSON) that passed try_scenario in this task, so save_scenario does not run them again.
   validated: Set<string>
+  // Failed try/save per obligation; at MAX_FAILURES_PER_OBLIGATION the obligation is given up.
+  failures: Map<string, number>
+  givenUp: Set<string>
+  // Failures since the last save: ends the task once every obligation is saved or given up.
+  failuresInARow: number
+  // Ends the loop when there is nothing left to test (set per task).
+  finish: (reason: string) => void
+  finishedBecause: string | null
 }
+
+// After this many failed attempts at one obligation the tester moves on (A's inbox message 2026-10-31).
+export const MAX_FAILURES_PER_OBLIGATION = 3
+const MAX_LOGGED_PROBLEM_CHARS = 300
 
 const PROMPT_FILE = fileURLToPath(new URL("./prompts/tester.md", import.meta.url))
 let prompt: string | null = null
@@ -85,7 +97,10 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
 
   // Runs the browser-free checks first, then validateScenario on the original and the blank screen.
   async function check(scenario: Scenario): Promise<string | null> {
-    const { unit, blankUrl, saved, validated } = current()
+    const { unit, blankUrl, saved, validated, givenUp } = current()
+    if (givenUp.has(scenario.obligation)) {
+      return `You gave up on obligation "${scenario.obligation}"; do not try it again. Work on what is still missing.`
+    }
     const problem = scenarioProblem(scenario, unit, saved)
     if (problem) return problem
     const key = JSON.stringify(scenario)
@@ -94,6 +109,45 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     if (!result.ok) return result.reason ?? "Validation failed."
     validated.add(key)
     return null
+  }
+
+  // Logs why a scenario failed (the model sees the reason, the log did not), counts it for its obligation and
+  // returns what to tell the model next: move on after MAX_FAILURES_PER_OBLIGATION, or nothing.
+  function failed(tool: "try_scenario" | "save_scenario", scenario: Scenario, problem: string): string {
+    const active = current()
+    const { unit } = active
+    log({
+      agent: id,
+      event: tool === "try_scenario" ? "tester.try_failed" : "tester.save_failed",
+      data: { unitId: unit.id, scenarioId: scenario.id, obligation: scenario.obligation, problem: problem.slice(0, MAX_LOGGED_PROBLEM_CHARS) },
+    })
+    active.failuresInARow++
+    let note = ""
+    const known = unit.obligations.some((o) => o.id === scenario.obligation)
+    const count = (active.failures.get(scenario.obligation) ?? 0) + 1
+    active.failures.set(scenario.obligation, count)
+    if (known && count >= MAX_FAILURES_PER_OBLIGATION && !active.givenUp.has(scenario.obligation)) {
+      active.givenUp.add(scenario.obligation)
+      log({ agent: id, event: "tester.obligation_skipped", data: { unitId: unit.id, obligation: scenario.obligation, failures: count } })
+      const next = openObligations(active)
+      note = `\nGive up on obligation "${scenario.obligation}" after ${count} failed attempts and move to the next one${next.length > 0 ? `: ${next.join(", ")}` : ""}.`
+    }
+    return note + finishIfDone(active)
+  }
+
+  // Obligations without a saved scenario that were not given up.
+  function openObligations(active: Task): string[] {
+    return computeCoverage(active.unit, active.saved, active.interactive).obligations.missing.filter((o) => !active.givenUp.has(o))
+  }
+
+  // Ends the task when every obligation is saved or given up, and the elements are covered or the model keeps
+  // failing; the tester then sends what it saved instead of waiting for its time limit.
+  function finishIfDone(active: Task): string {
+    if (openObligations(active).length > 0) return ""
+    const elementsLeft = computeCoverage(active.unit, active.saved, active.interactive).elements.missing.length
+    if (elementsLeft > 0 && active.failuresInARow < MAX_FAILURES_PER_OBLIGATION) return ""
+    active.finish("every obligation is saved or given up")
+    return "\nEvery obligation is saved or given up, so the task ends now."
   }
 
   const tools: Tool[] = [
@@ -113,7 +167,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
       args: scenarioArgs,
       invoke: async ({ scenario }) => {
         const problem = await check(scenario)
-        return problem ? `Invalid: ${problem}` : "Valid. Call save_scenario with exactly the same scenario to keep it."
+        if (problem) return `Invalid: ${problem}${failed("try_scenario", scenario, problem)}`
+        return "Valid. Call save_scenario with exactly the same scenario to keep it."
       },
     }),
     defineTool({
@@ -122,14 +177,15 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
       args: scenarioArgs,
       invoke: async ({ scenario }) => {
         const problem = await check(scenario)
-        if (problem) return `Not saved: ${problem}`
+        if (problem) return `Not saved: ${problem}${failed("save_scenario", scenario, problem)}`
         const active = current()
         active.saved.push(scenario)
+        active.failuresInARow = 0
         // Only code builds the path: a tester writes nothing but its own unit's tests file.
         writeTests(board().config.runDir, active.unit.id, active.saved)
         board().tests[active.unit.id] = [...active.saved]
         log({ agent: id, event: "tester.saved", data: { unitId: active.unit.id, scenarioId: scenario.id, obligation: scenario.obligation } })
-        return `Saved "${scenario.id}". ${coverageNote(active.unit, active.saved, active.interactive)}`
+        return `Saved "${scenario.id}". ${coverageNote(active.unit, active.saved, active.interactive)}${finishIfDone(active)}`
       },
     }),
   ]
@@ -142,7 +198,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     handlers: [],
   })
 
-  async function prepare(unitId: string): Promise<Task> {
+  async function prepare(unitId: string, cancel: CancelGuard): Promise<Task> {
     const unit = board().plan?.units.find((u) => u.id === unitId)
     if (!unit) throw new Error(`unit "${unitId}" is not in the plan`)
     if (unit.kind !== "screen" || !unit.route) throw new Error(`unit "${unitId}" is not a screen with a route`)
@@ -160,7 +216,23 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
         log({ agent: id, event: "tester.interactive_failed", data: { unitId, error: message(error) } })
       }
     }
-    return { unit, blankUrl, saved, interactive, validated: new Set() }
+    const prepared: Task = {
+      unit,
+      blankUrl,
+      saved,
+      interactive,
+      validated: new Set(),
+      failures: new Map(),
+      givenUp: new Set(),
+      failuresInARow: 0,
+      // The own CancelGuard ends the loop at its next step; it is not a cancel from outside, so tests.ready is sent.
+      finish: (reason) => {
+        prepared.finishedBecause ??= reason
+        cancel.cancel(reason)
+      },
+      finishedBecause: null,
+    }
+    return prepared
   }
 
   // The Conductor cancels from outside after its own timeout or at the end of the run (D-016).
@@ -172,7 +244,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     // The tester's own limit (D-016) comes before the Conductor's, so the task ends with what it saved.
     const ownLimit = setTimeout(() => cancel.cancel("tester time limit"), deps.unitTimeoutMs ?? DEFAULTS.testerUnitTimeoutMs)
     try {
-      task = await prepare(unitId)
+      task = await prepare(unitId, cancel)
       const result = await runTask(agent, {
         prompt: testerPrompt(),
         message: testerBrief(task.unit, task.interactive, task.saved),
@@ -182,7 +254,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
         tools,
         guard: cancel,
       })
-      log({ agent: id, event: "tester.finished", data: { unitId, saved: task.saved.length, ...(result.ok ? {} : { error: result.error }) } })
+      const end = result.ok ? {} : task.finishedBecause ? { reason: task.finishedBecause } : { error: result.error }
+      log({ agent: id, event: "tester.finished", data: { unitId, saved: task.saved.length, givenUp: [...task.givenUp], ...end } })
     } catch (error) {
       log({ agent: id, event: "tester.failed", data: { unitId, error: message(error) } })
     } finally {
