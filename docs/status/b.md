@@ -22,7 +22,13 @@ Poslednja izmena: 2026-10-30
 - **2026-10-31, posle koraka `submit` (PR #56) i C-ovog usklađenog nacrta: `todo-list` je u mock prolazu `proven`** (5/5 obaveza, 5/5 testova na telefonu, link `TodoMVC` `notPortable`).
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
 
-## Gotovo, čeka PR (grana `b/verify`): B12 `verify`
+## Gotovo, čeka PR (grana `b/sabotage`): B13 `sabotage`
+- `src/verify/sabotage.ts`, izvoz kroz `verify/index.ts`: `sabotage(runDir, unitId)` po ugovoru, plus `sabotageDetailed` (vraća šta je promenjeno: fajl, ime, vrsta) za A-ov CLI (A18). `scripts/sabotage.ts` nije potreban: `npm run sabotage` ide kroz `src/cli.ts` (b.md Q14).
+- **Kako radi:** samo ekran sa testovima i statusom `proven`/`partial` (inače `verify` ne bi pokazao štetu). Iz testova bira ime koje se traži (labela polja, pa ime sa ulogom, pa vidljiv tekst) i u kodu ekrana `app/src/screens/<unitId>/` ga zameni sa `[sabotaged]`, samo unutar stringa ili JSX teksta (identifikatori ostaju). Menja zadati folder na mestu: pušta se nad kopijom prolaza. Odbija drugu sabotažu istog ekrana i ekran čiji kod ne sadrži nijedno testirano ime.
+- Testovi: `src/verify/sabotage.test.ts` (5). Ceo repo: 513 testova.
+- **Ručno, sa pravim delovima (G3):** kopija pravog `migrate:mock` prolaza za TodoMVC: `verify` OK → `sabotage todo-list` (labela `New Todo Input`) → `verify` FAILED, padaju tačno 4 testa koja koriste polje, `empty-state` prolazi; originalni prolaz netaknut.
+
+## Spojeno: B12 `verify` (PR #67)
 - `src/verify/verify.ts`, izvoz kroz `verify/index.ts`: `verify(runDir)` po ugovoru, plus `verifyDetailed(runDir)` i `formatVerifyReport(details)` za A-ov CLI (A18), koji ispisuje matricu i vraća exit kod.
 - **Kako radi (odluke B, 2026-10-31):** učita `plan.json`, `tests/*.json` i `results/*.json` (zod); napravi web export `app/` C-ovim `serveApp` (D-006, Q12) i ako u `app/` nema `node_modules` (run iz `runs/` posle `git clone`), linkuje ga na `templates/expo/node_modules` kao scaffold (treba jednom `npm ci` u `templates/expo`); pusti testove svakog ekrana na telefonu (390×844, iste namerne razlike kao Gatekeeper), ekran po ekran, redom iz plana. **„Prošao“ (Q13):** svi testovi ekrana sa statusom `proven` ili `partial` (oni su prošli kapiju 5) moraju i sada da prođu; ekrani `failed`/`unproven`/bez rezultata se samo ispisuju. Matrica nema vremena trajanja, pa je isti tekst svaki put. Bez Mozaika i API ključa (`check-layers` prolazi). Mock-api za Recepte se za sada pokreće ručno pre `verify`.
 - Testovi: `src/verify/verify.test.ts` (4) nad ručnim prolazom u `src/verify/mocks/run/` (lažni `serveApp` servira statičku stranu umesto Expo exporta): prolaz, pokvaren ekran pada samo on, isti ispis dva puta, jasna greška za folder koji nije prolaz. `scenarios/index.ts` sada izvozi i `createRunScenarios` (kraći limiti u testovima). Ceo repo: 484 testa.
@@ -85,8 +91,8 @@ Poslednja izmena: 2026-10-30
 
 ## Sledeće
 - pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
-- F3: B13 `sabotage` (posle B12), `serveOriginal(webDir)`
-- A (A18): povezati `wemora verify <run-dir>` sa `verifyDetailed` + `formatVerifyReport` (exit 0 kad je `ok`, inače 1)
+- F3: `serveOriginal(webDir)`; testovi toka kad A spoji `a/flow-dispatch` (inbox `2026-10-31-b-to-c-flow-tests.md`)
+- A (A18): povezati `wemora verify <run-dir>` (`verifyDetailed` + `formatVerifyReport`, exit 0 kad je `ok`) i `wemora sabotage <run-dir> <unitId>` (`sabotageDetailed`, ispisati šta je promenjeno)
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
