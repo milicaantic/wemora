@@ -220,3 +220,15 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   3. Registracija `claude-haiku-5-5` u `src/core/runner.ts` koristi stalno ime (`DEFAULT_MODELS.default`), ne `MODELS.default`.
 - Zašto: gateway hakatona (`ANTHROPIC_BASE_URL` = `api.app.jigjoy.ai`) nudi samo `claude-haiku-4-5` i `claude-sonnet-4-6` (provereno po jednim malim zahtevom po modelu, 2026-10-31); `haiku-5-5` vraća 404, a `sonnet-5-5` 503 „not available on Mozaik Cloud yet“. Izbor kroz `.env` ne traži izmenu koda kad se gateway promeni.
 - Posledice: `.env.example` (zakomentarisani primer), `architecture.md` §12 (napomena). Haiku 4.5 je ~10× skuplji od cene uzete za 5.5, pa pravi prolazi trebaju veći `--budget` (podrazumevano je $3). Brojač troška računa po Anthropic ceni; gateway možda naplaćuje drugačije. Svi zahtevi modelu sa ovim `ANTHROPIC_BASE_URL` idu preko JigJoy servera; to nije telemetrija (`MOZAIK_API_KEY` i dalje nije postavljen).
+
+## D-019: Poruke između članova tima kroz `docs/inbox/`
+- Datum: 2026-10-31
+- Ko: A
+- Status: predlog (čeka B, C i D, posebno tačku 3)
+- Odluka:
+  1. Svaka poruka koja traži da neko nešto uradi ili odgovori je jedan fajl u `docs/inbox/` (ime `<datum>-<od>-to-<kome>-<opis>.md`), u formatu iz `docs/inbox/README.md`: frontmatter `from`, `to`, `created`, `priority`, `status`, `done` i sekcije Problem, Predlog, Gotovo kad, Odgovor.
+  2. Pošiljalac pravi fajl. Primalac menja `status` i `done`, piše odgovor i premešta fajl u `docs/inbox/done/`.
+  3. Fajlovi u `docs/inbox/` idu direktno na `main`, bez PR-a.
+  4. Odluke o arhitekturi i ugovorima i dalje idu u ovaj fajl. Poruka se samo poziva na njih.
+- Zašto: poruke u chatu se gube i ne zna se da li su urađene. Jedan fajl po poruci ne pravi merge konflikte. Direktno na `main`, jer bi poruka preko PR-a stigla tek posle review-a. Claude svake osobe može da pročita svoj inbox na početku sesije.
+- Posledice: `docs/inbox/README.md`, `docs/inbox/done/`. Predlog dopune `CLAUDE.md`, sekcija „Dokumentacija“: na početku sesije proveriti `docs/inbox/` za otvorene poruke sa svojim slovom.

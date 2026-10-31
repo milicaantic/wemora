@@ -46,7 +46,8 @@ Poslednja izmena: 2026-10-30
 - G2 mock prolaz (`output/20261031-020235-todomvc`): `todo-list` `proven` (5/5 obaveza), runda 1 `gate.failed`, runda 2 promovisan; `main` 467/467 testova
 
 ## U radu
-- G2 pravi prolaz nad TodoMVC-om (`--budget 3`, modeli gateway-a)
+- G2 pravi prolaz nad TodoMVC-om (modeli gateway-a): `output/20261031-022711-todomvc`, `finished`, $0.12; `todo-list` promovisan u rundi 1 (svih 5 kapija, 2 testa prolaze), ali status `partial` jer je `coverage` bio `null`
+- trka B/C: tester upisuje `board().tests` posle svakog sačuvanog testa (`agents/tester.ts:130`), a Gatekeeper `hasTests` (`agents/gatekeeperParticipant.ts:76`) to shvata kao „testovi su gotovi“. Zato proveri nacrt pre `tests.ready`, dok `board().coverage` još ne postoji. Predlog: Gatekeeper čeka događaj `tests.ready` (C) ili tester upisuje tablu tek na kraju (B)
 
 ## Gotovo, čeka review i spajanje (grana `a/gateway-models`)
 - D-018: modeli kroz `.env` (`WEMORA_MODEL_DEFAULT`, `WEMORA_MODEL_STRONG`; podrazumevano 5-5), cene za `claude-haiku-4-5` i `claude-sonnet-4-6`, registracija `haiku-5-5` sa stalnim imenom; `.env.example`; `architecture.md` §12; 4 nova testa. Razlog: gateway hakatona nudi samo 4-5 i 4-6 (prvi pravi prolaz je stao na `plan.failed`, $0)
