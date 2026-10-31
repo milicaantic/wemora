@@ -51,6 +51,7 @@ Poslednja izmena: 2026-10-30
 
 ## Gotovo, čeka review i spajanje (grana `a/cli-verify`)
 - A18: `wemora verify <run-dir>` i `wemora sabotage <run-dir> <unitId>` u `src/cli.ts`, preko B-ovih `verifyDetailed`, `formatVerifyReport` i `sabotageDetailed` (dinamički uvoz, bez Mozaika). Greške: poruka i exit 1. Tekst upotrebe kaže da se `sabotage` pušta nad kopijom. 3 nova testa u `cli.test.ts` (B-ov `verify` je tamo mock), 524/524. Ručno nad kopijom `migrate:mock` prolaza za TodoMVC (`archiveRun` u scratchpad), bez `ANTHROPIC_API_KEY`: `verify` 5/5 OK exit 0 → `sabotage todo-list` („New Todo Input“, label) exit 0 → `verify` 1/5 FAILED exit 1 (`empty-state` prolazi). Kriterijumi iz obe B-ove poruke ispunjeni
+- `wemora archive <run-dir> [--name <name>]` i `npm run archive` (D-ova poruka, D18): poziva D-ov `archiveRun` u `runs/`, podrazumevano ime `<app>-<yyyymmdd>-<hhmm>` iz run-id-ja, bez Mozaika. 4 nova testa, 528/528. Ručno: arhiva mock prolaza u `runs/` pa `verify` nad njom OK 5/5; drugi put isto ime → greška, exit 1
 
 ## Gotovo (spojeno u main), `a/scaling` (PR #73)
 - D-023: podrazumevani modeli su `claude-haiku-4-5` i `claude-sonnet-4-6` (oni koje gateway nudi), izbačene cene i registracija modela 5-5, `--budget` podrazumevano $5. Kod, testovi (506/506) i dokumentacija (`CLAUDE.md`, `mozaik.md`, `architecture.md`, `tasks/a.md`, `tim-plan.md`, `wemora-plan.md`)

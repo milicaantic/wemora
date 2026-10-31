@@ -4,7 +4,7 @@ import { parseArgs } from "node:util"
 import { DEFAULTS } from "./core/config"
 
 // Entry point of the `wemora` CLI (architecture.md §13). Mozaik and the orchestration are imported
-// only inside `migrate`, so `verify` and `sabotage` never load them (invariant 10).
+// only inside `migrate`, so `verify`, `sabotage` and `archive` never load them (invariant 10).
 
 export type CliCommand =
   | {
@@ -20,6 +20,7 @@ export type CliCommand =
     }
   | { cmd: "verify"; runDir: string }
   | { cmd: "sabotage"; runDir: string; unitId: string }
+  | { cmd: "archive"; runDir: string; name?: string }
   | { cmd: "help" }
 
 export class UsageError extends Error {}
@@ -30,9 +31,11 @@ export const USAGE = `Usage:
   --original-url  the running original web app, for the tester (start it first, e.g. npm run serve in examples/todomvc)
   wemora verify <run-dir>
   wemora sabotage <run-dir> <unitId>
+  wemora archive <run-dir> [--name <name>]
 
   verify          runs every saved test of a finished run again, without a model or API key
-  sabotage        breaks one promoted screen in place, so verify must fail on it: run it on a copy of a run`
+  sabotage        breaks one promoted screen in place, so verify must fail on it: run it on a copy of a run
+  archive         copies a finished run into runs/<name>/ to commit it (default name: <app>-<yyyymmdd>-<hhmm>)`
 
 export function parseCliArgs(argv: string[]): CliCommand {
   let parsed
@@ -48,6 +51,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
         mock: { type: "boolean" },
         "mock-dir": { type: "string" },
         "original-url": { type: "string" },
+        name: { type: "string" },
         help: { type: "boolean", short: "h" },
       },
     })
@@ -60,6 +64,7 @@ export function parseCliArgs(argv: string[]): CliCommand {
 
   const migrateOnly = ["out", "max-builders", "max-testers", "budget", "mock", "mock-dir", "original-url"].filter((name) => name in values)
   if (cmd !== "migrate" && migrateOnly.length > 0) throw new UsageError(`--${migrateOnly[0]} only works with migrate`)
+  if (cmd !== "archive" && values.name !== undefined) throw new UsageError("--name only works with archive")
 
   switch (cmd) {
     case "migrate":
@@ -81,6 +86,9 @@ export function parseCliArgs(argv: string[]): CliCommand {
     case "sabotage":
       if (rest.length !== 2) throw new UsageError("sabotage needs <run-dir> and <unitId>")
       return { cmd, runDir: rest[0], unitId: rest[1] }
+    case "archive":
+      if (rest.length !== 1) throw new UsageError("archive needs exactly one <run-dir>")
+      return { cmd, runDir: rest[0], ...(values.name !== undefined ? { name: values.name } : {}) }
     default:
       throw new UsageError(`unknown command "${cmd}"`)
   }
@@ -107,8 +115,11 @@ export async function main(argv: string[]): Promise<number> {
     }
     case "verify":
     case "sabotage":
+    case "archive":
       try {
-        return await (command.cmd === "verify" ? runVerify(command.runDir) : runSabotage(command.runDir, command.unitId))
+        if (command.cmd === "verify") return await runVerify(command.runDir)
+        if (command.cmd === "sabotage") return await runSabotage(command.runDir, command.unitId)
+        return await runArchive(command.runDir, command.name ?? archiveName(command.runDir))
       } catch (error) {
         console.error(`wemora ${command.cmd}: ${error instanceof Error ? error.message : String(error)}`)
         return 1
@@ -130,6 +141,23 @@ async function runSabotage(runDir: string, unitId: string): Promise<number> {
   const change = await sabotageDetailed(runDir, unitId)
   console.log(`sabotaged ${change.unitId}: "${change.target}" (${change.kind}) in ${change.file}; now run verify on this folder`)
   return 0
+}
+
+// D's archiveRun (D18): runs/<name>/ without node_modules or staging, with report.html built again.
+async function runArchive(runDir: string, name: string): Promise<number> {
+  const { archiveRun } = await import("./report")
+  const target = path.relative(process.cwd(), await archiveRun(runDir, "runs", name))
+  console.log(`archived ${runDir} into ${target}; check it with: npm run verify -- ${target}`)
+  return 0
+}
+
+/** "20261031-152346-todomvc" → "todomvc-20261031-1523". */
+export function archiveName(runDir: string): string {
+  const runId = path.basename(path.resolve(runDir))
+  const match = /^(\d{8})-(\d{4})\d{2}-(.+)$/.exec(runId)
+  if (!match) throw new Error(`cannot make an archive name from "${runId}"; pass --name <name>`)
+  const [, date, time, app] = match
+  return `${app}-${date}-${time}`
 }
 
 function positiveInt(raw: string | undefined, fallback: number, flag: string): number {
