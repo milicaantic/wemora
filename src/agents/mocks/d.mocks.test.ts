@@ -72,6 +72,34 @@ describe.each(apps)("mock replies for $name", ({ name, webDir }) => {
   })
 })
 
+describe("mock plan for TodoMVC can be proven", () => {
+  // What scenarios/extractInteractive finds on the original at "/" (checked 2026-10-31 over examples/todomvc).
+  // A screen is proven only when each of these is used by a test or marked notPortable.
+  const originalElements = [
+    { role: "textbox", name: "New Todo Input" },
+    { role: "link", name: "TodoMVC" },
+  ]
+
+  it("every interactive element of the original is in an obligation or marked notPortable", () => {
+    const output = ArchitectOutputSchema.parse(jsonOf(loadMockFixture(fixtureFile("todomvc", "architect"))["architect"]!))
+    const screen = output.units.find((u) => u.id === "todo-list")!
+    const notPortable = screen.intentionalDifferences.flatMap((d) => (d.kind === "notPortable" ? [d.element.name] : []))
+    const described = screen.obligations.map((o) => o.description).join("\n")
+    for (const element of originalElements) {
+      const handled = notPortable.includes(element.name) || described.includes(`'${element.name}'`)
+      expect(handled, `${element.role} "${element.name}"`).toBe(true)
+    }
+  })
+
+  it("obligations use the named '❯ Toggle All Input', not the unnamed checkbox of one todo", () => {
+    const output = ArchitectOutputSchema.parse(jsonOf(loadMockFixture(fixtureFile("todomvc", "architect"))["architect"]!))
+    const screen = output.units.find((u) => u.id === "todo-list")!
+    for (const id of ["complete-todo", "filter-todos", "clear-completed"]) {
+      expect(screen.obligations.find((o) => o.id === id)?.description).toContain("'❯ Toggle All Input'")
+    }
+  })
+})
+
 describe("mock plan for Recepti", () => {
   it("is the hand-written plan once the code fills in size, writes and routeMap", async () => {
     const parsed = await parsedApp("examples/recepti")

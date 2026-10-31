@@ -33,6 +33,7 @@ Each screen gets 2–5 obligations: behaviors a user can observe on the screen. 
 - `description`: what the user does and what they then see, with the exact texts, labels and button names from the original screen in quotes. Start from the analyzer's `suggestedObligations`.
 - Good: "Typing 'sarma' in 'Pretraga' shows only 'Sarma'; with no match it shows 'Nema recepata za zadatu pretragu'."
 - Bad: "Search works", "Uses the API", "Looks like the original".
+- Tests find elements by their name (label, button text, link text). An element with no name (e.g. an icon-only checkbox in each list row) cannot be used by a test: describe the behavior through a named element that gives the same result, e.g. "with one todo, checking '❯ Toggle All Input' shows '0 items left!'" instead of "checking the todo's checkbox".
 
 # Intentional differences
 
@@ -43,6 +44,12 @@ Some things cannot or should not look the same on a phone. Record them on the sc
 - `notPortable`: an element that has no mobile equivalent (hover, right click, keyboard shortcut). Example: `{ "kind": "notPortable", "element": { "role": "tooltip", "name": "Sastojci" }, "reason": "Shown on mouse hover; touch screens have no hover. Ingredients are on the detail screen." }`.
 
 Use the analyzer's `mobileIssues` to find them. Do not add a difference for things that simply get a mobile layout (a table becoming a list is not a difference if the same texts stay on the screen).
+
+A screen is proven only when every named button, link and field it shows is used by some test or listed here. So, for each screen, check every named interactive element in the analyzer report and the code:
+
+- it is used by one of the obligations, or
+- it is `hiddenBehind` (still reachable on mobile), or
+- it is `notPortable`. This includes links that leave the app (another website, `mailto:`): a test of the screen cannot follow them. Example: `{ "kind": "notPortable", "element": { "role": "link", "name": "TodoMVC" }, "reason": "Links to the external site http://todomvc.com; it leaves the app." }`.
 
 # Flows
 

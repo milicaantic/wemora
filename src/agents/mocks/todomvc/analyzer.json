@@ -31,14 +31,16 @@
               "a todo is added only by pressing Enter in 'New Todo Input'; there is no add button",
               "editing a todo starts on double click; phones have no double click",
               "'Delete todo' appears only on mouse hover over a todo",
+              "the checkbox of each todo has no name; only '❯ Toggle All Input' can be addressed by name",
+              "the credits footer links to the external site http://todomvc.com ('TodoMVC')",
               "the filters are hash links (#/active, #/completed)"
             ],
             "suggestedObligations": [
               "with no todos only the heading 'todos' and the field 'New Todo Input' are shown",
               "typing 'Buy milk' in 'New Todo Input' and pressing Enter adds 'Buy milk' and shows '1 item left!'",
-              "checking the toggle of 'Buy milk' shows '0 items left!' and the button 'Clear completed'",
-              "'Active' shows only active todos and 'Completed' only completed ones",
-              "'Clear completed' removes completed todos and keeps the active ones"
+              "with one todo, checking '❯ Toggle All Input' shows '0 items left!' and the button 'Clear completed'",
+              "after 'Buy milk' is completed and 'Walk the dog' added, 'Active' shows only 'Walk the dog' and 'Completed' only 'Buy milk'",
+              "'Clear completed' removes 'Buy milk' and keeps 'Walk the dog'"
             ]
           }
         ]

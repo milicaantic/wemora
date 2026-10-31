@@ -43,18 +43,23 @@
               },
               {
                 "id": "complete-todo",
-                "description": "Checking the toggle of 'Buy milk' shows '0 items left!' and the button 'Clear completed'."
+                "description": "With the single todo 'Buy milk', checking '❯ Toggle All Input' marks it completed: the screen shows '0 items left!' and the button 'Clear completed'. (The checkbox of one todo has no name, so tests use '❯ Toggle All Input'.)"
               },
               {
                 "id": "filter-todos",
-                "description": "With one active and one completed todo, 'Active' shows only the active one, 'Completed' only the completed one, and 'All' both."
+                "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog', 'Completed' only 'Buy milk', and 'All' both."
               },
               {
                 "id": "clear-completed",
-                "description": "Tapping 'Clear completed' removes the completed todos and keeps the active ones."
+                "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': tapping 'Clear completed' removes 'Buy milk' and keeps 'Walk the dog'."
               }
             ],
             "intentionalDifferences": [
+              {
+                "kind": "notPortable",
+                "element": { "role": "link", "name": "TodoMVC" },
+                "reason": "The credits footer links to the external site http://todomvc.com; it leaves the app, so a test of this screen cannot check it."
+              },
               {
                 "kind": "notPortable",
                 "element": { "role": "button", "name": "Delete todo" },

@@ -63,6 +63,8 @@ Look for each of these and report the ones you find:
 - drag and drop
 - fixed widths in pixels that are wider than a phone
 - direct use of `window` or `document`
+- links that leave the app (another website, `mailto:`): name the link and its URL
+- buttons, checkboxes or fields with no visible name or label (e.g. an icon-only checkbox in each row): tests cannot address them by name
 
 # Suggested obligations
 
@@ -71,6 +73,7 @@ An obligation is a behavior a user can observe on the screen, written so that a 
 - Use the exact texts from the screen: labels, button texts, headings, empty-state messages. Quote them.
 - Describe what the user does and what they then see: "typing 'Sarma' in 'Pretraga' shows only Sarma", "after adding 'Mleko' the list shows 'Kupljeno: 0 od 1'".
 - Do not describe implementation ("calls getRecipes", "uses useState"). Do not describe styling.
+- Use only elements that have a name. If a control has no name, describe the behavior through a named control with the same result.
 - Prefer behaviors that only this screen has over things every screen shows (like the app header).
 
 # Output
