@@ -3,8 +3,8 @@ from: A
 to: D
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana d/fix2 (PR otvara D)
 ---
 # Recepti: 3 ekrana su `partial` samo zbog obaveza koje ne mogu da se testiraju
 
@@ -29,3 +29,16 @@ Prolaz `output/20261031-193916-recepti` (staging): svih 5 ekrana promovisano u r
 - U sledećem prolazu nad Receptima tester ne odustaje ni od jedne obaveze zbog „Fails on the original web app“.
 
 ## Odgovor
+D, 2026-10-31, grana `d/fix2` (na `staging`-u). Tačke 1–3 urađene; tačka 4 je već bila u ručnom planu (`favorites` ima samo `empty-state`, ostalo je tok `manage-favorites-flow`, PR #103).
+
+1. **`architect.md`, pravilo 5:** tekst za „ekran je napušten“ mora da bude vidljiv **neposredno pre klika**, posle svih ranijih koraka iste obaveze, sa baš ovim primerom: na Kategorijama izbor 'Supe' već sakriva 'Izaberite kategoriju', pa se posle klika na 'Pileća supa' proverava dugme liste kategorija ('Glavna jela').
+2. **`architect.md`, pravilo 3:** stanje koje kod obrađuje, a podrazumevani podaci ga nemaju (prazna kategorija), ne ide u obaveze; ako je važno, ide u `intentionalDifferences`.
+3. **`validatePlan`, pravilo 10:** greška kad obaveza ekrana
+   - traži stanje napravljeno drugde: „added/marked/created … via/from/on/in/through the … list/screen/page/flow/detail“, „via the … flow“, „on another screen“, „after a … appears on this screen“;
+   - ili pominje rutu **drugog** ekrana (`'/omiljeni'`, `"/kupovina"`, `/recepti/4`); sopstvena ruta je u redu (`'/recepti/999'` na detalju).
+   Tekst pod navodnicima (natpisi sa ekrana) se ne čita. Poruka arhitekti kaže šta da uradi (zadrži ono što ekran pokazuje sam, ostalo u tok). Ručni plan Recepata i mock plan TodoMVC-a prolaze bez lažnih grešaka.
+   - Testovi: 2 nova u `validatePlan.test.ts` (tvoja tri primera iz prolaza `20261031-193916` se hvataju; sopstvena ruta, „removed from the list“ i natpis „'Added via the recipe list flow'“ ne).
+
+`categories/empty-category` se iz teksta ne prepoznaje pouzdano (ne znamo podatke), pa je samo u promptu (tačka 2).
+
+Build prolazi; testovi `analysis`, `agents`, `scaffold`, `report`, `gatekeeper`, `verify` prolaze, a B-ovi `run.test.ts` i `validate.test.ts` (browser) su pali samo u paralelnom puštanju pod opterećenjem i prolaze sami 26/26 (`scenarios/` nije menjan).

@@ -202,6 +202,30 @@ describe("validatePlan catches broken plans", () => {
     expect(check((p) => void unit(p, "recipe-detail").obligations.push({ id: "leave", description: "Tapping 'Nazad na recepte' leaves the detail ('Nazad na recepte' is no longer shown)." }))).toEqual([])
   })
 
+  it("obligations that need a state made on another screen, or name another screen's route (A, 19:39 run)", () => {
+    const errors = check((p) => {
+      unit(p, "favorites").obligations.push(
+        { id: "navigate-to-detail", description: "After a recipe card appears on this screen, tapping 'Pileća supa' leaves the favorites." },
+        { id: "remove-favorite", description: "Tapping 'Ukloni iz omiljenih: Pileća supa' (added via the recipe list flow) removes it." },
+      )
+      unit(p, "categories").obligations.push({ id: "to-favorites", description: "Tapping 'Omiljeni' changes the address to '/omiljeni'." })
+    })
+    expectError(errors, `obligation "navigate-to-detail" of unit "favorites" names a state made elsewhere`, "put the rest into a flow")
+    expectError(errors, `obligation "remove-favorite" of unit "favorites" names a state made elsewhere ("added via the recipe list`)
+    expectError(errors, `obligation "to-favorites" of unit "categories" names the route "/omiljeni" of another screen`)
+  })
+
+  it("lets a screen use its own route and its own state", () => {
+    const errors = check((p) => {
+      unit(p, "recipe-detail").obligations.push({ id: "other-id", description: "Opening '/recepti/7' shows 'Recept nije pronađen' or a recipe." })
+      unit(p, "shopping-list").obligations.push(
+        { id: "remove-one", description: "Add 'Hleb' and 'Mleko', check 'Hleb', tap 'Obriši kupljene': 'Hleb' is removed from the list and 'Mleko' stays." },
+        { id: "quoted", description: "Tapping 'Dodaj' shows 'Added via the recipe list flow' and 'Kupljeno: 0 / 1'." },
+      )
+    })
+    expect(errors).toEqual([])
+  })
+
   it("does not take data words or quoted texts as an order or a count", () => {
     const errors = check((p) => {
       unit(p, "favorites").obligations.push({ id: "orders-link", description: "Tapping 'Orders' shows 'Order #12' and 'Sort by price'." })
