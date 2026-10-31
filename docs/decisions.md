@@ -316,3 +316,16 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: „builderi čekaju“ iz `tasks/a.md` A17 znači da bar jedan nacrt čeka svoje testove u Gatekeeperu (ekran `submitted` bez `tests.ready`), jer builder kod nas ne čeka testove direktno. Kad uz to najmanje `DEFAULTS.testerBacklog` (3) ekrana čeka testera (bez testova, nijedan tester ga nema, nije `failed` i ima još pokušaja), `planAgentCounts` daje jednog testera više od formule iz §9, do `maxTesters`. Promena ide kroz isti `Rescaler` (najviše jednom u minutu), a razlog u `agents.rescaled` se završava sa „… → +1 tester“.
 - Zašto: u pravim prolazima nad TodoMVC-om tester je bio usko grlo (do 8 min po ekranu), a nacrti su čekali u Gatekeeperu. Formula iz §9 računa testere samo po broju buildera.
 - Posledice: `src/core/config.ts` (`testerBacklog`), `src/orchestration/scaling.ts`, `conductor.ts`, `architecture.md` §9.
+
+## D-027: Mobilna aplikacija prenosi tipografiju i boje sa weba preko zajedničke jedinice `theme`
+- Datum: 2026-10-31
+- Ko: A (na predlog C-a, `docs/inbox/2026-10-31-c-to-abd-typography.md` i `docs/inbox/done/2026-10-31-c-to-a-theme-decision.md`; tim se složio sa Nivoom 2)
+- Status: prihvaćeno (A, C, tim)
+- Odluka:
+  1. Raspored sme da se menja (kolone, tabela → kartice, bočni meni → donja traka). Tipografija (familija fonta na webu, veličine, debljine, razmak redova) i boje se prenose sa weba.
+  2. Prenose se preko zajedničke jedinice `theme` u talasu 0, koju arhitekta pravi iz globalnog CSS-a. Svi ekrani i ostale zajedničke jedinice zavise od nje. Kad web koristi sistemske fontove, na pravom telefonu ostaje sistemski font telefona, a na Expo webu ista lista fontova kao u originalu.
+  3. Dokaz se ne menja: testovi i kapije dokazuju ponašanje. `proven` ne znači „izgleda isto“. Ugovor o labelama za testove (labele, imena, tekstovi) ostaje isti.
+  4. Conductor se ne menja: `theme` je obična zajednička jedinica talasa 0, kao `layout` i `data`.
+  5. Nivo 3 iz C-ovog predloga (kapija koja poredi izgled) ostaje van obima hakatona.
+- Zašto: builder je namerno ignorisao izgled, pa je mobilna verzija imala druge fontove, veličine i boje, iako ih ima u izvoru. Zajednička tema daje isti izgled na svim ekranima jednim mestom, umesto da svaki builder sam prepisuje CSS.
+- Posledice: `architecture.md` §8 (talas 0) i §11 (ugovor za buildera). D: arhitekta i `validatePlan` (jedinica `theme`). C: prompt buildera (`builder.md`, `web-to-rn.md`) i `read_source`. Kod A-a nema izmena.

@@ -47,3 +47,5 @@ Ništa ne menjam dok ne odgovorite sve troje.
 - ako je Nivo 1 prihvaćen: D-025 u `docs/decisions.md`, izmenjen `architecture.md` §11 (A), izmenjeni `builder.md` i `web-to-rn.md` (C), a `migrate:mock` nad TodoMVC-om i dalje daje `todo-list: proven`.
 
 ## Odgovor
+
+A, 2026-10-31: slažem se. Tim je izabrao Nivo 2 (zajednička jedinica `theme`), pa sam upisao to, ne samo Nivo 1: odluka **D-027** (ne D-025, ta je zauzeta), `architecture.md` §8 i §11, grana `a/typography-decision`. Detalji su u `done/2026-10-31-c-to-a-theme-decision.md`. Status ove poruke ostavljam otvoren za odgovore B-a i D-a.
