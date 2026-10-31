@@ -3,7 +3,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
 import { beforeAll, describe, expect, it } from "vitest"
-import { PlanSchema, UnitResultSchema, type CheckDraft, type CheckDraftInput, type GateResult, type RunConfig, type Scenario } from "../contracts"
+import { FlowResultSchema, PlanSchema, UnitResultSchema, type CheckDraft, type CheckDraftInput, type GateResult, type RunConfig, type Scenario } from "../contracts"
+import type { CheckFlow } from "../gatekeeper"
 import { initLog } from "../core/log"
 import { MockRunner } from "../core/runner"
 import { board, emit, initializeRuntime, join } from "../core/runtime"
@@ -33,6 +34,15 @@ const fakeCheck: CheckDraft = async ({ unit, round, draftDir, tests }: CheckDraf
     ? [g("parse", true, "ok"), g("labels", false, 'nema elementa sa accessibilityLabel "Pretraga"')]
     : [g("parse", true, "ok"), g("scenarios", true, "ok")]
 }
+
+// Lažni checkFlow: beleži pozive; shopping-flow pada, da proverimo da pad toka ne vraća ekrane.
+const flowCalls: { flowId: string; tests: number; differences: number }[] = []
+const fakeFlow: CheckFlow = async ({ flow, tests, differences }) => {
+  flowCalls.push({ flowId: flow.id, tests: tests.length, differences: differences.length })
+  const ok = flow.id !== "shopping-flow"
+  return { flowId: flow.id, ok, scenarios: tests.map((t) => ({ scenarioId: t.id, unitId: t.unitId, ok, durationMs: 1 })) }
+}
+const flowTest = (flowId: string, unitId: string): Scenario => ({ id: `${flowId}-1`, unitId, obligation: flowId, flowId, steps: [{ goto: "/" }] })
 
 class AnyOf extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
@@ -69,7 +79,7 @@ beforeAll(() => {
   state.plan = plan
   initializeRuntime({ state, inferenceRunnerConfig: { runner: new MockRunner({}) } })
 
-  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck }))
+  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck, checkFlow: fakeFlow }))
   builder = createHuman({ name: "builder-7", capabilities: [], handlers: [] })
   join(builder)
   join(
@@ -100,6 +110,16 @@ describe("Gatekeeper-učesnik", () => {
     expect(maxActive).toBe(1)
     expect(calls.filter((c) => ["recipe-list", "categories"].includes(c.unitId)).map((c) => c.unitId)).toEqual(["recipe-list", "categories"])
     expect(calls[0]!.draftDir).toBe(path.join(runDir, "staging", "builder-7", "recipe-list"))
+  })
+
+  it("tok sa testovima ne kreće dok sve njegove jedinice nisu promovisane (C3.3)", async () => {
+    board().flowTests["favorite-flow"] = [flowTest("favorite-flow", "recipe-detail")]
+    board().flowTests["shopping-flow"] = [flowTest("shopping-flow", "recipe-detail")]
+    emit("flow.tests.ready", { flowId: "favorite-flow" }, builder.getId())
+    emit("flow.tests.ready", { flowId: "shopping-flow" }, builder.getId())
+    await new Promise((r) => setTimeout(r, 100))
+    // recipe-detail, favorites i shopping-list još nisu promovisani
+    expect(flowCalls).toEqual([])
   })
 
   it("nacrt bez testova ne biva promovisan: čeka (bez sopstvenog tajmera)", async () => {
@@ -183,5 +203,28 @@ describe("Gatekeeper-učesnik", () => {
     submit("layout", 2)
     await new Promise((r) => setTimeout(r, 100))
     expect(outcomes.filter((o) => o.unitId === "layout").map((o) => o.type)).toEqual(["gate.failed", "unit.promoted"])
+  })
+
+  it("tok kreće tačno jednom, kad su sve jedinice promovisane; rezultat na tabli i u results/flows/ (C3.3)", async () => {
+    // do sada su promovisani favorites, recipe-detail i shopping-list
+    const started = Date.now()
+    while (flowCalls.length < 2 && Date.now() - started < 5_000) await new Promise((r) => setTimeout(r, 10))
+    expect(flowCalls.map((c) => c.flowId)).toEqual(["favorite-flow", "shopping-flow"])
+    expect(flowCalls[0]!.tests).toBe(1)
+
+    const result = FlowResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "flows", "favorite-flow.json"), "utf8")))
+    expect(result).toMatchObject({ flowId: "favorite-flow", ok: true })
+    expect(board().flowResults["shopping-flow"]!.ok).toBe(false)
+
+    // ponovni flow.tests.ready ne pušta tok drugi put
+    emit("flow.tests.ready", { flowId: "favorite-flow" }, builder.getId())
+    await new Promise((r) => setTimeout(r, 100))
+    expect(flowCalls.length).toBe(2)
+  })
+
+  it("tok koji pada ne vraća ekrane i ne šalje gate.failed (D-022)", async () => {
+    // recipe-detail je u oba toka (shopping-flow pada) i nikad nije pao na kapijama
+    expect(outcomes.some((o) => o.type === "gate.failed" && o.unitId === "recipe-detail")).toBe(false)
+    expect(board().results["recipe-detail"]!.status).not.toBe("failed")
   })
 })
