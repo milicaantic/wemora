@@ -33,12 +33,9 @@ Faza: F3
 
 - `results/<unitId>.json` sada ima rezultat svakog testa (`scenarios`), status iz pravih rezultata (D → C, grana `c/results-scenarios`)
 
-- **Nivo 2, tema (D-027):** kod spojen (PR #88), A je upisao D-027 i izmenio `architecture.md` (PR #89)
-  - prompt: pravilo 7 („raspored sme da se menja; tipografija i boje se prenose“), odeljak „Theme“ u `builder.md`, tabela „CSS → StyleSheet“ i primer teme u `web-to-rn.md`
-  - builder: `read_source` sme da čita i izvore jedinica iz `dependsOn` (globalni CSS teme); zadatak kaže „koristi `Text` i tokene iz `@/shared/theme`“ kad plan ima temu
-  - MockRunner: `builder:theme:1` (TodoMVC tema iz `todomvc-app-css`); provereno u browseru: font, veličina, debljina i boja isti kao u originalu
-  - čeka D: jedinica `theme` u arhitekti i mock planovima (`docs/inbox/2026-10-31-c-to-d-theme-unit.md`); posle toga `builder:todo-list:2` prelazi na temu
-
+- **Nivo 2, tema (D-027): gotovo.** Kod (PR #88, #91), odluka i arhitektura (A, PR #89), jedinica `theme` u arhitekti i mock planovima (D, PR #90); grana `c/todo-theme`: TodoMVC nacrt ekrana (`builder:todo-list:2`) koristi `Text` i tokene iz `@/shared/theme`
+  - `migrate:mock -- examples/todomvc --original-url http://localhost:7002`: `finished`; `theme`, `app-entry`, `todo-list` promovisani; `todo-list` **proven** (runda 2, 5/5); ubačeni ekran uvozi `@/shared/theme`
+  - u browseru provereno ranije: font, veličina, debljina i boja teksta isti kao u originalu (`"Helvetica Neue"…`, 80px/200/#b83f45, 14px/#111111)
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
 - prolaz sa pravim modelom (`--budget 1`): treba `ANTHROPIC_API_KEY` (kod C ga nema)
