@@ -98,7 +98,7 @@ Moje PR-ove gleda **B**. Ja gledam PR-ove od **A** i **B**. Review: najviše 10 
 **Gotovo kada:**
 - [x] za svaku kapiju test: dobar fixture prolazi, loš pada **baš na toj kapiji** sa jasnom porukom
 - [x] domen ne uvozi `@mozaik-ai/core` (`npm run build` to proverava)
-- [ ] opciono, kasnije: kapija 6 `androidExport`
+- [ ] ~~opciono, kasnije: kapija 6 `androidExport`~~ (ne radimo, odluka tima)
 **PR:** `c/gates`
 
 ### C1.5 `promote`, `rollback`, `serveApp`
@@ -195,7 +195,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - [x] Gatekeeper pušta `Flow` kad su sve njegove jedinice promovisane (C deo, D-022; testirano lažnim `flow.tests.ready`; ceo tok čeka B-ovog testera za tokove i A-ov `a/flow-dispatch`)
 
 ### C3.4 Kapija `androidExport` — opciono, poslednje
-- [ ] `expo export --platform android` kao kapija 6
+- [ ] ~~`expo export --platform android` kao kapija 6~~ (ne radimo, odluka tima 2026-10-31)
 
 ### Kapija G3 (proverava B) — moj deo
 - [ ] pravi prolaz nad Receptima: bar 3 od 5 ekrana dokazano, ostali imaju tačan razlog
