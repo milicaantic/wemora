@@ -106,7 +106,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
   - Fixture `src/report/mocks/run/run.jsonl`: 6 traka koje se preklapaju, trošak, odbijena runda, `agents.rescaled`, loše linije. 11 novih testova (29 ukupno), među njima 2 trake po 60 s u 80 s → 1,5×.
   - Ručno: snimci u Chromium-u (desktop, tamna tema, telefon) nad fixture-om i nad pravim mock prolazom TodoMVC-a.
 
-## Gotovo, čeka spajanje (grana `d/runs`)
+## Gotovo, spojeno u main (PR #71, grana `d/runs`)
 - D18: `archiveRun(runDir, runsDir, name)` u `src/report/archive.ts` (izvoz iz `report/index.ts`; `buildReport` je premešten u `build.ts` da nema kružnog uvoza):
   - kopira `output/<run-id>/` u `runs/<name>/` bez `node_modules`, `.expo`, `dist`, `web-build` (na bilo kojoj dubini), `staging/`, linkova (ne prati ih; `app/node_modules` je link na šablon) i fajlova većih od 5 MB; spisak izostavljenog je u `<name>/archive.json`; `report.html` se pravi ponovo iz kopije; nikad ne prepisuje postojeći folder i odbija ime sa putanjom;
   - 3 testa u `src/report/archive.test.ts` nad lažnim prolazom (`node_modules`, `.expo`, `dist`, `web-build`, `staging/`, junction link, fajl od 5 MB + 1 B).
@@ -115,14 +115,31 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - Inbox B → D (README pre `verify`): urađeno u `README.md` i `runs/README.md`, poruka u `docs/inbox/done/`.
 - Inbox D → A (nova): skripta `npm run archive` / `wemora archive` (A-ov `package.json` i `cli.ts`).
 
+## Delimično gotovo, čeka spajanje (grana `d/readme`)
+- D19, sve što može danas (README na engleskom, rezime na srpskom, PD7):
+  1. jedna rečenica + snimak izveštaja (`docs/img/report-summary.png`, iz `runs/todomvc-mock-…`); u „How it works“ i snimak vremenske ose (`docs/img/report-timeline.png`);
+  2. problem i rešenje (wrapper vs. AI generator; „proizvod je dokaz, ne kod“);
+  3. mermaid dijagram toka + tabela statusa;
+  4. Mozaik: paralelni agenti, `join`/`leave` po formulama (A14), tabla `MigrationState`, događaji sa ID-jevima, `OwnershipGuard`/`CancelGuard`, structured output, `BudgetedRunner`/`MockRunner`, `eventLogger`; svaka tvrdnja sa linkom na fajl; tabela agenata, modela i alata;
+  5. brzi start bez ključa: `npm ci`, Playwright, `npm ci` u `templates/expo`, build, test, `verify` nad `runs/todomvc-mock-…` (sa `npx tsx` komandom dok A18 ne stigne, i očekivanim izlazom);
+  6. pun prolaz: `--mock` nad TodoMVC-om sa `--original-url` (pušteno, ~3 min, `finished`) i pravi prolaz nad Receptima (`.env`, gateway, mock-api, original, `--budget 3`);
+  7. stablo `output/<run-id>/`; 8. ograničenja i van obima (arch §15, ulazni profil, testovi na Expo webu, Android još nije kapija); 9. tim.
+  - Svaka tvrdnja proverena u kodu (npr. eskalacija na Sonnet je A15 i još ne postoji, Android kapija ne postoji, budžet gasi jedinice koje čekaju); svi linkovi vode na postojeće fajlove.
+- Usput: izveštaj je prikazivao „— nije pušten“ za sve testove dokazanog ekrana, jer Gatekeeper upisuje `results/<unit>.json` sa praznim `scenarios`. Izveštaj sada, kad nema pojedinačnih rezultata, a kapija `scenarios` poslednje runde je prošla, prikazuje testove kao prolazne (2 testa). Inbox D → C: da Gatekeeper popunjava `scenarios`.
+- **Šta fali u README-u** (isto je u HTML komentarima `TODO(D19)` u samom README-u, nevidljivo na GitHub-u):
+  1. prolaz za Recepte u `runs/recepti-<vreme>`: treba pravi prolaz (A, ključ) ili mock odgovori testera i buildera za Recepte (B, C); onda snimak njegovog izveštaja i primer u brzom startu;
+  2. `npm run verify` i `npm run sabotage` u CLI-ju (A18, B13): obrisati napomene „until A18“ i `npx tsx` komandu, dodati korak `sabotage` + `verify` mora da padne;
+  3. pravi prolaz (ne `--mock`) arhiviran u `runs/`, sa troškom i ubrzanjem iz izveštaja;
+  4. imena i uloge tima i licenca (nema `LICENSE`, `package.json` kaže ISC);
+  5. završni prolaz: neko ko nije pisao README ga prati na čistom klonu; komande i izlaz prekopirati iz terminala.
+
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/runs` (D18)
-- D19: pun `README.md`
+- PR `d/readme` (D19, delimično)
+- D19 do kraja kad stignu stavke iz liste „Šta fali u README-u“
 - kad A pusti pravi prolaz: arhivirati ga u `runs/` i pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
-- kad A18 stigne: obrisati iz README-a rečenicu da `npm run verify` još nije povezan
 
 ## Odgovori D (2026-10-31)
 - **C: ID ekrana za TodoMVC je `todo-list`** (zajednička jedinica je `app-entry`). To vraća moj `src/agents/mocks/todomvc/architect.json` (PR #38). Tvoj `builder.json` (`builder:todo-list:1`, `builder:todo-list:2`, `screens/todo-list/index.tsx`) i B-ov `tester.json` (`tester:todo-list`, obaveza `empty-state`) već odgovaraju, pa ne treba ništa menjati.

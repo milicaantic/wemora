@@ -126,10 +126,14 @@ function screenRow(unit: Unit, data: RunData): ScreenRow {
   const result = data.results[unit.id]
   const tests = data.tests[unit.id] ?? []
   const outcomes = new Map((result?.scenarios ?? []).map((s) => [s.scenarioId, s]))
+  // Without per-test results, a passed `scenarios` gate in the last round still means every test of the
+  // unit passed (architecture.md §10, gate 5), so the tests are shown as passing instead of "not run".
+  const lastScenarioGate = (result?.gates ?? []).filter((g) => g.gate === "scenarios").at(-1)
+  const allPassed = outcomes.size === 0 && lastScenarioGate?.ok === true && lastScenarioGate.round === Math.max(...(result?.gates ?? []).map((g) => g.round))
 
   const scenarios: ScenarioRow[] = tests.map((t) => {
     const r = outcomes.get(t.id)
-    if (!r) return { id: t.id, obligation: t.obligation, outcome: "not-run" }
+    if (!r) return { id: t.id, obligation: t.obligation, outcome: allPassed ? "pass" : "not-run" }
     return r.ok
       ? { id: t.id, obligation: t.obligation, outcome: "pass" }
       : { id: t.id, obligation: t.obligation, outcome: "fail", failedStep: r.failedStep, error: r.error }

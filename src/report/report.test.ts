@@ -246,6 +246,24 @@ describe("v2: timeline, speed-up, cost and rounds from run.jsonl", () => {
   })
 })
 
+describe("tests with no per-test results", () => {
+  const gate = (round: number, name: "scenarios" | "tsc", ok: boolean) => ({ unitId: "categories", round, gate: name, ok, message: "" })
+  const outcomes = (gates: ReturnType<typeof gate>[]) => {
+    const data = loadRun(fixture)
+    data.results.categories = { unitId: "categories", status: "proven", rounds: 2, gates, scenarios: [], coverage: null }
+    return toReportModel(data).screens.find((s) => s.unitId === "categories")!.scenarios.map((s) => s.outcome)
+  }
+
+  it("shows them as passing when the scenarios gate of the last round passed (gate 5 runs every test)", () => {
+    expect(outcomes([gate(1, "scenarios", false), gate(2, "scenarios", true)])).toEqual(["pass"])
+  })
+
+  it("keeps them as not run when the last round did not pass the scenarios gate", () => {
+    expect(outcomes([gate(1, "scenarios", true), gate(2, "tsc", false)])).toEqual(["not-run"])
+    expect(outcomes([])).toEqual(["not-run"])
+  })
+})
+
 describe("toReportModel", () => {
   const model = toReportModel(loadRun(fixture))
   const screen = (id: string) => model.screens.find((s) => s.unitId === id)!
