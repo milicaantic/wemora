@@ -118,7 +118,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 ## Spojeno u main: D19 prva verzija (PR #76, #79, #80) i tema (PR #90)
 - README prva verzija i tema `theme` (D-027) su u `main`-u; detalji su u istoriji ovog fajla.
 
-## Gotovo, čeka spajanje (grana `d/readme-final`)
+## Spojeno u main: README za žiri, MIT licenca (PR #93, grana `d/readme-final`)
 - D19 do kraja: README napisan iz ugla žirija (šta je projekat, zašto, provera bez ključa u 4 koraka, pravi prolaz, kako radi, Mozaik, izlaz, ograničenja, tim, licenca), bez internih oznaka i TODO komentara.
   - Pušteno na **čistom klonu** te grane, korak po korak, tačno kao u README-u: `npm ci`, Playwright, `npm ci` u `templates/expo` → `npm run verify -- runs/todomvc-mock-…` (5/5, OK, exit 0, 22 s) → `npm run sabotage` + `verify` (1/5, FAILED, exit 1) → `git checkout -- runs/` (čisto) → `npm ci` u `examples/todomvc` + `npm run migrate:mock -- examples/todomvc` (`finished`, `theme`/`app-entry`/`todo-list` promovisani, `todo-list` proven, 158 s). Izlazi u README-u su iz tog terminala.
   - Pravi prolaz nad Receptima je opisan, ali nije pušten (nema ključa); komande su proverene (mock-api `npm start`, `migrate` sam build-uje i servira original, D-025).
@@ -127,11 +127,16 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - Inbox D → A: dva testa Conductor-a (`conductor.test.ts`, A17 i „late draft“) padaju u punom `npm test` kad je `templates/expo` instaliran (zavise od vremena dok rade Expo exporti); sami prolaze. Zato README ne traži `npm test`.
 - Šta README i dalje nema, jer ne postoji: prolaz za Recepte i prolaz sa pravim modelom u `runs/`. Kad A pusti pravi prolaz: `npm run archive -- output/<run-id>`, red u tabeli `runs/README.md` i, ako je bolji primer, zameniti TodoMVC u README-u.
 
+## Gotovo, čeka spajanje (grana `d/testable-obligations`)
+- Inbox A → D (G3, Recepti): obaveze koje tester ne može da izvede (redosled, brojanje, podaci kojih nema, rezultat na drugom ekranu). Prompt arhitekte i analizatora imaju četiri pravila; `validatePlan` odbija obaveze koje proveravaju redosled ili brojanje (tekst pod navodnicima se ne čita); ručni i mock plan Recepata bez `sort-by-time` (dugme „Sortiraj po vremenu“ je `notPortable`), `mark-bought` i `clear-bought` sa putem do početnog stanja. 2 nova testa.
+- B-ov `coverage.test.ts`: jedan broj (obaveza bez testa 5 → 4), jer ručni plan sada nema `sort-by-time`; poseban commit.
+- Nije provereno: novi pravi prolaz nad Receptima (A, ključ).
+
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/readme-final`
+- PR `d/testable-obligations`
 - kad A pusti pravi prolaz: arhivirati ga u `runs/` i pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
 
 ## Odgovori D (2026-10-31)

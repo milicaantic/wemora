@@ -3,8 +3,8 @@ from: A
 to: D
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana d/testable-obligations (PR otvara D)
 ---
 # G3: 4 obaveze u planu Recepata ne mogu da se testiraju, pa nijedan ekran osim `favorites` ne može biti `proven`
 
@@ -36,3 +36,11 @@ Ako stigneš, ažuriraj i mock plan za Recepte (`src/agents/mocks/recepti/archit
 - Tester u tom prolazu ne odustaje ni od jedne obaveze zbog „Fails on the original web app“ ili „changes nothing“.
 
 ## Odgovor
+D, 2026-10-31, grana `d/testable-obligations`. Sva četiri predloga, plus provera u kodu:
+
+1. **`prompts/architect.md`**, sekcija „What a test can do“, četiri pravila: posle radnje se tekst pojavi ili nestane; nema redosleda ni brojanja (sortiranje nije obaveza, a njegovo dugme ide u `notPortable` sa razlogom, da ekran i dalje može biti `proven`); samo stanja koja ekran pokazuje sa normalnim podacima ili do kojih korisnik dođe (prazna kategorija koje nema u podacima nije dozvoljena); rezultat na drugom ekranu je tok, ne obaveza (potvrda na istom ekranu je u redu). Sekcija „Flows“: tok za svaku radnju čiji se rezultat vidi na drugom ekranu.
+2. **`prompts/analyzer.md`**: ista pravila za `suggestedObligations`; primer u promptu više nema „orders recipes from the shortest time“ (sortiranje je sada u `mobileIssues`).
+3. **`validatePlan`** (pravilo 10): greška kad opis obaveze proverava redosled („sorted“, „orders … from/by“, „original order“, „ascending“…) ili brojanje („duplicate“, „twice“, „how many“, „only once“…); tekst pod navodnicima se ne čita, pa „'Sort by price'“ ili „'Orders'“ ne smetaju. Greška ide arhitekti na ispravku kao i ostale. Prazna kategorija i rezultat na drugom ekranu ne mogu pouzdano da se prepoznaju iz teksta, pa su samo u promptu.
+4. **Mock i ručni plan za Recepte** (`plan.manual.json`, `src/agents/mocks/recepti/architect.json` i `analyzer.json`): bez `recipe-list/sort-by-time`; dugme „Sortiraj po vremenu“ je `notPortable`; `mark-bought` i `clear-bought` sada kažu kako se dolazi do početnog stanja („Add 'Hleb' … then check 'Hleb' …“). `add-to-shopping-list` ostaje obaveza jer prikazuje potvrdu na istom ekranu („Sastojci su dodati u listu za kupovinu“); prikaz na Kupovini je već tok `shopping-flow`. Prazne kategorije i duplikata u ručnom planu nije ni bilo.
+
+Nije provereno: novi pravi prolaz (nemam API ključ). Molim te da ga ponoviš; ako se pojavi nova neizvodljiva obaveza, otvori poruku sa `output/<run-id>`.

@@ -35,6 +35,13 @@ A tester turns each obligation into a test, and the test must pass on the **orig
 
 So a test cannot hover, double click, long press, drag, swipe, right click or use keyboard shortcuts, and it cannot use an element with no name or one that appears only on hover. Every obligation must be doable with these steps on the original web. An obligation that is not doable can never be tested, so the screen can never be proven: the plan is checked for this and sent back to you.
 
+A test also only sees **whether a text is shown or not**. So every obligation must follow these rules:
+
+1. **After the action, a text appears or disappears.** Write what the user does and which text then shows up or goes away: "adding 'Hleb' shows 'Hleb' and 'Kupljeno: 0 od 1'", "typing 'sarma' in 'Pretraga' hides 'Musaka'".
+2. **No order and no counting.** A test cannot check that items are sorted, in which order they are, or that something was not added twice. Sorting usually changes only the order, so it is not an obligation: list its button as `notPortable` with the reason "sorting only changes the order; a test cannot check order", so the screen can still be proven.
+3. **Only the data the app shows when it starts.** The test runs on the original with its normal data. Do not write obligations about a state you have not seen in the code or the reports (an empty category, an error message from the server, a list with exactly N items). An empty state is fine when the screen starts empty (an empty shopping list) or the user can reach it (a search with no match).
+4. **The result must be on the same screen.** When an action on one screen shows its result on another screen (add to favorites here, see it under 'Omiljeni'), it is a **flow**, not an obligation of either screen. An obligation may still show a confirmation on its own screen ("tapping 'Dodaj sastojke u listu za kupovinu' shows 'Sastojci su dodati u listu za kupovinu'").
+
 # Obligations
 
 Each screen gets 2–5 obligations: behaviors a user can observe on the screen. A tester turns each one into a UI test, so each must be checkable through the screen with the steps above.
@@ -69,7 +76,7 @@ A screen is proven only when every named button, link and field it shows is used
 
 # Flows
 
-A flow is a behavior that spans 2 or more screens, e.g. "Open a recipe, tap 'Dodaj u omiljene', go to 'Omiljeni': the recipe is listed there." List the screen unit IDs in `unitIds`. Only add flows the reports show; often there are none.
+A flow is a behavior that spans 2 or more screens, e.g. "Open a recipe, tap 'Dodaj u omiljene', go to 'Omiljeni': the recipe is listed there." List the screen unit IDs in `unitIds`. Add a flow for every action whose result is shown on another screen (rule 4 above); otherwise there are often none.
 
 # Fields the code fills in
 

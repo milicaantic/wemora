@@ -33,19 +33,19 @@ Prolazi `PlanSchema` i `validatePlan` nad pravim `parseApp("examples/recepti")` 
 
 | Jedinica | Obaveze |
 |---|---|
-| `recipe-list` | `shows-recipes`, `search-by-name`, `filter-by-category`, `sort-by-time`, `toggle-favorite`, `open-detail` |
+| `recipe-list` | `shows-recipes`, `search-by-name`, `filter-by-category`, `toggle-favorite`, `open-detail` |
 | `recipe-detail` | `shows-recipe`, `scale-servings`, `toggle-favorite`, `add-to-shopping-list`, `not-found` |
 | `categories` | `pick-category`, `open-recipe` |
 | `favorites` | `empty-state`, `shows-favorites`, `remove-favorite` |
 | `shopping-list` | `empty-state`, `add-item`, `mark-bought`, `clear-bought` |
 
-Opisi obaveza navode tačan tekst sa ekrana, sa podacima iz `examples/mock-api` (fixture `default`).
+Opisi obaveza navode tačan tekst sa ekrana, sa podacima iz `examples/mock-api` (fixture `default`). Svaka obaveza se proverava DSL koracima na originalu: posle radnje se neki tekst pojavi ili nestane; nema redosleda ni brojanja; rezultat je na istom ekranu (inače je tok). Zato nema obaveze za sortiranje: „Sortiraj po vremenu“ menja samo redosled, pa je `notPortable` (inbox A → D, G3).
 
 ## Namerne razlike (samo `recipe-list`)
 
 - `hiddenBehind`: dugmad kategorija (`Sve kategorije`, `Supe`, `Glavna jela`, `Salate`, `Deserti`) su na telefonu iza dugmeta `Filteri`. Prevodilac testova ubacuje `tap Filteri` pre koraka koji ih koristi.
 - `movedTo`: kolona kalorija ide na detalj recepta (`recipe-detail` već prikazuje „520 kcal po porciji“).
-- `notPortable`: tooltip sa sastojcima se pojavljuje samo na hover.
+- `notPortable`: tooltip sa sastojcima se pojavljuje samo na hover; dugme `Sortiraj po vremenu` menja samo redosled recepata, a test ne može da proveri redosled.
 
 ## Tokovi
 

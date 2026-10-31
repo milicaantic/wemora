@@ -178,6 +178,28 @@ describe("validatePlan catches broken plans", () => {
     expectError(errors, `obligation "row-details" of unit "recipe-list" uses 'Sastojci', which the same unit marks notPortable`)
   })
 
+  it("obligations that check an order or count items (A, G3)", () => {
+    const errors = check((p) => {
+      unit(p, "recipe-list").obligations.push({
+        id: "sort-by-time",
+        description: "Tapping 'Sortiraj po vremenu' orders recipes from the shortest to the longest time; tapping it again restores the original order.",
+      })
+      unit(p, "shopping-list").obligations.push({ id: "no-duplicate", description: "Adding 'Hleb' twice does not add a duplicate." })
+      unit(p, "favorites").obligations.push({ id: "sorted", description: "Favorites are sorted by name." })
+    })
+    expectError(errors, `obligation "sort-by-time" of unit "recipe-list" checks an order of items`, "a text appears or disappears")
+    expectError(errors, `obligation "no-duplicate" of unit "shopping-list" checks counting items`)
+    expectError(errors, `obligation "sorted" of unit "favorites" checks an order of items`)
+  })
+
+  it("does not take data words or quoted texts as an order or a count", () => {
+    const errors = check((p) => {
+      unit(p, "favorites").obligations.push({ id: "orders-link", description: "Tapping 'Orders' shows 'Order #12' and 'Sort by price'." })
+      unit(p, "shopping-list").obligations.push({ id: "counter", description: "Adding 'Hleb' changes the counter to 'Kupljeno: 0 od 1'." })
+    })
+    expect(errors).toEqual([])
+  })
+
   it("does not read gesture words inside quoted screen texts", () => {
     const errors = check((p) => {
       unit(p, "shopping-list").obligations.push({ id: "odd-labels", description: "Tapping 'Drag me' shows 'Hover over here' and \"Double click\"." })
