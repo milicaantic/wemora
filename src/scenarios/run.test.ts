@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net"
 import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { IntentionalDifference, Scenario, ServedApp } from "../contracts"
-import { createRunScenarios } from "./run"
+import { createRunScenarios, snapshotAfterSteps } from "./run"
 import { serveStatic } from "./serve"
 
 // Real Chromium against a local static server; no internet. Short timeouts keep failing cases fast.
@@ -159,6 +159,18 @@ describe("runScenarios", { timeout: 60_000 }, () => {
       server.closeAllConnections()
       server.close()
     }
+  })
+
+  it("snapshotAfterSteps shows what appears only after a tap, and the page where a step fails", async () => {
+    const settings = { stepTimeoutMs: 1_500, navigationTimeoutMs: 5_000, scrollGraceMs: 300, maxScrolls: 3, networkQuietMs: 300 }
+    const before = await snapshotAfterSteps(app.url, [{ goto: "/" }], settings)
+    const after = await snapshotAfterSteps(app.url, [{ goto: "/" }, { tap: { role: "button", name: "Sačuvaj" } }], settings)
+    expect(before).not.toContain("Sačuvano")
+    expect(after).toContain("Sačuvano")
+
+    const failed = await snapshotAfterSteps(app.url, [{ goto: "/" }, { tap: { role: "button", name: "Nema ga" } }], settings)
+    expect(failed).toMatch(/^Step 1 failed: tap button "Nema ga": not found on screen/)
+    expect(failed).toContain('button "Sačuvaj"')
   })
 
   it("never throws when the app is not running", async () => {

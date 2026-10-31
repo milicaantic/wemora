@@ -4,10 +4,12 @@ import { createAgent, type Tool } from "@mozaik-ai/core"
 import { z } from "zod"
 import {
   ScenarioSchema,
+  StepSchema,
   type Coverage,
   type ExtractInteractive,
   type InteractiveElement,
   type Scenario,
+  type Step,
   type Unit,
   type ValidateScenario,
 } from "../contracts"
@@ -52,7 +54,7 @@ export type TesterDeps = {
   // Replaceable so tests run without a browser.
   validateScenario?: ValidateScenario
   extractInteractive?: ExtractInteractive
-  ariaSnapshot?: (url: string, route: string) => Promise<string>
+  ariaSnapshot?: (url: string, route: string, steps?: Step[]) => Promise<string>
   /** The tester's own time limit per unit (D-016); default DEFAULTS.testerUnitTimeoutMs. */
   unitTimeoutMs?: number
 }
@@ -183,14 +185,22 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     return "\nEvery obligation is saved or given up, so the task ends now."
   }
 
+  // A flow scenario without flowId is the most common slip and cost one of three attempts; the task knows the flow.
+  function withTaskFlowId(scenario: Scenario): Scenario {
+    const { flowId } = current()
+    return flowId && scenario.flowId === undefined ? { ...scenario, flowId } : scenario
+  }
+
   const tools: Tool[] = [
     defineTool({
       name: "aria_snapshot",
-      description: "What a user sees at a path of the original web app: role, name and text of every element. Example path: /kupovina",
-      args: z.strictObject({ path: z.string().min(1) }),
-      invoke: async ({ path }) => {
+      description:
+        "What a user sees at a path of the original web app: role, name and text of every element. Example path: /kupovina. " +
+        "With steps (tap, fill, submit), they run after opening the path, so you see what appears only after a tap.",
+      args: z.strictObject({ path: z.string().min(1), steps: z.array(StepSchema).optional() }),
+      invoke: async ({ path, steps }) => {
         current()
-        const text = await snapshot(deps.originalUrl, path)
+        const text = await snapshot(deps.originalUrl, path, steps ?? [])
         return text.length > MAX_SNAPSHOT_CHARS ? `${text.slice(0, MAX_SNAPSHOT_CHARS)}\n… (snapshot cut)` : text
       },
     }),
@@ -198,7 +208,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
       name: "try_scenario",
       description: "Check a scenario on the original and on a blank screen without saving it. Returns whether it is valid, and why not.",
       args: scenarioArgs,
-      invoke: async ({ scenario }) => {
+      invoke: async (args) => {
+        const scenario = withTaskFlowId(args.scenario)
         const problem = await check(scenario)
         if (problem) return `Invalid: ${problem}${failed("try_scenario", scenario, problem)}`
         return "Valid. Call save_scenario with exactly the same scenario to keep it."
@@ -208,7 +219,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
       name: "save_scenario",
       description: "Save a valid scenario for this unit. An invalid scenario is not saved; you get the reason.",
       args: scenarioArgs,
-      invoke: async ({ scenario }) => {
+      invoke: async (args) => {
+        const scenario = withTaskFlowId(args.scenario)
         const problem = await check(scenario)
         if (problem) return `Not saved: ${problem}${failed("save_scenario", scenario, problem)}`
         const active = current()

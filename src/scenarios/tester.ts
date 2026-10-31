@@ -188,6 +188,7 @@ export function flowBrief(flow: Flow, plan: Plan, unitTests: Record<string, Scen
     `Write ONE scenario that does this flow, with unitId "${unit.id}", obligation "${flow.id}" and flowId "${flow.id}".`,
     `Start with goto on ${unit.route} and reach the other screens by tapping links or buttons, as a user would; do not goto them.`,
     "Check at the end what the flow promises, on the last screen.",
+    "Never guess a name: for an element that appears only after a tap, call aria_snapshot with that tap in steps and copy the name.",
   ]
   const examples = flow.unitIds.flatMap((unitId) => (unitTests[unitId] ?? []).slice(0, EXAMPLES_PER_UNIT))
   if (examples.length > 0) {

@@ -1,6 +1,7 @@
 import { chromium, errors, type Browser, type BrowserContext, type Locator, type Page } from "playwright"
-import { ScenarioSchema, type RunScenarios, type RunScenariosOptions, type Scenario, type ScenarioResult, type Viewport } from "../contracts"
+import { ScenarioSchema, type RunScenarios, type RunScenariosOptions, type Scenario, type ScenarioResult, type Step, type Viewport } from "../contracts"
 import { compileSteps, describeAction, type Action, type Target } from "./compile"
+import { DESKTOP } from "./viewports"
 
 export type RunnerSettings = {
   stepTimeoutMs: number
@@ -49,6 +50,29 @@ export function createRunScenarios(settings: RunnerSettings = DEFAULT_RUNNER_SET
 }
 
 export const runScenarios: RunScenarios = createRunScenarios()
+
+/**
+ * What a user sees after these steps (desktop viewport, fresh browser), as an ARIA snapshot: the tester uses it to
+ * read names that appear only after a tap. A failed step is reported with the page as it is at that moment.
+ */
+export async function snapshotAfterSteps(baseUrl: string, input: Step[], settings: RunnerSettings = DEFAULT_RUNNER_SETTINGS): Promise<string> {
+  const compiled = compileSteps(input, [])
+  if (!compiled.ok) return `Step ${compiled.step} is invalid: ${compiled.error}`
+  const browser = await chromium.launch()
+  try {
+    const context = await browser.newContext({ viewport: DESKTOP })
+    context.setDefaultTimeout(settings.stepTimeoutMs)
+    context.setDefaultNavigationTimeout(settings.navigationTimeoutMs)
+    const page = await context.newPage()
+    const waitForQuiet = trackNetwork(page, settings)
+    const failure = await runActions(page, baseUrl, DESKTOP, settings, waitForQuiet, compiled.actions)
+    await waitForQuiet()
+    const snapshot = await page.locator("body").ariaSnapshot()
+    return failure ? `Step ${failure.step} failed: ${failure.message}\nThe page at that moment:\n${snapshot}` : snapshot
+  } finally {
+    await browser.close().catch(() => {})
+  }
+}
 
 async function runOne(
   browser: Browser,

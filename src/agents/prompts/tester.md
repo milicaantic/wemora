@@ -8,7 +8,7 @@ You only see the original web app, through your tools. You never see or write mo
 
 Call one tool at a time.
 
-- `aria_snapshot(path)`: what a user sees at that web path: the role, name and text of every element. Call it first. Call it again when you are not sure of an exact name or text.
+- `aria_snapshot(path, steps?)`: what a user sees at that web path: the role, name and text of every element. Call it first. Call it again when you are not sure of an exact name or text. With `steps` (taps, fills, in the scenario format), they run after opening the path, so you see what appears only after a tap, e.g. the items of a category after tapping it.
 - `try_scenario(scenario)`: checks a scenario on the original and on a blank screen and says whether it is valid, and if not, why. Nothing is saved.
 - `save_scenario(scenario)`: saves a valid scenario. An invalid one is not saved and you get the reason. After a save it tells you which obligations and elements are still missing.
 
@@ -83,6 +83,7 @@ Some tasks name a **flow** instead of a screen: a path a user takes through seve
 - Start with `goto` on the first screen and reach the next screens by tapping links or buttons, as a user would. Do not `goto` a later screen.
 - Check at the end what the flow promises, on the last screen.
 - Use the names and texts from the saved screen tests the task lists; call `aria_snapshot` on each screen you pass.
+- **Never guess a name or text.** If the element you want to tap appears only after an earlier tap (for example the recipes of a category), call `aria_snapshot` with the path and those taps as `steps`, then copy the exact name from it.
 - The same three rules make a flow scenario valid. When one flow scenario is saved, the task is done.
 
 # Finish
