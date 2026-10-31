@@ -232,3 +232,14 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   4. Odluke o arhitekturi i ugovorima i dalje idu u ovaj fajl. Poruka se samo poziva na njih.
 - Zašto: poruke u chatu se gube i ne zna se da li su urađene. Jedan fajl po poruci ne pravi merge konflikte. Direktno na `main`, jer bi poruka preko PR-a stigla tek posle review-a. Claude svake osobe može da pročita svoj inbox na početku sesije.
 - Posledice: `docs/inbox/README.md`, `docs/inbox/done/`. Predlog dopune `CLAUDE.md`, sekcija „Dokumentacija“: na početku sesije proveriti `docs/inbox/` za otvorene poruke sa svojim slovom.
+
+## D-020: Trošak računa i keširane tokene (prompt caching na gateway-u)
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A; pravi prolaz `output/20261031-030034-todomvc` je prijavio $0.00027 za ~100 poziva)
+- Odluka:
+  1. `costUsd(model, inputTokens, outputTokens, cache?)` (`src/core/config.ts`): `inputTokens` je nekeširani ulaz, a `cache = { readTokens, writeTokens }`. Čitanje iz keša košta `CACHE_READ_PRICE` (0,1×), a upis `CACHE_WRITE_PRICE` (1,25×) cene ulaza, po Anthropic ceni za keš od 5 minuta. Granica za `longContext` se računa na ceo ulaz, keš uključen.
+  2. `BudgetedRunner` čita `cache_read_input_tokens` i `cache_creation_input_tokens` iz `output.rowResponse.usage` (sirov odgovor provajdera, proveren zod šemom). Ako ih nema, ceo `tokenUsage.inputTokenDetails.cached_tokens` se računa kao upis, da budžet nikad ne potceni.
+  3. `UsageRecord.inputTokens` i `LedgerEntry.inputTokens` su ceo ulaz (keš uključen). `UsageRecord` i linija `model.usage` u `run.jsonl` imaju i `cacheReadTokens` i `cacheWriteTokens`.
+- Zašto: gateway hakatona sam radi prompt caching, a Anthropic `usage.input_tokens` tada sadrži samo nekeširani deo (5–6 tokena po pozivu). Mozaik oba keš broja sabira u jedan (`cached_tokens`), pa se iz `TokenUsage` ne vidi šta je čitanje, a šta upis.
+- Posledice: `src/core/config.ts`, `src/core/runner.ts`, `src/orchestration/migrate.ts`, testovi. Ugovor (`LedgerEntry`) se ne menja. Ako gateway koristi keš od 1 h (upis 2×), trošak upisa je potcenjen za 0,75× cene ulaza. Ovo je i dalje procena: stvarnu potrošnju ključa vidi samo izdavalac ključa. Napomena „Anthropic mapper ne radi prompt caching“ u `CLAUDE.md` i `.claude/rules/mozaik.md` §3 važi za Mozaik, ali ne i za gateway.
