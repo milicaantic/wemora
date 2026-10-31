@@ -142,9 +142,35 @@ describe("BudgetedRunner", () => {
       agentId: "builder-1",
       model: MODELS.default,
       inputTokens: 100_000,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
       outputTokens: 1_000_000,
       usd: expect.closeTo(0.51),
     })
+  })
+
+  it("prices cache reads and writes from the provider's raw usage (D-020)", async () => {
+    const onUsage = vi.fn()
+    // A gateway that caches: input_tokens is only the uncached part, Mozaik adds both cache numbers together.
+    const cached = new TokenUsage(10, 0, 10, new InputTokenDetails(30_000), new OutputTokenDetails(0))
+    const output = { ...answer("ok", cached), rowResponse: { usage: { input_tokens: 10, cache_read_input_tokens: 20_000, cache_creation_input_tokens: 10_000 } } }
+
+    await runnerWith(fakeModel(async () => output), { onUsage }).run(task())
+
+    expect(onUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ inputTokens: 30_010, cacheReadTokens: 20_000, cacheWriteTokens: 10_000 }),
+    )
+    // haiku-5-5 at $0.10/M: 10 + 20k × 0.1 + 10k × 1.25 = 14 510 input tokens' worth.
+    expect(onUsage.mock.calls[0]![0].usd).toBeCloseTo(0.001451)
+  })
+
+  it("prices every cached token as a write when the raw usage is missing", async () => {
+    const onUsage = vi.fn()
+    const cached = new TokenUsage(10, 0, 10, new InputTokenDetails(30_000), new OutputTokenDetails(0))
+
+    await runnerWith(fakeModel(async () => answer("ok", cached)), { onUsage }).run(task())
+
+    expect(onUsage).toHaveBeenCalledWith(expect.objectContaining({ inputTokens: 30_010, cacheReadTokens: 0, cacheWriteTokens: 30_000 }))
   })
 
   it("refuses unknown models and models without a price", async () => {

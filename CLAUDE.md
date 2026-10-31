@@ -59,7 +59,7 @@ Promptovi agenata su u `src/agents/prompts/<agent>.md`, i svako je vlasnik promp
 - **Događaji nose samo ID-jeve** (npr. `{ unitId }`), a podaci stoje na tabli (`MigrationState`) i na disku.
 - U jednom koraku petlje izvršava se samo prvi function call. Paralelizam dolazi od više agenata, ne od više alata.
 - `claude-haiku-5-5` nije na ugrađenoj listi modela. Registruje se u `core/runner.ts`, ne drugde.
-- Uvek postavi `maxOutputTokens`. Anthropic mapper ne radi prompt caching.
+- Uvek postavi `maxOutputTokens`. Anthropic mapper ne radi prompt caching, ali gateway hakatona kešira sam: trošak se računa iz `rowResponse.usage` (D-020).
 - **Ne postavljaj `MOZAIK_API_KEY`** osim ako tim nije tako odlučio: uključuje slanje događaja i memorije agenata na Mozaik Cloud.
 
 ## Izlaz jednog prolaza i vlasništvo nad fajlovima

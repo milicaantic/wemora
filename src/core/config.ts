@@ -87,11 +87,26 @@ export function modelForRound(round: number): ModelName {
   return round < DEFAULTS.escalationRound ? MODELS.default : MODELS.strong
 }
 
-export function costUsd(model: string, inputTokens: number, outputTokens: number): number {
+// Prompt-cache prices as a share of the input price (Anthropic, 5-minute cache). A gateway may cache on its own
+// (D-020), and then `input_tokens` counts only the uncached part.
+export const CACHE_READ_PRICE = 0.1
+export const CACHE_WRITE_PRICE = 1.25
+
+export type CacheTokens = { readTokens: number; writeTokens: number }
+
+/** `inputTokens` is the uncached input; cached tokens come in `cache`. */
+export function costUsd(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+  cache: CacheTokens = { readTokens: 0, writeTokens: 0 },
+): number {
   const pricing = Object.hasOwn(PRICING, model) ? PRICING[model] : undefined
   if (!pricing) throw new Error(`no pricing for model "${model}"`)
   const long = pricing.longContext
-  const multiplier = long && inputTokens > long.thresholdTokens ? long.multiplier : 1
-  const usd = (inputTokens * pricing.inputPerMTok + outputTokens * pricing.outputPerMTok) / 1_000_000
+  const allInput = inputTokens + cache.readTokens + cache.writeTokens
+  const multiplier = long && allInput > long.thresholdTokens ? long.multiplier : 1
+  const input = inputTokens + cache.readTokens * CACHE_READ_PRICE + cache.writeTokens * CACHE_WRITE_PRICE
+  const usd = (input * pricing.inputPerMTok + outputTokens * pricing.outputPerMTok) / 1_000_000
   return usd * multiplier
 }

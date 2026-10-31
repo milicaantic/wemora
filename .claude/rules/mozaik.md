@@ -74,7 +74,7 @@ async run(input: InferenceInput): Promise<InferenceOutput> {
 - Koristimo `claude-haiku-5-5` (osnovni) i `claude-sonnet-5-5` (arhitekta, eskalacija). Imena modela su konstante u `src/core/config.ts`, ne stringovi rasuti po kodu.
 - `AnthropicMessages` bez konfiguracije čita `ANTHROPIC_API_KEY` iz okruženja.
 - **Uvek postavi `maxOutputTokens`** (mapira se na `max_tokens`).
-- Anthropic mapper **ne radi prompt caching**. Ne računaj na njega.
+- Anthropic mapper **ne radi prompt caching**. Ne računaj na njega. Gateway hakatona (`ANTHROPIC_BASE_URL`) kešira sam, pa `input_tokens` sadrži samo nekeširani deo. `BudgetedRunner` čita keš iz `rowResponse.usage` (D-020).
 
 ## 4. Agenti: jedan agent, jedna aktivna petlja, svež kontekst za svaki zadatak
 

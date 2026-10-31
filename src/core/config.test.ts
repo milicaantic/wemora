@@ -65,6 +65,17 @@ describe("costUsd", () => {
     expect(() => costUsd("claude-opus-4-7", 1, 1)).toThrow(/no pricing/)
   })
 
+  it("prices cache reads at 0.1× and cache writes at 1.25× of the input price (D-020)", () => {
+    // haiku-4-5 at $1/M input: 1M read → $0.10, 1M write → $1.25.
+    expect(costUsd("claude-haiku-4-5", 0, 0, { readTokens: 1_000_000, writeTokens: 0 })).toBeCloseTo(0.1)
+    expect(costUsd("claude-haiku-4-5", 0, 0, { readTokens: 0, writeTokens: 1_000_000 })).toBeCloseTo(1.25)
+  })
+
+  it("applies the long-context multiplier to all input, cached included", () => {
+    // 1 uncached + 100k cached is above the 100k threshold: (1 + 10 000) × $0.10/M × 5.
+    expect(costUsd("claude-haiku-5-5", 1, 0, { readTokens: 100_000, writeTokens: 0 })).toBeCloseTo(0.0050005)
+  })
+
   it("prices the two models the hackathon gateway serves (D-018)", () => {
     expect(costUsd("claude-haiku-4-5", 1_000_000, 1_000_000)).toBeCloseTo(6)
     expect(costUsd("claude-sonnet-4-6", 1_000_000, 1_000_000)).toBeCloseTo(18)

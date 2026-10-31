@@ -13,7 +13,7 @@ import {
 } from "@mozaik-ai/core"
 import { z } from "zod"
 import type { AgentKind } from "../contracts"
-import { costUsd, DEFAULT_MODELS, DEFAULTS, PRICING } from "./config"
+import { costUsd, DEFAULT_MODELS, DEFAULTS, PRICING, type CacheTokens } from "./config"
 import { log } from "./log"
 
 // Every model call goes through a runner from this file. Runners never throw: Mozaik's runLoop is not
@@ -47,7 +47,31 @@ export function registerContext(context: ModelContext, meta: TaskMeta): void {
   contexts.set(context, meta)
 }
 
-export type UsageRecord = { agentId: string | null; model: string; inputTokens: number; outputTokens: number; usd: number }
+/** `inputTokens` is all input, cached included; the cache tokens are the part of it that was cached. */
+export type UsageRecord = {
+  agentId: string | null
+  model: string
+  inputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  outputTokens: number
+  usd: number
+}
+
+// The provider's own usage numbers; Mozaik's TokenUsage adds cache reads and writes into one number.
+const RawUsageSchema = z.object({
+  cache_read_input_tokens: z.number().nonnegative().nullish(),
+  cache_creation_input_tokens: z.number().nonnegative().nullish(),
+})
+
+function cacheTokensOf(output: InferenceOutput): CacheTokens {
+  const raw = RawUsageSchema.safeParse((output.rowResponse as { usage?: unknown } | null | undefined)?.usage)
+  if (raw.success) {
+    return { readTokens: raw.data.cache_read_input_tokens ?? 0, writeTokens: raw.data.cache_creation_input_tokens ?? 0 }
+  }
+  // Without the raw numbers every cached token is priced as a write, so the budget never counts too little.
+  return { readTokens: 0, writeTokens: output.tokenUsage?.inputTokenDetails?.cached_tokens ?? 0 }
+}
 
 export type BudgetedRunnerOptions = {
   budgetUsd: number
@@ -120,9 +144,18 @@ export class BudgetedRunner implements InferenceRunner {
       log({ agent: agentId ?? "runner", event: "usage.missing", data: { model: input.model } })
       return
     }
-    const usd = costUsd(input.model, usage.inputTokens, usage.outputTokens)
+    const cache = cacheTokensOf(output)
+    const usd = costUsd(input.model, usage.inputTokens, usage.outputTokens, cache)
     this.spent += usd
-    const record = { agentId, model: input.model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, usd }
+    const record: UsageRecord = {
+      agentId,
+      model: input.model,
+      inputTokens: usage.inputTokens + cache.readTokens + cache.writeTokens,
+      cacheReadTokens: cache.readTokens,
+      cacheWriteTokens: cache.writeTokens,
+      outputTokens: usage.outputTokens,
+      usd,
+    }
     safely(() => this.options.onUsage?.(record))
     if (this.spent >= this.options.budgetUsd) this.reportExceeded()
   }

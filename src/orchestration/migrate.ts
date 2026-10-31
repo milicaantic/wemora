@@ -91,7 +91,18 @@ function recordUsage(usage: UsageRecord): void {
   entry.inputTokens += usage.inputTokens
   entry.outputTokens += usage.outputTokens
   entry.usd += usage.usd
-  log({ agent: agentId, event: "model.usage", costUsd: usage.usd, data: { model: usage.model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens } })
+  log({
+    agent: agentId,
+    event: "model.usage",
+    costUsd: usage.usd,
+    data: {
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      outputTokens: usage.outputTokens,
+    },
+  })
 }
 
 function printSummary(summary: RunSummary, spentUsd: number): void {

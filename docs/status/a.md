@@ -43,17 +43,17 @@ Poslednja izmena: 2026-10-30
 - A13 (D-016): timeouti testera i buildera, događaj `tests.missing`, ignorisanje zakasnelih događaja (PR #45)
 - C-ov Gatekeeper-učesnik povezan u `agents.ts`; svi agenti su pravi; C je ispravio Gatekeeper po D-016 (PR #48)
 - korak `submit` (D-017): ugovor uradio B, kapija 4 i prompt C, plan D (PR #55–#58)
+- D-018: modeli kroz `.env`, cene za modele gateway-a (PR #60); D-019 inbox (predlog)
 - G2 mock prolaz (`output/20261031-020235-todomvc`): `todo-list` `proven` (5/5 obaveza), runda 1 `gate.failed`, runda 2 promovisan; `main` 467/467 testova
 
 ## U radu
-- G2 pravi prolaz nad TodoMVC-om (modeli gateway-a): `output/20261031-022711-todomvc`, `finished`, $0.12; `todo-list` promovisan u rundi 1 (svih 5 kapija, 2 testa prolaze), ali status `partial` jer je `coverage` bio `null`
-- trka B/C: tester upisuje `board().tests` posle svakog sačuvanog testa (`agents/tester.ts:130`), a Gatekeeper `hasTests` (`agents/gatekeeperParticipant.ts:76`) to shvata kao „testovi su gotovi“. Zato proveri nacrt pre `tests.ready`, dok `board().coverage` još ne postoji. Predlog: Gatekeeper čeka događaj `tests.ready` (C) ili tester upisuje tablu tek na kraju (B)
+- G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/gateway-models`)
-- D-018: modeli kroz `.env` (`WEMORA_MODEL_DEFAULT`, `WEMORA_MODEL_STRONG`; podrazumevano 5-5), cene za `claude-haiku-4-5` i `claude-sonnet-4-6`, registracija `haiku-5-5` sa stalnim imenom; `.env.example`; `architecture.md` §12; 4 nova testa. Razlog: gateway hakatona nudi samo 4-5 i 4-6 (prvi pravi prolaz je stao na `plan.failed`, $0)
+## Gotovo, čeka review i spajanje (grana `a/cache-cost`)
+- D-020: trošak računa i keširane tokene. Gateway sam radi prompt caching, pa je `input_tokens` bio 5–6 po pozivu (prolaz `030034`: $0.00027 za ~100 poziva). `costUsd` dobija `cache` (čitanje 0,1×, upis 1,25×), `BudgetedRunner` čita keš iz `rowResponse.usage`, a `model.usage` u logu ima `cacheReadTokens` i `cacheWriteTokens`. 4 nova testa, 480/480
 
 ## Sledeće
-- brojač troška potcenjuje preko gateway-a (`output/20261031-030034-todomvc`: $0.00027 za ~100 poziva). Uzrok: gateway radi prompt caching, a Anthropic `usage.input_tokens` ne sadrži keširane tokene (`cache_read_input_tokens`, `cache_creation_input_tokens`). `BudgetedRunner` (`core/runner.ts:118`) računa samo `tokenUsage.inputTokens`. Tačni brojevi su u `output.rowResponse.usage` (Mozaik ga vraća). Predlog popravke čeka odobrenje
+- proveriti D-020 u pravom prolazu: `model.usage` u `run.jsonl` treba da ima `cacheReadTokens` > 0, a `cost:` na kraju realan iznos
 - D-017 prihvatiti (A) i dopisati `submit` u `architecture.md` §11
 - G2: provera stavki iz pravog prolaza, rezultat u `runs/todomvc-<vreme>/`
 - `contracts/f1`: šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, uklanjanje `roundsExhausted`
