@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { analyzerCount, builderCount, costUsd, DEFAULTS, MODELS, modelForRound, testerCount } from "./config"
+import { afterEach, describe, expect, it } from "vitest"
+import { analyzerCount, builderCount, costUsd, DEFAULT_MODELS, DEFAULTS, MODELS, modelForRound, testerCount } from "./config"
 
 describe("analyzerCount", () => {
   it.each([
@@ -62,7 +62,36 @@ describe("costUsd", () => {
   })
 
   it("throws for a model without pricing", () => {
-    expect(() => costUsd("claude-haiku-4-5", 1, 1)).toThrow(/no pricing/)
+    expect(() => costUsd("claude-opus-4-7", 1, 1)).toThrow(/no pricing/)
+  })
+
+  it("prices the two models the hackathon gateway serves (D-018)", () => {
+    expect(costUsd("claude-haiku-4-5", 1_000_000, 1_000_000)).toBeCloseTo(6)
+    expect(costUsd("claude-sonnet-4-6", 1_000_000, 1_000_000)).toBeCloseTo(18)
+  })
+})
+
+describe("MODELS from .env (D-018)", () => {
+  afterEach(() => {
+    delete process.env.WEMORA_MODEL_DEFAULT
+    delete process.env.WEMORA_MODEL_STRONG
+  })
+
+  it("uses the architecture models when .env sets nothing", () => {
+    delete process.env.WEMORA_MODEL_DEFAULT
+    delete process.env.WEMORA_MODEL_STRONG
+    expect(MODELS).toEqual({ default: DEFAULT_MODELS.default, strong: DEFAULT_MODELS.strong })
+  })
+
+  it("reads WEMORA_MODEL_DEFAULT and WEMORA_MODEL_STRONG on every access", () => {
+    process.env.WEMORA_MODEL_DEFAULT = "claude-haiku-4-5"
+    process.env.WEMORA_MODEL_STRONG = "claude-sonnet-4-6"
+    expect([1, 2, 3, 4].map(modelForRound)).toEqual(["claude-haiku-4-5", "claude-haiku-4-5", "claude-sonnet-4-6", "claude-sonnet-4-6"])
+  })
+
+  it("ignores an empty value", () => {
+    process.env.WEMORA_MODEL_DEFAULT = ""
+    expect(MODELS.default).toBe(DEFAULT_MODELS.default)
   })
 })
 

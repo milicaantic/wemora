@@ -9,6 +9,7 @@ CLI alat koji uzima React web aplikaciju (SPA sa React Routerom) i pravi Expo (R
 - `docs/tasks/<a|b|c|d>.md`: zadaci te osobe, sa ID-jevima i kriterijumom završetka.
 - `docs/status/<a|b|c|d>.md`: trenutno stanje (šta je gotovo, šta je mock). Ažurira se sa `/handoff <slovo>`.
 - `docs/decisions.md`: **pročitaj pre nego što predložiš promenu arhitekture ili ugovora.**
+- `docs/inbox/`: poruke između članova tima (D-019). **Na početku sesije proveri otvorene poruke za svoje slovo** (`to:` i `status: open`) i reci ih korisniku. Format i pravila su u `docs/inbox/README.md`.
 - `docs/wemora-plan.md` i `docs/tim-plan.md`: pozadina za ljude (zašto, raspored). Otvori samo kad ti treba "zašto".
 
 Ako se zadatak ne slaže sa `docs/architecture.md` ili `src/contracts/`, **stani i reci šta se ne slaže**. Ne rešavaj sam.

@@ -13,7 +13,7 @@ import {
 } from "@mozaik-ai/core"
 import { z } from "zod"
 import type { AgentKind } from "../contracts"
-import { costUsd, DEFAULTS, MODELS, PRICING } from "./config"
+import { costUsd, DEFAULT_MODELS, DEFAULTS, PRICING } from "./config"
 import { log } from "./log"
 
 // Every model call goes through a runner from this file. Runners never throw: Mozaik's runLoop is not
@@ -30,7 +30,7 @@ if (!haiku45) throw new Error("Mozaik no longer ships claude-haiku-4-5; update t
 // claude-haiku-5-5 is not built into Mozaik 4.1.0, so it reuses the haiku-4-5 specification.
 export const models: GenerativeModel[] = [
   ...supportedModels,
-  { endpoint: new AnthropicMessages(), specification: { ...haiku45.specification, name: MODELS.default } },
+  { endpoint: new AnthropicMessages(), specification: { ...haiku45.specification, name: DEFAULT_MODELS.default } },
 ]
 
 export function errorOutput(reason: string): InferenceOutput {
