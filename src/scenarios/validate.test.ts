@@ -85,7 +85,8 @@ describe("validateScenario", { timeout: 60_000 }, () => {
     expect(result.reason).toContain("The action at step 1")
     expect(result.reason).toContain('step 2 {"expectVisible":{"text":"Pretraga"}}')
     // The hint for the usual mistakes, so the tester does not spend all its attempts on one.
-    expect(result.reason).toContain("check a text only that screen has")
+    expect(result.reason).toContain("check that this screen is gone")
+    expect(result.reason).toContain("never check a text of the other screen")
   })
 
   it("keeps the goto between an action and its check: the check runs on the screen it was written for", async () => {
