@@ -75,7 +75,7 @@
             "obligations": [
               {
                 "id": "open-recipe",
-                "description": "Tapping a recipe name in the chosen category opens its detail screen."
+                "description": "Tap 'Supe', then 'Pileća supa': the categories screen is left, so the button 'Glavna jela' is no longer shown."
               },
               {
                 "id": "pick-category",
@@ -179,7 +179,7 @@
               },
               {
                 "id": "open-detail",
-                "description": "Tapping a recipe name opens that recipe's detail screen (tapping 'Sarma' shows 'Porcije: 8')."
+                "description": "Tapping a recipe name ('Sarma') leaves the list: the field 'Pretraga' is no longer shown."
               },
               {
                 "id": "search-by-name",
@@ -317,6 +317,15 @@
             "unitIds": [
               "recipe-detail",
               "favorites"
+            ]
+          },
+          {
+            "id": "open-recipe-flow",
+            "description": "On the recipe list tap 'Sarma': the detail shows 'Porcije: 8'; on Kategorije tap 'Supe', then 'Pileća supa': the detail shows 'Pileća supa'.",
+            "unitIds": [
+              "recipe-list",
+              "categories",
+              "recipe-detail"
             ]
           },
           {
