@@ -140,6 +140,8 @@ Testeri uzimaju jedinice istim redom.
 
 **Timeouti (podrazumevano):** builder 10 min po rundi, tester 8 min po jedinici. Gatekeeper čeka testove 10 min, zatim Conductor dodeljuje jedinicu drugom testeru. Posle drugog isteka ekran se promoviše kao `nedokazan`. Tačno ponašanje je u D-016: Conductor prekida agenta (`cancel`); istek buildera je neuspela runda; posle drugog isteka testova Conductor šalje `tests.missing`; događaji iz ranije runde se ignorišu.
 
+**429 i budžet (A16, D-024):** na svaki 429 ili 529 Conductor spušta granicu buildera za 1 (najmanje 1), najviše jednom u `DEFAULTS.rateLimitCooldownMs` (60 s). Novi 429 u tom vremenu znači još jedan korak dole kad vreme istekne, a mirno vreme vraća jednog buildera, do `--max-builders` (`rate.limited` i `rate.recovered` u logu). Na `budget.exceeded` nema novih zadataka ni novih rundi. Jedinice koje se grade odmah su `failed` („budget exceeded“), a njihovi agenti se prekidaju, jer bi im runner odbio svaki sledeći poziv. Predati nacrti se i dalje proveravaju, a Gatekeeper dobija `tests.missing` za ekrane čiji testovi neće stići. Ako budžet nestane pre plana, arhitekta se ne pokreće. Ishod prolaza je tada `budget.exceeded`.
+
 ## 10. Gatekeeper
 
 **Kapije, redom** (prva koja padne vraća grešku builderu):

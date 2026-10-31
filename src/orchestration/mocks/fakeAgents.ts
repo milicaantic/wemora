@@ -57,6 +57,8 @@ type CancelOptions = { slow?: boolean; afterCancel?: (task: unknown, participant
 function fakeHandle<T>(id: string, kind: AgentKind, act: Act<T>, onCancel: (reason: string) => void, options: CancelOptions = {}): AgentHandle<T> {
   let busy = false
   let current: T | null = null
+  // Like a real agent (handle.ts): a task cancelled before it acted sends nothing.
+  let generation = 0
   const participant = createHuman({ name: id, capabilities: [kind], handlers: [] })
   return {
     id,
@@ -66,13 +68,16 @@ function fakeHandle<T>(id: string, kind: AgentKind, act: Act<T>, onCancel: (reas
     assign(task) {
       busy = true
       current = task
+      const mine = ++generation
       later(() => {
+        if (mine !== generation) return
         busy = false
         // A silent task keeps the agent busy until the Conductor cancels it.
         if (act(task, participant.getId()) === "silent") busy = true
       })
     },
     cancel(reason) {
+      generation++
       onCancel(`${id}: ${reason}`)
       const cancelled = current
       if (options.slow) later(() => (busy = false))

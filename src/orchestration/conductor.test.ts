@@ -137,12 +137,15 @@ describe("Conductor", () => {
   })
 
   it("stops handing out work after budget.exceeded and fails what never started", async () => {
-    const { summary, calls } = await runWith({ budgetAfterPromotions: 1 })
+    const { summary, calls, logLines } = await runWith({ budgetAfterPromotions: 1 })
 
-    // "list" was handed out when "api" was promoted, just before budget.exceeded arrived, so it still finishes.
+    // "list" was handed out when "api" was promoted, just before budget.exceeded arrived. Its next model call
+    // would be refused, so it is cancelled and fails at once (D-024); "store" had already submitted its draft.
     expect(summary.outcome).toBe("budget.exceeded")
-    expect(calls.builder.map((t) => t.unitId)).toEqual(["api", "store", "list"])
-    expect(summary.units).toMatchObject({ api: "promoted", store: "promoted", list: "promoted", detail: "failed", edit: "failed" })
+    expect(calls.builder.map((t) => t.unitId)).toEqual(["api", "store"])
+    expect(calls.cancels).toContainEqual(expect.stringMatching(/^builder-\d: budget exceeded$/))
+    expect(summary.units).toMatchObject({ api: "promoted", store: "promoted", list: "failed", detail: "failed", edit: "failed" })
+    expect(logLines.find((l) => l.event === "unit.failed" && l.data?.unitId === "list")?.data?.reason).toBe("budget exceeded")
   })
 
   it("stops handing out work when the runner reports the budget through notifyBudgetExceeded", async () => {
@@ -153,8 +156,10 @@ describe("Conductor", () => {
 
     const summary = await running
     expect(summary.outcome).toBe("budget.exceeded")
+    expect(summary.error).toBe("the budget ran out before the plan")
+    // The analyzer already running finishes; no architect is started, because every call would be refused.
+    expect(calls.architect).toEqual([])
     expect(calls.builder).toEqual([])
-    expect(Object.values(summary.units).every((status) => status === "failed")).toBe(true)
   })
 
   it("ends with an error, and still builds the report, when parsing fails", async () => {
@@ -322,6 +327,63 @@ describe("Conductor timeouts", () => {
     const summary = await running
     expect(new Set(calls.builder.filter((t) => t.unitId === "list").map((t) => t.builderId))).toEqual(new Set([busyBuilder]))
     expect(summary).toMatchObject({ outcome: "finished", units: { list: "failed" } })
+  })
+
+  function startConductor(script: Partial<FakeScript>) {
+    const clock = manualClock()
+    const { deps, calls } = fakeWorld({ plan, ...script })
+    const conductor = new Conductor(deps, { clock })
+    return { clock, calls, conductor, running: conductor.run() }
+  }
+
+  it("on budget.exceeded fails a building unit at once instead of waiting for its timeout (A16, D-024)", async () => {
+    const { calls, conductor, running } = startConductor({ silentRounds: { list: Infinity } })
+    await vi.waitFor(() => expect(board().units.list?.status).toBe("building"))
+    const assignedBefore = calls.builder.length
+
+    conductor.notifyBudgetExceeded()
+
+    // No clock.advance: without D-024 this run would wait 10 min per round for the silent builder.
+    const summary = await running
+    expect(summary.outcome).toBe("budget.exceeded")
+    expect(summary.units.list).toBe("failed")
+    expect(calls.builder).toHaveLength(assignedBefore)
+    expect(calls.cancels).toContainEqual(expect.stringMatching(/^builder-\d: budget exceeded$/))
+  })
+
+  it("on budget.exceeded tells the Gatekeeper to stop waiting for tests that will not come", async () => {
+    const { conductor, running } = startConductor({ waitForTests: true, silentTests: { detail: Infinity } })
+    await vi.waitFor(() => expect(board().units.detail?.status).toBe("submitted"))
+
+    conductor.notifyBudgetExceeded()
+
+    const summary = await running
+    expect(summary.outcome).toBe("budget.exceeded")
+    expect(summary.statuses.detail).toBe("unproven")
+    expect(logEvents().filter((e) => e.event === "tests.missing").map((e) => e.data?.unitId)).toContain("detail")
+  })
+
+  it("lowers the builder limit once per window on 429, never below 1, and gives builders back after a quiet window", async () => {
+    const { clock, calls, conductor, running } = startConductor({ silentRounds: { list: Infinity } })
+    await vi.waitFor(() => expect(board().units.edit?.status).toBe("promoted"))
+    const limits = () => logEvents().filter((e) => e.event === "rate.limited" || e.event === "rate.recovered").map((e) => `${e.event} ${e.data?.maxBuilders}`)
+
+    conductor.notifyRateLimited()
+    conductor.notifyRateLimited()
+    conductor.notifyRateLimited()
+    // The test config allows 2 builders: three 429s in a row take the limit to 1, once.
+    await vi.waitFor(() => expect(limits()).toEqual(["rate.limited 1"]))
+
+    clock.advance(DEFAULTS.rateLimitCooldownMs)
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    // A 429 came inside the window, so it would step down again, but 1 is the floor.
+    expect(limits()).toEqual(["rate.limited 1"])
+
+    clock.advance(DEFAULTS.rateLimitCooldownMs)
+    await vi.waitFor(() => expect(limits()).toEqual(["rate.limited 1", "rate.recovered 2"]))
+
+    await timeOutRounds(clock, calls, "list")
+    expect((await running).units.list).toBe("failed")
   })
 
   it("ignores a late draft from a round that already timed out", async () => {
