@@ -21,18 +21,13 @@ Faza: F3
 - **integracija:** `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` završava sa `finished`: `app-entry` promovisan (unproven), `todo-list` runda 1 `gate.failed` („`<div>` ne postoji u React Native, koristi `<View>`“), runda 2 promovisan (partial); u `run.jsonl` nema odbijenih ni zalutalih upisa buildera; `report.html` prikazuje statuse
 
 ## U radu
-<<<<<<< HEAD
-- popravke posle pravog prolaza (A-ova analiza), grana `c/popravka`:
-  - **Gatekeeper čeka događaj `tests.ready`** (ili `tests.missing`), a ne „ima li testova na tabli“: tester upisuje testove jedan po jedan, pa je provera kretala sa nepotpunim skupom (3 od 5) i prolaz se završavao pre filtera i „Clear completed“. Proveren redosled u `migrate:mock`: `tests.ready` → `check_started`, `todo-list` proven sa 5/5.
-  - **prompt buildera:** builder ne pravi rute; filteri i podstranice u okviru ekrana (`#/active`, `?filter=`) su `useState` ili search parametar na istoj ruti; linkovi samo na postojeće rute. Zadatak buildera sada sadrži spisak mobilnih ruta iz `routeMap`.
-- C3.1 regresija nad pravom aplikacijom: grana `c/regression-real` (lokalno, čeka push)
-- C3.3 testovi toka: čeka odluku tima
-=======
-- C3.1 regresija i rollback nad pravom aplikacijom: gotovo na grani `c/regression-real`, čeka PR
-  - `src/gatekeeper/g1.test.ts`: lista za kupovinu dokazana kroz pravi `checkDraft`, pa nacrt `layout` čiji `_layout.tsx` više ne prikazuje ekrane → kapije 1–3 prolaze, regresija pada sa `brokenTests: ["shopping-list-add-item"]`, rollback vraća stari `_layout.tsx`, B-ov test posle toga opet prolazi
-  - **nađen i popravljen bug u šablonu:** `src/shared/config.ts` je dobijao tip za `process` samo preko fajlova koji uvoze `expo-router`; kad `layout` zameni `_layout.tsx`, kapija 3 je pogrešno padala. Sada `config.ts` ima `/// <reference types="expo/types" />`
-- C3.3 testovi toka: čeka odluku tima (ko piše scenarije toka i gde se čuvaju; predlog u poruci timu)
->>>>>>> d381373 (gatekeeper: regresija i rollback nad pravom aplikacijom (C3.1); templates: config.ts sam uvozi expo tipove)
+- C3.3 testovi toka (C deo): gotovo na grani `c/flow-tests`, čeka PR
+  - `src/gatekeeper/flow.ts`: `checkFlow` → aplikacija (390×844) + testovi toka sa namernim razlikama svih jedinica toka → `FlowResult`; test bez rezultata = pao
+  - Gatekeeper-učesnik: sluša `flow.tests.ready`; kad su sve jedinice toka promovisane, tok ide u **isti red** kao nacrti (bez preklapanja nad `app/`), tačno jednom; rezultat u `flowResults` i `results/flows/<flowId>.json`; tok koji pada ne vraća ekrane i ne šalje događaj (D-022)
+  - testovi: 5 za `checkFlow`, 3 za učesnika (tok ne kreće pre promocije, kreće jednom, pad ne vraća ekrane)
+  - ceo tok u prolazu čeka B (tester piše testove toka, inbox) i A (`a/flow-dispatch`)
+- C3.1 (PR #65) i popravke posle pravog prolaza (PR #61) su spojeni
+- G3: `verify` (B, PR #67) koristi moj `serveApp`
 
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)

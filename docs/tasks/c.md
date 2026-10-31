@@ -192,14 +192,14 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - [x] povezano sa B-ovim `computeCoverage()` i D-ovim izveštajem (`proven` traži punu pokrivenost sa table; `report.html` prikazuje statuse)
 
 ### C3.3 Testovi toka — **samo ako je sve ostalo zeleno**
-- [ ] Gatekeeper pušta `Flow` kad su sve njegove jedinice promovisane
+- [x] Gatekeeper pušta `Flow` kad su sve njegove jedinice promovisane (C deo, D-022; testirano lažnim `flow.tests.ready`; ceo tok čeka B-ovog testera za tokove i A-ov `a/flow-dispatch`)
 
 ### C3.4 Kapija `androidExport` — opciono, poslednje
 - [ ] `expo export --platform android` kao kapija 6
 
 ### Kapija G3 (proverava B) — moj deo
 - [ ] pravi prolaz nad Receptima: bar 3 od 5 ekrana dokazano, ostali imaju tačan razlog
-- [ ] `verify` (B) koristi moj `serveApp` / statički build i prolazi bez API ključa
+- [x] `verify` (B) koristi moj `serveApp` / statički build i prolazi bez API ključa (PR #67, `src/verify/verify.ts`)
 
 > **Ovde vidiš sve zajedno:** `report.html` (D) sa statusima koje računa tvoj `computeStatus`.
 

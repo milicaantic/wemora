@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
-import { EVENTS, type CheckDraft, type GateResult, type Scenario, type ScreenStatus, type Unit, type UnitResult } from "../contracts"
+import { EVENTS, type CheckDraft, type Flow, type FlowResult, type GateResult, type Scenario, type ScreenStatus, type Unit, type UnitResult } from "../contracts"
 import { log } from "../core/log"
 import { board, emit } from "../core/runtime"
-import { checkDraft as realCheckDraft, computeStatus } from "../gatekeeper"
+import { checkDraft as realCheckDraft, checkFlow as realCheckFlow, computeStatus, type CheckFlow } from "../gatekeeper"
 
 // Gatekeeper-učesnik (C2.4, architecture.md §10): deterministički, bez modela.
 // - draft.submitted → red čekanja; nacrti se proveravaju jedan po jedan (checkDraft)
@@ -13,12 +13,17 @@ import { checkDraft as realCheckDraft, computeStatus } from "../gatekeeper"
 //   (Conductor, D-016) ide na proveru bez testova i ulazi kao unproven
 // - nacrt iz ranije runde (zakasneli, D-016) se ignoriše
 // - rezultat ide na tablu i u results/<unitId>.json, pa gate.failed { unitId, round } ili unit.promoted { unitId }
+// - testovi toka (C3.3, D-022): kad su sve jedinice toka promovisane i stigao je flow.tests.ready, tok ide u isti
+//   red; rezultat ide u flowResults i results/flows/<flowId>.json. Tok koji pada ne vraća nijedan ekran.
 
 export type GatekeeperOptions = {
   checkDraft?: CheckDraft
+  checkFlow?: CheckFlow
 }
 
 type Job = { unitId: string; round: number; builderId: string }
+// Nacrti i tokovi idu kroz isti red: oba koriste isti app/, pa ne smeju da se preklapaju.
+type Work = { kind: "draft"; job: Job } | { kind: "flow"; flowId: string }
 
 class EventOfType extends SituationSpecification {
   constructor(private readonly type: string) {
@@ -33,14 +38,19 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 
 export function createGatekeeper(id: string, options: GatekeeperOptions = {}): Participant {
   const check = options.checkDraft ?? realCheckDraft
+  const checkFlow = options.checkFlow ?? realCheckFlow
 
-  const queue: Job[] = []
+  const queue: Work[] = []
   // Ekrani čiji je nacrt stigao pre testova: čekaju tests.ready ili tests.missing.
   const waiting = new Map<string, Job>()
   // Ekrani za koje je stigao tests.ready: tek tada su testovi na tabli potpuni.
   const ready = new Set<string>()
   // Ekrani za koje testova neće biti (tests.missing): proveravaju se bez testova.
   const missing = new Set<string>()
+  // Za testove toka: promovisane jedinice, tokovi sa testovima i tokovi koji su već pušteni.
+  const promoted = new Set<string>()
+  const flowsWithTests = new Set<string>()
+  const flowsStarted = new Set<string>()
   let working = false
 
   const participant: Participant = createHuman({
@@ -58,6 +68,10 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
       {
         specification: new EventOfType(EVENTS.testsMissing),
         processor: { apply: ({ event }) => safely(() => onTestsMissing((event.payload as { unitId: string }).unitId)) },
+      },
+      {
+        specification: new EventOfType(EVENTS.flowTestsReady),
+        processor: { apply: ({ event }) => safely(() => onFlowTestsReady((event.payload as { flowId: string }).flowId)) },
       },
     ],
   })
@@ -123,7 +137,23 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
   }
 
   function enqueue(job: Job): void {
-    queue.push(job)
+    queue.push({ kind: "draft", job })
+    void drain()
+  }
+
+  function onFlowTestsReady(flowId: string): void {
+    flowsWithTests.add(flowId)
+    queueReadyFlows()
+  }
+
+  /** Tok ide na proveru jednom: kad ima testove i kad su sve njegove jedinice promovisane. */
+  function queueReadyFlows(): void {
+    for (const flow of board().plan?.flows ?? []) {
+      if (flowsStarted.has(flow.id) || !flowsWithTests.has(flow.id)) continue
+      if (!flow.unitIds.every((u) => promoted.has(u))) continue
+      flowsStarted.add(flow.id)
+      queue.push({ kind: "flow", flowId: flow.id })
+    }
     void drain()
   }
 
@@ -133,7 +163,14 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     working = true
     try {
       while (queue.length > 0) {
-        const job = queue.shift()!
+        const work = queue.shift()!
+        if (work.kind === "flow") {
+          await runFlow(work.flowId).catch((error) => {
+            log({ agent: id, event: "gatekeeper.flow_failed", data: { flowId: work.flowId, error: message(error) } })
+          })
+          continue
+        }
+        const job = work.job
         await runOne(job).catch((error) => {
           finish(job, [gate(job, "parse", false, `Gatekeeper: provera nije uspela: ${message(error)}`)], [])
         })
@@ -156,6 +193,26 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     log({ agent: id, event: "gatekeeper.check_started", data: { unitId: job.unitId, round: job.round } })
     const gates = await check({ unit, round: job.round, draftDir, tests, webDir })
     finish(job, gates, tests)
+  }
+
+  async function runFlow(flowId: string): Promise<void> {
+    const plan = board().plan
+    const flow: Flow | undefined = plan?.flows.find((f) => f.id === flowId)
+    if (!plan || !flow) throw new Error(`tok "${flowId}" nije u planu`)
+    const tests = board().flowTests[flowId] ?? []
+    const differences = plan.units.filter((u) => flow.unitIds.includes(u.id)).flatMap((u) => u.intentionalDifferences)
+    log({ agent: id, event: "gatekeeper.flow_started", data: { flowId, tests: tests.length } })
+    const result: FlowResult = await checkFlow({ flow, tests, appDir: path.join(board().config.runDir, "app"), differences })
+    // Samo zapis: tok koji pada ne vraća ekrane (D-022), pa nema događaja za Conductor.
+    board().flowResults[flowId] = result
+    try {
+      const dir = path.join(board().config.runDir, "results", "flows")
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(path.join(dir, `${flowId}.json`), `${JSON.stringify(result, null, 2)}\n`)
+    } catch (error) {
+      log({ agent: id, event: "gatekeeper.write_failed", data: { flowId, error: message(error) } })
+    }
+    log({ agent: id, event: "gatekeeper.flow_checked", data: { flowId, ok: result.ok } })
   }
 
   function gate(job: Job, name: GateResult["gate"], ok: boolean, msg: string): GateResult {
@@ -197,6 +254,10 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
       else emit(EVENTS.gateFailed, { unitId: job.unitId, round: job.round }, participant.getId())
     } catch (error) {
       log({ agent: id, event: "gatekeeper.emit_failed", data: { unitId: job.unitId, error: message(error) } })
+    }
+    if (passed) {
+      promoted.add(job.unitId)
+      queueReadyFlows()
     }
   }
 
