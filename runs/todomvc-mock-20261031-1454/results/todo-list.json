@@ -1,0 +1,71 @@
+{
+  "unitId": "todo-list",
+  "status": "proven",
+  "rounds": 2,
+  "gates": [
+    {
+      "unitId": "todo-list",
+      "round": 2,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "todo-list",
+      "round": 2,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "todo-list",
+      "round": 2,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "todo-list",
+      "round": 2,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 7 labela/tekstova; preskočeno 5 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "todo-list",
+      "round": 2,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (5)."
+    }
+  ],
+  "scenarios": [],
+  "coverage": {
+    "unitId": "todo-list",
+    "obligations": {
+      "covered": [
+        "add-todo",
+        "clear-completed",
+        "complete-todo",
+        "empty-state",
+        "filter-todos"
+      ],
+      "missing": []
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "textbox",
+          "name": "New Todo Input"
+        }
+      ],
+      "missing": [],
+      "notPortable": [
+        {
+          "role": "link",
+          "name": "TodoMVC"
+        }
+      ]
+    }
+  }
+}

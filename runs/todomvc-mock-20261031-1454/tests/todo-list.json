@@ -1,0 +1,200 @@
+[
+  {
+    "id": "todo-list-empty-state",
+    "unitId": "todo-list",
+    "obligation": "empty-state",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "expectVisible": {
+          "text": "todos"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "items left!"
+        }
+      }
+    ]
+  },
+  {
+    "id": "todo-list-add-todo",
+    "unitId": "todo-list",
+    "obligation": "add-todo",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Buy milk"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Buy milk"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "1 item left!"
+        }
+      }
+    ]
+  },
+  {
+    "id": "todo-list-complete-todo",
+    "unitId": "todo-list",
+    "obligation": "complete-todo",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Buy milk"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "❯ Toggle All Input"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "0 items left!"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Clear completed"
+        }
+      }
+    ]
+  },
+  {
+    "id": "todo-list-filter-todos",
+    "unitId": "todo-list",
+    "obligation": "filter-todos",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Buy milk"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "❯ Toggle All Input"
+        }
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Walk the dog"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Active"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Walk the dog"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Buy milk"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Completed"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Buy milk"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Walk the dog"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "All"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Buy milk"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Walk the dog"
+        }
+      }
+    ]
+  },
+  {
+    "id": "todo-list-clear-completed",
+    "unitId": "todo-list",
+    "obligation": "clear-completed",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Buy milk"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "❯ Toggle All Input"
+        }
+      },
+      {
+        "submit": {
+          "label": "New Todo Input",
+          "value": "Walk the dog"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Clear completed"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Buy milk"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Walk the dog"
+        }
+      }
+    ]
+  }
+]
