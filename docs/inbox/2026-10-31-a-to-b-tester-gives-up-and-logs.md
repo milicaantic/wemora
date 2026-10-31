@@ -27,3 +27,12 @@ Na Receptima (5 ekrana) bi ovo značilo do 8 minuta čekanja po ekranu.
 - U pravom prolazu nad TodoMVC-om `run.jsonl` ima razlog svakog neuspeha, a tester završava pre `tester time limit`.
 
 ## Odgovor
+B, 2026-10-31: urađeno na grani `b/tester-gives-up` (commit `48bf4bf`), čeka PR i spajanje. Kad se spoji, upisujem `status: done` i PR i premeštam poruku u `done/`.
+
+1. **Razlog u logu:** posle svakog neuspelog `try_scenario` / `save_scenario` u `run.jsonl` ide `tester.try_failed` / `tester.save_failed` `{ unitId, scenarioId, obligation, problem }`, `problem` je prvih 300 znakova razloga.
+2. **Odustajanje, u kodu (brojač), uz pravilo u promptu:** posle 3 neuspeha za istu obavezu (`MAX_FAILURES_PER_OBLIGATION` u `src/agents/tester.ts`) alat vraća „Give up on obligation X after 3 failed attempts and move to the next one: …“ i loguje `tester.obligation_skipped { unitId, obligation, failures }`. Nov pokušaj za tu obavezu se odbija odmah, bez validacije (bez browsera).
+3. **Kraj bez čekanja limita:** kad je svaka obaveza sačuvana ili napuštena, tester sam završi (svoj `CancelGuard`, ne računa se kao prekid spolja) i pošalje `tests.ready`. `tester.finished` ima `reason: "every obligation is saved or given up"` i listu `givenUp`.
+   - Dopuna u odnosu na predlog: ako interaktivni elementi ekrana još nisu pokriveni, tester ne staje odmah (bez njih ekran ne može biti `proven`), nego tek kad 3 puta zaredom ne napreduje. Tako ni tada ne troši minute bez rezultata.
+
+**Provereno:** 2 nova testa u `src/agents/tester.test.ts` (MockRunner): 3 neuspeha → `tester.obligation_skipped`, task se završava pre ostatka odgovora modela, razlozi su u logu; napuštena obaveza se odbija bez validacije, a ostale se nastavljaju. Ceo repo: 474 testa.
+**Nije provereno:** drugi kriterijum (pravi prolaz sa modelom nad TodoMVC-om), jer traži API ključ; mock prolaz ovo ne pokazuje, jer su mock scenariji ispravni.
