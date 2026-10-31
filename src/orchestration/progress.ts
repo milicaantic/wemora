@@ -35,6 +35,10 @@ function describe(entry: LogEntry, d: Data, context: ProgressContext): string | 
       return `tester saved a test for ${d.unitId ?? d.flowId}: ${d.scenarioId}`
     case "tests.ready":
       return `tests ready for ${d.unitId}`
+    case "tests.ended_empty": {
+      const what = d.flowId ? `flow ${d.flowId}` : String(d.unitId)
+      return `tester found no test for ${what}, ${d.gaveUp ? "left without tests" : "it goes back to the queue"}`
+    }
     case "gatekeeper.waiting_for_tests":
       return `${d.unitId} round ${d.round} is built, waiting for its tests`
     case "gatekeeper.check_started":

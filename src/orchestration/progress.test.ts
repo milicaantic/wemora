@@ -26,6 +26,12 @@ describe("progressLine", () => {
     expect(progressLine(entry(15, "gatekeeper.waiting_for_tests", { unitId: "todo-list", round: 1 }), start, context)).toBe(
       "[00:15] todo-list round 1 is built, waiting for its tests",
     )
+    expect(progressLine(entry(90, "tests.ended_empty", { flowId: "categories-to-detail", gaveUp: false }), start, context)).toBe(
+      "[01:30] tester found no test for flow categories-to-detail, it goes back to the queue",
+    )
+    expect(progressLine(entry(95, "tests.ended_empty", { unitId: "favorites", gaveUp: true }), start, context)).toBe(
+      "[01:35] tester found no test for favorites, left without tests",
+    )
   })
 
   it("stays quiet for model calls, tool calls and the analyzers-only team line", () => {
