@@ -52,7 +52,7 @@ The last line installs Expo, which Wemora uses to build the mobile app for the w
 
 ### 2. Check a finished migration
 
-[`runs/`](runs/) holds a finished migration of the [TodoMVC](https://github.com/tastejs/todomvc) app. `verify` builds its mobile app and runs every test again:
+[`runs/`](runs/) holds a finished migration of the [TodoMVC](https://github.com/tastejs/todomvc) app, made with recorded model answers (`--mock`, as in step 4). `verify` builds its mobile app and runs every test again:
 
 ```bash
 npm run verify -- runs/todomvc-mock-20261031-1454
@@ -69,7 +69,7 @@ todo-list  [proven]
 OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
-Open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser to see the full report. The first `verify` takes about a minute (Expo's first build); later ones take seconds.
+Open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser to see the full report. The first `verify` can take up to a minute (Expo's first build); later ones take seconds.
 
 ### 3. Break a screen and watch `verify` catch it
 
