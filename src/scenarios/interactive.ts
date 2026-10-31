@@ -1,6 +1,7 @@
 import { chromium, type Page } from "playwright"
 import type { ExtractInteractive, InteractiveElement, Step } from "../contracts"
 import { snapshotAfterSteps } from "./run"
+import { matchesRoute } from "./tester"
 import { DESKTOP } from "./viewports"
 
 const INTERACTIVE_ROLES = new Set([
@@ -44,6 +45,42 @@ export const extractInteractive: ExtractInteractive = (url, route) =>
 export function ariaSnapshot(url: string, route: string, steps: Step[] = []): Promise<string> {
   if (steps.length > 0) return snapshotAfterSteps(url, [{ goto: route }, ...steps])
   return onLoadedPage(url, route, (page) => page.locator("body").ariaSnapshot())
+}
+
+/** A named link on a screen of the original and the path it opens (same origin only). */
+export type LinkTarget = { name: string; path: string }
+
+/** The named links on one screen of the original (desktop viewport) and the path each one opens. */
+export function linkTargets(url: string, route: string): Promise<LinkTarget[]> {
+  return onLoadedPage(url, route, (page) => readLinks(page))
+}
+
+/**
+ * A real path for a route with parameters (/recepti/:id): the first link on these screens that opens it, e.g.
+ * /recepti/1 from the recipe list. Null when no screen links to it.
+ */
+export async function findOpenPath(url: string, route: string, from: string[]): Promise<string | null> {
+  for (const start of from) {
+    const found = (await onLoadedPage(url, start, (page) => readLinks(page)).catch(() => [])).find((l) => matchesRoute(route, l.path))
+    if (found) return found.path
+  }
+  return null
+}
+
+async function readLinks(page: Page): Promise<LinkTarget[]> {
+  const origin = new URL(page.url()).origin
+  const links = await page.locator("a[href]").evaluateAll((anchors) =>
+    anchors.map((a) => ({
+      // The accessible name of a link: aria-label when set, else its text (what getByRole matches by name).
+      name: (a.getAttribute("aria-label") ?? a.textContent ?? "").replace(/\s+/g, " ").trim(),
+      // The resolved absolute URL (the DOM property, not the attribute); the root tsconfig has no DOM types.
+      href: (a as unknown as { href: string }).href,
+    })),
+  )
+  return links.flatMap(({ name, href }) => {
+    const target = new URL(href)
+    return name !== "" && target.origin === origin ? [{ name, path: `${target.pathname}${target.hash}` }] : []
+  })
 }
 
 async function onLoadedPage<T>(url: string, route: string, read: (page: Page) => Promise<T>): Promise<T> {

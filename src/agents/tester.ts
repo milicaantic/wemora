@@ -21,8 +21,11 @@ import {
   computeCoverage,
   coverageNote,
   extractInteractive,
+  findOpenPath,
   flowAsUnit,
   flowBrief,
+  linkTargets,
+  matchesRoute,
   openablePath,
   readFlowTests,
   readTests,
@@ -31,6 +34,7 @@ import {
   validateScenario,
   writeFlowTests,
   writeTests,
+  type LinkTarget,
 } from "../scenarios"
 import { CancelGuard, defineTool, runTask, type AgentHandle } from "./_shared"
 
@@ -54,6 +58,8 @@ export type TesterDeps = {
   // Replaceable so tests run without a browser.
   validateScenario?: ValidateScenario
   extractInteractive?: ExtractInteractive
+  linkTargets?: (url: string, route: string) => Promise<LinkTarget[]>
+  findOpenPath?: (url: string, route: string, from: string[]) => Promise<string | null>
   ariaSnapshot?: (url: string, route: string, steps?: Step[]) => Promise<string>
   /** The tester's own time limit per unit (D-016); default DEFAULTS.testerUnitTimeoutMs. */
   unitTimeoutMs?: number
@@ -75,6 +81,10 @@ type Task = {
   blankUrl: string
   saved: Scenario[]
   interactive: InteractiveElement[]
+  /** Where the screen was opened for its elements and links: its route, or a real path for a route with parameters. */
+  openAt: string | null
+  /** Links of the screen and where they go: a screen test may leave the screen only as its last action. */
+  links: LinkTarget[]
   // Scenarios (as JSON) that passed try_scenario in this task, so save_scenario does not run them again.
   validated: Set<string>
   // Failed try/save per obligation; at MAX_FAILURES_PER_OBLIGATION the obligation is given up.
@@ -103,6 +113,8 @@ const scenarioArgs = z.strictObject({ scenario: ScenarioSchema })
 export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTask> {
   const validate = deps.validateScenario ?? validateScenario
   const extract = deps.extractInteractive ?? extractInteractive
+  const screenLinks = deps.linkTargets ?? linkTargets
+  const findPath = deps.findOpenPath ?? findOpenPath
   const snapshot = deps.ariaSnapshot ?? ariaSnapshot
 
   let task: Task | null = null
@@ -120,7 +132,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     if (givenUp.has(scenario.obligation)) {
       return `You gave up on obligation "${scenario.obligation}"; do not try it again. Work on what is still missing.`
     }
-    const problem = scenarioProblem(scenario, unit, saved, flowId ?? undefined)
+    const problem = scenarioProblem(scenario, unit, saved, flowId ?? undefined, current().links)
     if (problem) return problem
     const key = JSON.stringify(scenario)
     if (validated.has(key)) return null
@@ -270,13 +282,23 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     }
     // Without a blank screen no scenario can be validated, so the task stops before asking the model.
     const blankUrl = typeof deps.blankUrl === "string" ? deps.blankUrl : await deps.blankUrl()
-    // A route with parameters (/recepti/:id) cannot be opened as written; the brief then lists no elements.
-    const open = work.flowId || !unit.route ? null : openablePath(unit.route)
-    if (open !== null) {
-      try {
-        interactive = await extract(deps.originalUrl, open)
-      } catch (error) {
-        log({ agent: id, event: "tester.interactive_failed", data: { unitId: unit.id, error: message(error) } })
+    // A flow has no elements to cover. A screen opens at its route, or, with parameters (/recepti/:id), at a real
+    // path: from a saved test of it, else from the first link to it on another screen (A's inbox 2026-10-31).
+    let open: string | null = null
+    let links: LinkTarget[] = []
+    if (!work.flowId && unit.route) {
+      const route = unit.route
+      open = openablePath(route) ?? savedPath(saved, route) ?? (await realPath(route))
+      if (open !== null) {
+        try {
+          interactive = await extract(deps.originalUrl, open)
+        } catch (error) {
+          log({ agent: id, event: "tester.interactive_failed", data: { unitId: unit.id, error: message(error) } })
+        }
+        links = await screenLinks(deps.originalUrl, open).catch((error: unknown) => {
+          log({ agent: id, event: "tester.links_failed", data: { unitId: unit.id, error: message(error) } })
+          return []
+        })
       }
     }
     const prepared: Task = {
@@ -285,6 +307,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
       blankUrl,
       saved,
       interactive,
+      openAt: open,
+      links,
       validated: new Set(),
       failures: new Map(),
       givenUp: new Set(),
@@ -303,7 +327,25 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     const plan = board().plan
     const flow = active.flowId ? plan?.flows.find((f) => f.id === active.flowId) : undefined
     if (plan && flow) return flowBrief(flow, plan, board().tests, active.saved)
-    return testerBrief(active.unit, active.interactive, active.saved)
+    return testerBrief(active.unit, active.interactive, active.saved, active.openAt)
+  }
+
+  // The path a saved test of this screen opens, when the route has parameters.
+  function savedPath(saved: Scenario[], route: string): string | null {
+    const step = saved.flatMap((s) => [...(s.setup ?? []), ...s.steps]).find((x) => "goto" in x && matchesRoute(route, x.goto))
+    return step && "goto" in step ? step.goto : null
+  }
+
+  async function realPath(route: string): Promise<string | null> {
+    // Screens without parameters, the start page first, are where links to this route are looked for.
+    const from = (board().plan?.units ?? []).flatMap((u) => (u.kind === "screen" && u.route ? [openablePath(u.route)] : []))
+    const starts = [...new Set(["/", ...from.filter((p): p is string => p !== null)])]
+    try {
+      return await findPath(deps.originalUrl, route, starts)
+    } catch (error) {
+      log({ agent: id, event: "tester.open_path_failed", data: { route, error: message(error) } })
+      return null
+    }
   }
 
   // The Conductor cancels from outside after its own timeout or at the end of the run (D-016).

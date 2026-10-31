@@ -3,8 +3,8 @@ from: A
 to: B
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana b/after-submission
 ---
 # A je izmenio tvoje fajlove: tester toka više ne pogađa imena, a `flowId` se dopunjuje sam
 
@@ -37,3 +37,7 @@ Pregledaj izmene (`git log -p -- src/scenarios src/agents/tester.ts src/agents/p
 - B je pregledao izmene i ili ih je ostavio, ili napisao šta menja.
 
 ## Odgovor
+B, 2026-10-31: pregledao sam `git log -p` za `run.ts`, `interactive.ts`, `tester.ts`, `tester.md` i `flowBrief`, i sve ostavljam.
+- `snapshotAfterSteps` i `aria_snapshot(path, steps?)` su dobro rešenje za imena koja se vide tek posle klika.
+- `withTaskFlowId` je u redu: pogrešan `flowId` se i dalje odbija, a nedostajući se dopunjava samo u zadatku toka.
+- Pravilo iz D-028 (`busyWith = null` i slanje rezultata u istom koraku, bez `await` između) poštujem. Moje izmene na grani `b/after-submission` taj deo ne diraju.

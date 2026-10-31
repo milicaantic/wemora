@@ -4,6 +4,7 @@ import { z } from "zod"
 import { ScenarioSchema, type Flow, type InteractiveElement, type Plan, type Scenario, type Unit } from "../contracts"
 import { actedOn, describeTarget, sameElement, toTarget } from "./compile"
 import { computeCoverage } from "./coverage"
+import type { LinkTarget } from "./interactive"
 
 // The domain side of the tester agent (agents/tester.ts): rules for saving a scenario, the tests file,
 // and the texts the model reads. No Mozaik here.
@@ -74,7 +75,14 @@ export function flowAsUnit(flow: Flow, plan: Plan): Unit {
  * original still has that element and the scenario would pass validation, then fail on every phone.
  * `flowId` is set for a flow test (D-022): the scenario must carry it; a screen test must not have one.
  */
-export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[], flowId?: string): string | null {
+export function scenarioProblem(
+  scenario: Scenario,
+  unit: Unit,
+  saved: Scenario[],
+  flowId?: string,
+  /** Links of this screen on the original and where they go (linkTargets), for the rule below. */
+  links: LinkTarget[] = [],
+): string | null {
   if (flowId !== undefined && scenario.flowId !== flowId) return `flowId must be "${flowId}" for this flow test.`
   if (flowId === undefined && scenario.flowId !== undefined) return `Leave flowId out: this task tests one screen, not a flow.`
   if (scenario.unitId !== unit.id) return `unitId must be "${unit.id}", not "${scenario.unitId}".`
@@ -95,6 +103,10 @@ export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[
         `that path belongs to a flow test.`
       )
     }
+  }
+  if (flowId === undefined && unit.route !== undefined) {
+    const problem = leavesScreen(scenario, unit.route, links)
+    if (problem) return problem
   }
   for (const difference of unit.intentionalDifferences) {
     if (difference.kind !== "notPortable") continue
@@ -121,6 +133,35 @@ export function openablePath(route: string): string | null {
 }
 
 /**
+ * A screen test that taps a link to another screen and then goes on (in setup, or with more actions after it)
+ * tests that other screen, which may not be in the app yet (A's inbox 2026-10-31: favorites tapped "Recepti" in
+ * setup, added a favorite on the list and came back). Leaving the screen as the last action of steps stays allowed:
+ * the test then checks that this screen is gone.
+ */
+function leavesScreen(scenario: Scenario, route: string, links: LinkTarget[]): string | null {
+  const away = (step: Scenario["steps"][number]) => {
+    const target = actedOn(step)
+    if (!target || !("tap" in step) || target.by === "label") return undefined
+    const name = target.by === "role" ? (target.role === "link" ? target.name : null) : target.text
+    return name === null ? undefined : links.find((l) => l.name === name && !matchesRoute(route, l.path))
+  }
+  const refuse = (link: LinkTarget, where: string) =>
+    `Tapping link "${link.name}" ${where} opens another screen (${link.path}), so what follows tests that screen, which may not be in the app yet. ` +
+    `A test of this screen may leave it only as its last action (then check that this screen is gone); ` +
+    `a path through several screens belongs to a flow test.`
+  for (const step of scenario.setup ?? []) {
+    const link = away(step)
+    if (link) return refuse(link, "in setup")
+  }
+  const actions = scenario.steps.flatMap((step, i) => (actedOn(step) ? [i] : []))
+  for (const i of actions.slice(0, -1)) {
+    const link = away(scenario.steps[i]!)
+    if (link) return refuse(link, `at step ${i}`)
+  }
+  return null
+}
+
+/**
  * Whether a web path opens this route: ":param" matches one segment, a trailing "*" matches the rest.
  * Query and hash are ignored, so "/?q=sarma" and "/#/active" open "/".
  */
@@ -135,13 +176,15 @@ export function matchesRoute(route: string, target: string): boolean {
 }
 
 /** The task message: what to test on this unit and what is already saved. */
-export function testerBrief(unit: Unit, interactive: InteractiveElement[], saved: Scenario[]): string {
+export function testerBrief(unit: Unit, interactive: InteractiveElement[], saved: Scenario[], openAt: string | null = null): string {
   const open = unit.route === undefined ? null : openablePath(unit.route)
   const lines = [
     `Unit: ${unit.id}`,
     `Web route: ${unit.route ?? "(none)"}`,
     unit.route !== undefined && open === null
-      ? "The route has parameters: open it with real values, e.g. an id you find in a link on another screen."
+      ? openAt !== null
+        ? `The route has parameters: open it at ${openAt} (a real link in the app); the elements below are from that page.`
+        : "The route has parameters: open it with real values, e.g. an id you find in a link on another screen."
       : null,
     open !== null && open !== unit.route ? `The route matches any path; open it at ${open}` : null,
     "",

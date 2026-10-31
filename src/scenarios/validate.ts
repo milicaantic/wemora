@@ -1,5 +1,5 @@
 import { ScenarioSchema, type RunScenarios, type Scenario, type ScenarioResult, type Step, type ValidateScenario } from "../contracts"
-import { runScenarios } from "./run"
+import { createRunScenarios, PROBE_RUNNER_SETTINGS, runScenarios } from "./run"
 import { DESKTOP, MOBILE } from "./viewports"
 
 const isAction = (s: Step) => "tap" in s || "fill" in s || "submit" in s
@@ -12,8 +12,12 @@ const isExpect = (s: Step) => "expectVisible" in s || "expectNotVisible" in s
  * 3. every action (tap/fill/submit) followed by checks changes something: at least one of those checks
  *    fails when the action is left out (the steps before it and the goto steps up to the check stay).
  * Reasons are written for the tester model, so it can fix the scenario.
+ *
+ * `probe` runs what is expected to fail (the blank screen, the rule 3 variants) with shorter waits: a failing step
+ * waits its whole timeout, and that was most of try_scenario's time (A's inbox 2026-10-31). Rule 1 keeps `run`,
+ * so a slow but good scenario is never refused. Without `probe`, `run` does both.
  */
-export function createValidateScenario(run: RunScenarios = runScenarios): ValidateScenario {
+export function createValidateScenario(run: RunScenarios = runScenarios, probe: RunScenarios = run): ValidateScenario {
   return async (originalUrl, blankUrl, input) => {
     const parsed = ScenarioSchema.safeParse(input)
     if (!parsed.success) {
@@ -21,21 +25,15 @@ export function createValidateScenario(run: RunScenarios = runScenarios): Valida
       return { ok: false, reason: `Invalid scenario: ${issue?.path.join(".")}: ${issue?.message}` }
     }
     const scenario = parsed.data
-    const probes = actionProbes(scenario)
+    const desktop = { viewport: DESKTOP, differences: [] }
 
-    // Rule 1 and the rule 3 probes share one browser: the two original runs come first.
-    const onOriginal = await run(
-      originalUrl,
-      [scenario, scenario, ...probes.flatMap((p) => p.variants)],
-      { viewport: DESKTOP, differences: [] },
-    )
-    const [first, second, ...probeResults] = onOriginal
+    const [first, second] = await run(originalUrl, [scenario, scenario], desktop)
     if (!first.ok) return { ok: false, reason: `Fails on the original web app: ${failure(scenario, first)}` }
     if (!second.ok) {
       return { ok: false, reason: `Unstable: passed once on the original, then failed: ${failure(scenario, second)}` }
     }
 
-    const [onBlank] = await run(blankUrl, [{ ...scenario, setup: undefined }], { viewport: MOBILE, differences: [] })
+    const [onBlank] = await probe(blankUrl, [{ ...scenario, setup: undefined }], { viewport: MOBILE, differences: [] })
     if (onBlank.ok) {
       return {
         ok: false,
@@ -47,26 +45,35 @@ export function createValidateScenario(run: RunScenarios = runScenarios): Valida
       return { ok: false, reason: `Blank screen did not load, so the scenario could not be checked against it: ${onBlank.error}` }
     }
 
-    let next = 0
-    for (const probe of probes) {
-      const results = probeResults.slice(next, next + probe.variants.length)
-      next += probe.variants.length
-      if (results.every((r) => r.ok)) {
-        const checks = probe.checks.map((i) => `step ${i} ${JSON.stringify(scenario.steps[i])}`).join(", ")
-        return {
-          ok: false,
-          reason:
-            `The action at step ${probe.action} (${JSON.stringify(scenario.steps[probe.action])}) changes nothing the scenario checks: ` +
-            `without it, every check after it still passes (${checks}). ` +
-            `Add a check that is false without the action and true with it. ${CHANGES_NOTHING_HINT}`,
-        }
-      }
+    // In rounds: the n-th variant of every action not proven yet, in one browser. An action is proven as soon as
+    // one variant fails, so its other variants never run.
+    let open = actionProbes(scenario)
+    for (let round = 0; open.length > 0; round++) {
+      const results = await probe(originalUrl, open.map((p) => p.variants[round]!), desktop)
+      // A browser that did not start is not a failing check: it proves nothing.
+      const broken = results.find((r) => r.error?.startsWith("browser did not start"))
+      if (broken) return { ok: false, reason: `Could not check the scenario: ${broken.error}` }
+      // An action with a failing variant is proven; one whose every variant passed changes nothing.
+      open = open.filter((_, i) => results[i]!.ok)
+      const unproven = open.find((p) => p.variants.length === round + 1)
+      if (unproven) return changesNothing(scenario, unproven)
     }
     return { ok: true }
   }
 }
 
-export const validateScenario: ValidateScenario = createValidateScenario()
+export const validateScenario: ValidateScenario = createValidateScenario(runScenarios, createRunScenarios(PROBE_RUNNER_SETTINGS))
+
+function changesNothing(scenario: Scenario, probe: Probe): { ok: false; reason: string } {
+  const checks = probe.checks.map((i) => `step ${i} ${JSON.stringify(scenario.steps[i])}`).join(", ")
+  return {
+    ok: false,
+    reason:
+      `The action at step ${probe.action} (${JSON.stringify(scenario.steps[probe.action])}) changes nothing the scenario checks: ` +
+      `without it, every check after it still passes (${checks}). ` +
+      `Add a check that is false without the action and true with it. ${CHANGES_NOTHING_HINT}`,
+  }
+}
 
 // The usual causes in real runs (A's inbox message 2026-10-31, `navigate-to-detail`), so the tester does not
 // spend all its attempts on the same mistake.
