@@ -10,7 +10,7 @@ import {
   validatePlan,
   type ArchitectOutput,
 } from "../analysis"
-import type { Plan } from "../contracts"
+import type { ParsedApp, Plan } from "../contracts"
 import { DEFAULTS, MODELS } from "../core/config"
 import { log } from "../core/log"
 import { board, emit } from "../core/runtime"
@@ -56,6 +56,8 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
     let request = brief
     let errors: string[] = []
     let lastPlan: ArchitectOutput | null = null
+    // The last plan that passed the schema, and what validatePlan said about it (for salvagePlan).
+    let lastChecked: { plan: Plan; errors: string[] } | null = null
     let attempt = 0
     while (attempt < maxAttempts && !cancel.isCancelled()) {
       attempt++
@@ -76,6 +78,7 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
         errors = validatePlan(plan, parsed)
         if (errors.length === 0) return { ok: true, plan, attempts: attempt }
         lastPlan = result.value
+        lastChecked = { plan, errors }
         request = architectRetryMessage(brief, result.value, errors)
       } else {
         // No usable JSON (or an API error / cancel): ask again from the brief, keeping the last real plan if any.
@@ -83,6 +86,13 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
         request = lastPlan ? architectRetryMessage(brief, lastPlan, errors) : brief
       }
       log({ agent: id, event: "plan.rejected", data: { attempt, errors } })
+    }
+    if (lastChecked && !cancel.isCancelled()) {
+      const salvaged = salvagePlan(lastChecked.plan, lastChecked.errors, parsed)
+      if (salvaged) {
+        log({ agent: id, event: "plan.salvaged", data: { attempts: attempt, dropped: salvaged.dropped } })
+        return { ok: true, plan: salvaged.plan, attempts: attempt }
+      }
     }
     return { ok: false, attempts: attempt, errors, lastPlan }
   }
@@ -160,4 +170,41 @@ export function createArchitect(id: string): AgentHandle<ArchitectTask> {
       guard?.cancel(reason)
     },
   }
+}
+
+/**
+ * After the last attempt: drops the obligations and movedTo differences that validatePlan names, and checks
+ * again, so one stubborn rule does not end the whole run without a plan. Null when another kind of error
+ * remains or the smaller plan still fails.
+ */
+export function salvagePlan(plan: Plan, errors: string[], parsed: ParsedApp): { plan: Plan; dropped: string[] } | null {
+  const obligations = new Set<string>()
+  const movedToItself = new Set<string>()
+  const movedToShared = new Set<string>()
+  for (const error of errors) {
+    const obligation = /^obligation "([^"]+)" of unit "([^"]+)"/.exec(error)
+    const itself = /^unit "([^"]+)" has a movedTo difference that points at itself/.exec(error)
+    const toShared = /^unit "([^"]+)" moves "(.*)" to shared unit "[^"]+"/.exec(error)
+    if (obligation) obligations.add(`${obligation[2]}/${obligation[1]}`)
+    else if (itself) movedToItself.add(itself[1]!)
+    else if (toShared) movedToShared.add(`${toShared[1]}/${toShared[2]}`)
+    else return null
+  }
+  const dropped: string[] = []
+  const units = plan.units.map((unit) => ({
+    ...unit,
+    obligations: unit.obligations.filter((o) => {
+      if (!obligations.has(`${unit.id}/${o.id}`)) return true
+      dropped.push(`obligation ${unit.id}/${o.id}`)
+      return false
+    }),
+    intentionalDifferences: unit.intentionalDifferences.filter((d) => {
+      if (d.kind !== "movedTo") return true
+      if (!(movedToItself.has(unit.id) && d.toUnit === unit.id) && !movedToShared.has(`${unit.id}/${d.what}`)) return true
+      dropped.push(`movedTo ${unit.id}: ${d.what}`)
+      return false
+    }),
+  }))
+  const salvaged: Plan = { ...plan, units }
+  return dropped.length > 0 && validatePlan(salvaged, parsed).length === 0 ? { plan: salvaged, dropped } : null
 }
