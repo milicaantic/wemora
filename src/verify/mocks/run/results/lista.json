@@ -1,0 +1,8 @@
+{
+  "unitId": "lista",
+  "status": "partial",
+  "rounds": 1,
+  "gates": [{ "unitId": "lista", "round": 1, "gate": "scenarios", "ok": true, "message": "Svi testovi jedinice prolaze (2)." }],
+  "scenarios": [],
+  "coverage": null
+}

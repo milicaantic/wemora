@@ -1,6 +1,8 @@
 // Public API of scenarios/ (owner: B). Signatures come from contracts/api.ts.
 
 export { runScenarios } from "./run"
+// Shorter step limits for tests of other folders (e.g. verify) that run scenarios meant to fail.
+export { createRunScenarios, type RunnerSettings } from "./run"
 export { validateScenario } from "./validate"
 export { ariaSnapshot, extractInteractive } from "./interactive"
 export { computeCoverage } from "./coverage"

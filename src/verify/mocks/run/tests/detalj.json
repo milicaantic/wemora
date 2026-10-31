@@ -1,0 +1,8 @@
+[
+  {
+    "id": "detalj-shows-detail",
+    "unitId": "detalj",
+    "obligation": "shows-detail",
+    "steps": [{ "goto": "/detalj" }, { "expectVisible": { "text": "Detalj recepta" } }]
+  }
+]

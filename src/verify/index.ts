@@ -1,10 +1,10 @@
-import type { Sabotage, Verify } from "../contracts"
+import type { Sabotage } from "../contracts"
 
-// Public API of verify/ (owner: B). Placeholders until F3; signatures come from contracts/api.ts.
+// Public API of verify/ (owner: B). Signatures come from contracts/api.ts.
 
-export const verify: Verify = async () => {
-  throw new Error("not implemented: verify")
-}
+export { verify } from "./verify"
+// For the CLI (A18): the details and the screen × test matrix it prints.
+export { formatVerifyReport, verifyDetailed, type UnitCheck, type VerifyDetails } from "./verify"
 
 export const sabotage: Sabotage = async () => {
   throw new Error("not implemented: sabotage")

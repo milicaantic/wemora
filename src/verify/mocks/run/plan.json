@@ -1,0 +1,56 @@
+{
+  "units": [
+    {
+      "id": "data",
+      "kind": "shared",
+      "wave": 0,
+      "sources": ["src/api.ts"],
+      "writes": ["src/shared/data/"],
+      "dependsOn": [],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 100
+    },
+    {
+      "id": "lista",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/",
+      "sources": ["src/pages/Lista.tsx"],
+      "writes": ["src/screens/lista/"],
+      "dependsOn": ["data"],
+      "obligations": [
+        { "id": "shows-items", "description": "Shows 'Jabuka' and 'Kruška'" },
+        { "id": "search", "description": "Typing 'kru' in 'Pretraga' hides 'Jabuka'" }
+      ],
+      "intentionalDifferences": [],
+      "size": 300
+    },
+    {
+      "id": "detalj",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/detalj",
+      "sources": ["src/pages/Detalj.tsx"],
+      "writes": ["src/screens/detalj/"],
+      "dependsOn": ["data"],
+      "obligations": [{ "id": "shows-detail", "description": "Shows 'Detalj recepta'" }],
+      "intentionalDifferences": [],
+      "size": 200
+    },
+    {
+      "id": "prazan",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/prazan",
+      "sources": ["src/pages/Prazan.tsx"],
+      "writes": ["src/screens/prazan/"],
+      "dependsOn": [],
+      "obligations": [{ "id": "shows-something", "description": "Shows something" }],
+      "intentionalDifferences": [],
+      "size": 50
+    }
+  ],
+  "flows": [],
+  "routeMap": { "/": "/", "/detalj": "/detalj", "/prazan": "/prazan" }
+}
