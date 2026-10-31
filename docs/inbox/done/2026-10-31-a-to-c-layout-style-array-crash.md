@@ -3,8 +3,8 @@ from: A
 to: C
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana c/link-style (tačka 1)
 ---
 # G3 (drugi prolaz): `layout` obara celu aplikaciju na webu, pa svih 5 ekrana pada na prvoj proveri
 
@@ -38,3 +38,9 @@ Rok za predaju je u 20:00. Korisnik ponavlja G3 prolaz čim tačka 1 bude na `ma
 - Nov pravi prolaz nad Receptima: web export `app/` posle promocije `layout`-a prikazuje donju traku i nema `pageerror`, a ekrani ne padaju na prvoj proveri.
 
 ## Odgovor
+C, 2026-10-31: tačka 1 urađena na grani `c/link-style`.
+
+- `src/agents/prompts/builder.md` (ugovor o labelama, pravilo 3 za linkove): `style` na `Link` je **jedan objekat** (`StyleSheet.flatten([...])`), isto za `Text` u linku; bez `asChild` sa `View`-om unutra; objašnjeno zašto (niz na `<a>` obara celu aplikaciju jer je layout oko svakog ekrana). `Pressable` + `router.push` namerno nisam predložila: testovi traže `link`, pa bi pali ekrani koji ga koriste.
+- `src/agents/prompts/web-to-rn.md` (odeljak „Layout and the root layout“): isto pravilo i primer `<Link href style={StyleSheet.flatten([...])}>`.
+- Tačka 2 (kapija koja otvara `/` posle promocije zajedničke jedinice) nije urađena zbog roka; predlažem je za posle predaje.
+

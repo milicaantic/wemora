@@ -178,6 +178,13 @@ The shared unit `layout` turns the web layout (sidebar, header, menu) into a mob
 - Keep `Stack` from `expo-router` with `screenOptions={{ headerShown: false }}`, or the screens show route names as titles.
 - A web sidebar or top menu becomes a bar at the bottom made of `Link`s with **the same texts** (`Recepti`, `Kategorije`, `Omiljeni`…). Use `Link`, not a tab navigator: tests look for links by name.
 - Keep the web app title (e.g. `Recepti`) visible as `<Text role="heading">`.
+- **Link styles are one object, never an array** (an array crashes the whole app on the web, and the layout wraps every screen). No `asChild` with a `View` inside:
+
+```tsx
+<Link href="/omiljeni" style={StyleSheet.flatten([styles.link, active && styles.linkActive])}>
+  Omiljeni
+</Link>
+```
 
 ```tsx
 // app/_layout.tsx (only the layout unit)
