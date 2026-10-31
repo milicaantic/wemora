@@ -136,7 +136,7 @@ Staging folder ima isti raspored kao `app/src/`, pa je promocija kopiranje. Owne
 
 Testeri uzimaju jedinice istim redom.
 
-**Runde i eskalacija:** runde 1–2 na `MODELS.default` (`claude-haiku-4-5`), runde 3–4 na `MODELS.strong` (`claude-sonnet-4-6`); preko gateway-a hakatona to su modeli iz `.env` (D-018). Posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde jedne jedinice, svaku sa svežim kontekstom (prompt + izvor + trenutni kod + poslednja greška).
+**Runde i eskalacija:** runde 1–2 na `MODELS.default` (`claude-haiku-4-5`), runde 3–4 na `MODELS.strong` (`claude-sonnet-4-6`) (D-023). Posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde jedne jedinice, svaku sa svežim kontekstom (prompt + izvor + trenutni kod + poslednja greška).
 
 **Timeouti (podrazumevano):** builder 10 min po rundi, tester 8 min po jedinici. Gatekeeper čeka testove 10 min, zatim Conductor dodeljuje jedinicu drugom testeru. Posle drugog isteka ekran se promoviše kao `nedokazan`. Tačno ponašanje je u D-016: Conductor prekida agenta (`cancel`); istek buildera je neuspela runda; posle drugog isteka testova Conductor šalje `tests.missing`; događaji iz ranije runde se ignorišu.
 
@@ -188,12 +188,12 @@ Testeri uzimaju jedinice istim redom.
 
 | Agent | Model | Alati | Izlaz | Prompt |
 |---|---|---|---|---|
-| Analizator | haiku-5-5 | `read_file`, `list_files` (samo njegov deo + zajednički fajlovi, samo čitanje) | `AnalyzerReport[]` (structured output) | `prompts/analyzer.md` |
-| Arhitekta | sonnet-5-5 | nema | `Plan` (structured output) | `prompts/architect.md` |
-| Tester | haiku-5-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | validirani testovi preko `save_scenario` | `prompts/tester.md` |
-| Builder | haiku-5-5 → sonnet-5-5 | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | fajlovi u staging-u | `prompts/builder.md` + `prompts/web-to-rn.md` |
+| Analizator | haiku-4-5 | `read_file`, `list_files` (samo njegov deo + zajednički fajlovi, samo čitanje) | `AnalyzerReport[]` (structured output) | `prompts/analyzer.md` |
+| Arhitekta | sonnet-4-6 | nema | `Plan` (structured output) | `prompts/architect.md` |
+| Tester | haiku-4-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | validirani testovi preko `save_scenario` | `prompts/tester.md` |
+| Builder | haiku-4-5 → sonnet-4-6 | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | fajlovi u staging-u | `prompts/builder.md` + `prompts/web-to-rn.md` |
 
-- Modeli u tabeli su podrazumevani; `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` u `.env` ih menjaju (D-018), npr. `claude-haiku-4-5` i `claude-sonnet-4-6` za gateway hakatona.
+- Modeli u tabeli su oni koje nudi gateway hakatona i podrazumevani su u kodu (D-023). `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` u `.env` ih menjaju za drugi gateway (D-018).
 - Svaki agent je zasebna instanca. Svaki zadatak ima svež kontekst. Jedna aktivna petlja po agentu.
 - `save_scenario` prihvata samo scenarije koji prolaze `validateScenario`.
 - `check_draft` pušta kapije 1–4 (brza provera), a `submit_draft` objavljuje `draft.submitted`.
@@ -203,7 +203,7 @@ Testeri uzimaju jedinice istim redom.
 ## 13. CLI
 
 ```
-wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock] [--mock-dir <dir>]
+wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 5] [--mock] [--mock-dir <dir>]
 wemora verify <run-dir>          # bez API ključa
 wemora sabotage <run-dir> <unitId>
 ```

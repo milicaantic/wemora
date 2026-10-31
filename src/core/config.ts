@@ -1,15 +1,15 @@
 // Every tunable number and model name lives here (architecture.md §9). Pure values and functions,
 // no Mozaik, so the domain may import this file too.
 
-/** The models from architecture.md §12. */
+/** The models from architecture.md §12: the ones the hackathon gateway serves, both built into Mozaik (D-023). */
 export const DEFAULT_MODELS = {
-  default: "claude-haiku-5-5",
-  strong: "claude-sonnet-5-5",
+  default: "claude-haiku-4-5",
+  strong: "claude-sonnet-4-6",
 } as const
 
 export type ModelName = string
 
-// A gateway may serve other models (D-018): WEMORA_MODEL_DEFAULT / WEMORA_MODEL_STRONG in .env replace them.
+// Another gateway may serve other models (D-018): WEMORA_MODEL_DEFAULT / WEMORA_MODEL_STRONG in .env replace them.
 // Read on every access, because the CLI loads .env after this file is imported.
 export const MODELS = {
   get default(): ModelName {
@@ -20,22 +20,10 @@ export const MODELS = {
   },
 }
 
-type Pricing = {
-  inputPerMTok: number
-  outputPerMTok: number
-  // Requests with more input tokens than this cost `multiplier` times more (docs/wemora-plan.md §6).
-  longContext?: { thresholdTokens: number; multiplier: number }
-}
+type Pricing = { inputPerMTok: number; outputPerMTok: number }
 
-// USD per million tokens. 5-5 from docs/wemora-plan.md §6; 4-5 and 4-6 are Anthropic list prices for the
-// models the hackathon gateway serves (D-018). The budget refuses any model that is not listed here.
+// USD per million tokens, Anthropic list prices (D-023). The budget refuses any model that is not listed here.
 export const PRICING: Record<ModelName, Pricing> = {
-  "claude-haiku-5-5": {
-    inputPerMTok: 0.1,
-    outputPerMTok: 0.5,
-    longContext: { thresholdTokens: 100_000, multiplier: 5 },
-  },
-  "claude-sonnet-5-5": { inputPerMTok: 2, outputPerMTok: 10 },
   "claude-haiku-4-5": { inputPerMTok: 1, outputPerMTok: 5 },
   "claude-sonnet-4-6": { inputPerMTok: 3, outputPerMTok: 15 },
 }
@@ -43,7 +31,8 @@ export const PRICING: Record<ModelName, Pricing> = {
 export const DEFAULTS = {
   maxBuilders: 4,
   maxTesters: 2,
-  budgetUsd: 3,
+  // Enough for Recepti with the D-023 prices and up to 4 rounds per unit.
+  budgetUsd: 5,
   tokensPerAnalyzer: 60_000,
   maxAnalyzers: 4,
   maxRounds: 4,
@@ -100,10 +89,6 @@ export function costUsd(
 ): number {
   const pricing = Object.hasOwn(PRICING, model) ? PRICING[model] : undefined
   if (!pricing) throw new Error(`no pricing for model "${model}"`)
-  const long = pricing.longContext
-  const allInput = inputTokens + cache.readTokens + cache.writeTokens
-  const multiplier = long && allInput > long.thresholdTokens ? long.multiplier : 1
   const input = inputTokens + cache.readTokens * CACHE_READ_PRICE + cache.writeTokens * CACHE_WRITE_PRICE
-  const usd = (input * pricing.inputPerMTok + outputTokens * pricing.outputPerMTok) / 1_000_000
-  return usd * multiplier
+  return (input * pricing.inputPerMTok + outputTokens * pricing.outputPerMTok) / 1_000_000
 }

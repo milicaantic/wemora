@@ -272,12 +272,12 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
 - **Fajlovi:** `src/core/config.ts`, `src/core/config.test.ts`.
 - **Izvozi:**
   ```ts
-  export const MODELS = { default: "claude-haiku-5-5", strong: "claude-sonnet-5-5" } as const
+  export const MODELS = { default: "claude-haiku-4-5", strong: "claude-sonnet-4-6" }   // D-023; .env ih menja (D-018)
   export type ModelName = (typeof MODELS)[keyof typeof MODELS]
-  export const PRICING: Record<ModelName, { inputPerMTok: number; outputPerMTok: number; longContext?: { thresholdTokens: number; multiplier: number } }>
-  // haiku-5-5: 0.10 / 0.50, ×5 preko 100k ulaznih tokena; sonnet-5-5: 2 / 10
+  export const PRICING: Record<ModelName, { inputPerMTok: number; outputPerMTok: number }>
+  // haiku-4-5: 1 / 5; sonnet-4-6: 3 / 15 (D-023)
   export const DEFAULTS = {
-    maxBuilders: 4, maxTesters: 2, budgetUsd: 3,
+    maxBuilders: 4, maxTesters: 2, budgetUsd: 5,
     tokensPerAnalyzer: 60_000, maxAnalyzers: 4, maxRounds: 4, escalationRound: 3,
     maxSchemaRetries: 2, maxPlanRetries: 2, rescaleIntervalMs: 60_000,
     builderRoundTimeoutMs: 600_000, testerUnitTimeoutMs: 480_000, testsWaitTimeoutMs: 600_000,
@@ -288,15 +288,13 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   export function modelForRound(round: number): ModelName                              // 1–2 → default, 3–4 → strong
   export function costUsd(model: string, inputTokens: number, outputTokens: number): number
   ```
-- **Šta radi:** sve brojke iz §9 i cene modela su na jednom mestu, kao čiste funkcije bez Mozaika, pa ih sme uvesti i domen (P3). Conductor, runner i timeouti čitaju vrednosti samo odavde, nigde drugde nema brojeva ni imena modela. `costUsd` uzima u obzir da je Haiku 5.5 5× skuplji preko 100k ulaznih tokena (wemora-plan §6.1).
+- **Šta radi:** sve brojke iz §9 i cene modela su na jednom mestu, kao čiste funkcije bez Mozaika, pa ih sme uvesti i domen (P3). Conductor, runner i timeouti čitaju vrednosti samo odavde, nigde drugde nema brojeva ni imena modela. `costUsd` računa i keširane tokene (D-020).
 - **Gotovo kad:** `npx vitest run src/core/config.test.ts`:
   - `analyzerCount`: 0 → 1, 60 000 → 1, 60 001 → 2, 10 000 000 → 4;
   - `builderCount(5, 0, 4)` = 4, `(1, 0, 4)` = 1, `(0, 2, 4)` = 2;
   - `testerCount(4, 2)` = 2, `(1, 2)` = 1, `(0, 2)` = 1;
   - `modelForRound`: 1 i 2 → haiku, 3 i 4 → sonnet, 5 → greška;
-  - `costUsd("claude-haiku-5-5", 100_000, 1_000_000)` = 0.51; preko 100k ulaznih tokena cena je 5× veća; model bez cene → greška.
-
-  Ukupno 23 testa. Pretpostavka: množilac ×5 važi za ceo zahtev (ulaz i izlaz), jer wemora-plan §6.1 kaže samo „košta 5× više“.
+  - `costUsd("claude-haiku-4-5", 100_000, 1_000_000)` = 5.1; model bez cene → greška (D-023; prvobitno sa cenama 5-5).
 - **Zavisnosti i mock:** nema.
 
 ### A5 — Tabla i runtime ✅ 2026-10-30
@@ -352,7 +350,7 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
 - **Izvozi:**
   ```ts
   export const WEMORA_ERROR = "__WEMORA_ERROR__"
-  export const models: typeof supportedModels                        // ugrađeni + claude-haiku-5-5 (mozaik.md §3)
+  export const models: typeof supportedModels                        // ugrađeni; oba modela su tu (D-023)
   export type TaskMeta = { agentId: string; kind: AgentKind; taskId?: string; round?: number }
   export function registerContext(contextId: string, meta: TaskMeta): void   // zove ga freshContext (A8)
 
@@ -386,7 +384,7 @@ Lista je u tim-plan.md §4. A je pušta na čistom klonu, uključujući proveru 
   3. odgovor koji ima samo `ReasoningItem` → `items` sadrži poruku `__WEMORA_ERROR__ empty output`;
   4. limit $0.001, a prvi poziv ga premaši → drugi poziv ne stiže do endpointa, a `onBudgetExceeded` je pozvan tačno jednom;
   5. `onUsage` dobija `agentId` iz `registerContext` i `usd` iz `costUsd` (A4);
-  6. `models` sadrži `claude-haiku-5-5` i `claude-sonnet-5-5`;
+  6. `models` sadrži `MODELS.default` i `MODELS.strong` (`claude-haiku-4-5`, `claude-sonnet-4-6`);
   7. `MockRunner`: `{ call }` postaje `FunctionCallItem` sa tim imenom i argumentima u JSON-u, `{ json }` postaje tekstualna poruka sa JSON-om, ključ `builder:u1` ima prednost nad `builder`, a nepoznat ključ vraća grešku.
 - **Zavisnosti i mock:** A4, A0 (`AgentKind`). Prave odgovore agenata dobijam u A12, a do tada koristim ručne primere u testu.
 
@@ -498,7 +496,7 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
   4. `gate.failed` → isti builder dobija sledeću rundu sa svežim kontekstom i `lastError` iz `results`;
   5. `unit.promoted` → oslobađa zavisne jedinice i dodeljuje posao.
 
-  Conductor je deterministički učesnik (`createHuman`). Svaka async reakcija se završava sa `.catch(log)`, a `isSatisfiedBy` nikad ne baca. U F2 je broj agenata fiksan (1 analizator, 2 buildera, 1 tester), runde 1–2 idu na Haiku 5.5, a posle toga je jedinica `failed`. Kad `isFinished` vrati `true`, Conductor poziva `buildReport` i vraća `RunSummary`.
+  Conductor je deterministički učesnik (`createHuman`). Svaka async reakcija se završava sa `.catch(log)`, a `isSatisfiedBy` nikad ne baca. U F2 je broj agenata fiksan (1 analizator, 2 buildera, 1 tester), runde 1–2 idu na Haiku 4.5, a posle toga je jedinica `failed`. Kad `isFinished` vrati `true`, Conductor poziva `buildReport` i vraća `RunSummary`.
 - **Gotovo kad:** `npx vitest run src/orchestration/conductor.test.ts`, sa lažnim agentima iz `mocks/fakeAgents.ts` koji posle `assign` šalju očekivani događaj (bez modela):
   1. arhitekta dobija zadatak tek posle poslednjeg `analysis.done`, i to tačno jednom;
   2. posle `plan.ready` je `scaffold` pozvan jednom, tester je dobio ekrane iz svih talasa, a builderi samo talas 0;
@@ -528,7 +526,7 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
   export function parseCliArgs(argv: string[]): CliCommand     // baca UsageError sa porukom za korisnika
   export function main(argv: string[]): Promise<number>        // exit kod
   ```
-- **Šta radi:** implementira `wemora migrate <web-dir> [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock]` (§13). Argumente parsira `parseArgs` iz `node:util`, bez nove zavisnosti. `migrate` pravi `output/<run-id>/`, poziva `installSafety` i `initLog`, inicijalizuje runtime sa `BudgetedRunner`-om (ili `MockRunner`-om uz `--mock`) i pokreće `Conductor`. Mozaik i orkestracija se uvoze dinamički, samo u grani `migrate`, da `verify` ne bi učitavao Mozaik (A18).
+- **Šta radi:** implementira `wemora migrate <web-dir> [--out output] [--max-builders 4] [--max-testers 2] [--budget 5] [--mock]` (§13). Argumente parsira `parseArgs` iz `node:util`, bez nove zavisnosti. `migrate` pravi `output/<run-id>/`, poziva `installSafety` i `initLog`, inicijalizuje runtime sa `BudgetedRunner`-om (ili `MockRunner`-om uz `--mock`) i pokreće `Conductor`. Mozaik i orkestracija se uvoze dinamički, samo u grani `migrate`, da `verify` ne bi učitavao Mozaik (A18).
 - **Gotovo kad:**
   1. `npx vitest run src/cli.test.ts`: podrazumevane vrednosti dolaze iz `DEFAULTS`; `--budget abc` i nepoznata komanda daju `UsageError`; `--mock` se prenosi;
   2. `npx tsx src/cli.ts` bez argumenata ispisuje upotrebu i vraća exit 2;
@@ -602,7 +600,7 @@ Lista je u tim-plan.md §6. A je pušta na čistom `main`-u, redom: `npm run bui
 
 ### A15 — Eskalacija modela
 - **Fajlovi:** `src/orchestration/conductor.ts` (izmena), novi slučajevi u `conductor.test.ts`. Nema novih izvoza, koristi se `modelForRound` iz A4.
-- **Šta radi:** runde 3–4 idu na `claude-sonnet-5-5`, a posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde, svaku sa svežim kontekstom, a model runde se upisuje u `units[id].model`.
+- **Šta radi:** runde 3–4 idu na `MODELS.strong` (`claude-sonnet-4-6`), a posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde, svaku sa svežim kontekstom, a model runde se upisuje u `units[id].model`.
 - **Gotovo kad:** posle četiri `gate.failed` za istu jedinicu modeli rundi su redom haiku, haiku, sonnet, sonnet; `builderId` je isti u sve 4 runde; posle četvrte je `status === "failed"`, a builder je slobodan.
 - **Zavisnosti i mock:** C (builder koristi `BuildTask.model`). Dok čekam, koristim lažni builder.
 

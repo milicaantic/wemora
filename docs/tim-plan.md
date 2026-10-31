@@ -110,8 +110,8 @@ Niko ne čeka nikoga. Svako radi nad mockovima i ručno napisanim primerima.
 2. **`core/runner.ts`:**
    - `BudgetedRunner`: retry na 429/529/mrežu, nikad ne baca grešku, računa trošak iz `tokenUsage`, tvrdi limit (`--budget`), šalje `budget.exceeded`.
    - `MockRunner`: vraća unapred zapisane odgovore iz JSON fajla (po agentu i koraku), uključujući function call-ove i structured output. Bez ovoga niko ne može da testira tok za $0.
-   - dodat `claude-haiku-5-5` u listu modela.
-3. **`core/config.ts`:** sve vrednosti iz `architecture.md` §9 na jednom mestu: formule za broj agenata (`maxBuilders = 4`, `maxTesters`), modeli po rundi (1–2 Haiku 5.5, 3–4 Sonnet 5.5), timeouti (builder 10 min po rundi, tester 8 min po jedinici, Gatekeeper čeka testove 10 min).
+   - modeli `claude-haiku-4-5` i `claude-sonnet-4-6` su ugrađeni u Mozaik, pa se ne registruju (D-023).
+3. **`core/config.ts`:** sve vrednosti iz `architecture.md` §9 na jednom mestu: formule za broj agenata (`maxBuilders = 4`, `maxTesters`), modeli po rundi (1–2 Haiku 4.5, 3–4 Sonnet 4.6), timeouti (builder 10 min po rundi, tester 8 min po jedinici, Gatekeeper čeka testove 10 min).
 4. **`core/log.ts`, `core/safety.ts`:** JSONL log (`t`, `agent`, `event`, trošak, podaci) u `output/<run>/run.jsonl`; `unhandledRejection` handler.
 5. **`agents/_shared/`:** `freshContext(prompt)`, `OwnershipGuard(prefix)`, pomoćnik za pravljenje alata, pomoćnik za structured output sa zod proverom i najviše 2 ponovna pokušaja.
 6. **`orchestration/queue.ts`:** red zadataka sa talasima i zavisnostima (bez Mozaika, čista logika). Izbor sledeće jedinice po `architecture.md` §9: sve `dependsOn` promovisane → testovi već postoje → više tokova zavisi od nje → veća pre manje.
@@ -182,7 +182,7 @@ Sada se uvode agenti. Broj agenata je u ovoj fazi **fiksan** (1 analizator, 2 bu
    - `analysis.done` ×N → kad stignu svi, pokreće arhitektu
    - `plan.ready` → `scaffold()` (C), puni red po talasima; **testeri odmah kreću na sve talase**, builderi na talas 0
    - `tests.ready` / `draft.submitted { unitId, round }` → Gatekeeper-učesnik reaguje sam
-   - `gate.failed { unitId, round }` → **isti builder**, sledeća runda, svež kontekst (prompt + izvor + trenutni kod + poslednja greška). U F2 samo runde 1–2 na Haiku 5.5, zatim jedinica `failed`
+   - `gate.failed { unitId, round }` → **isti builder**, sledeća runda, svež kontekst (prompt + izvor + trenutni kod + poslednja greška). U F2 samo runde 1–2 na Haiku 4.5, zatim jedinica `failed`
    - `unit.promoted` → oslobađa zavisne jedinice i ponovo računa broj agenata
    - builder bez posla → `leave`; gasi se samo agent bez aktivne petlje
 2. **`cli.ts`:** `wemora migrate <web-dir> [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock]`.
@@ -192,7 +192,7 @@ Sada se uvode agenti. Broj agenata je u ovoj fazi **fiksan** (1 analizator, 2 bu
 **Testovi:** Conductor nad lažnim događajima (bez modela): red zadataka ide redom kojim treba.
 
 ### B — agent tester
-1. **`agents/tester.ts` + `prompts/tester.md`:** alati `aria_snapshot(route)`, `try_scenario(scenario)` (zove `validateScenario`), `save_scenario` (prihvata **samo** scenarije koji prolaze `validateScenario`). Tester vidi samo original. Model Haiku 5.5.
+1. **`agents/tester.ts` + `prompts/tester.md`:** alati `aria_snapshot(route)`, `try_scenario(scenario)` (zove `validateScenario`), `save_scenario` (prihvata **samo** scenarije koji prolaze `validateScenario`). Tester vidi samo original. Model Haiku 4.5.
 2. Kad su obaveze iz plana pokrivene → `tests.ready { unitId }`.
 3. Upis testova u `output/<run>/tests/<unitId>.json`; tester piše samo tu.
 4. `validateScenario` sada koristi placeholder ekran iz C-ovog scaffolda kao „prazan ekran“.
@@ -205,8 +205,8 @@ Sada se uvode agenti. Broj agenata je u ovoj fazi **fiksan** (1 analizator, 2 bu
 5. Pravilo „bez testova nema zelenog“: ako ekran nema testova, nacrt čeka (timeout iz `core/config.ts`).
 
 ### D — agenti analizator i arhitekta
-1. **`agents/analyzer.ts` + `prompts/analyzer.md`:** dobije svoj deo `ParsedApp`, alati `read_file` i `list_files` (samo njegov deo + zajednički fajlovi, samo čitanje), vraća `AnalyzerReport[]` kao structured output (zod-validiran), upiše `analysis/<partId>.json` i šalje `analysis.done { partId }`. Model Haiku 5.5.
-2. **`agents/architect.ts` + `prompts/architect.md`:** bez alata, structured output, Sonnet 5.5. Spaja izveštaje u `Plan` (`units`, `flows`, `routeMap`): zajedničke jedinice u talasu 0, adrese, `dependsOn`, `writes`, obaveze, strukturisane namerne razlike (`hiddenBehind`, `movedTo`, `notPortable`), talasi. Zatim `validatePlan()`; ako ima grešaka, arhitekta dobija listu i ponavlja **najviše 2 puta**, posle toga prolaz staje sa greškom. Upiše `plan.json` i šalje `plan.ready`.
+1. **`agents/analyzer.ts` + `prompts/analyzer.md`:** dobije svoj deo `ParsedApp`, alati `read_file` i `list_files` (samo njegov deo + zajednički fajlovi, samo čitanje), vraća `AnalyzerReport[]` kao structured output (zod-validiran), upiše `analysis/<partId>.json` i šalje `analysis.done { partId }`. Model Haiku 4.5.
+2. **`agents/architect.ts` + `prompts/architect.md`:** bez alata, structured output, Sonnet 4.6. Spaja izveštaje u `Plan` (`units`, `flows`, `routeMap`): zajedničke jedinice u talasu 0, adrese, `dependsOn`, `writes`, obaveze, strukturisane namerne razlike (`hiddenBehind`, `movedTo`, `notPortable`), talasi. Zatim `validatePlan()`; ako ima grešaka, arhitekta dobija listu i ponavlja **najviše 2 puta**, posle toga prolaz staje sa greškom. Upiše `plan.json` i šalje `plan.ready`.
 3. Ručno proveri plan za Recepte: da li obaveze imaju smisla (to je osnova pokrivenosti) i da li ekrani zavise samo od zajedničkih jedinica.
 
 ### Integracija (svi)
@@ -232,7 +232,7 @@ Sada se uvode agenti. Broj agenata je u ovoj fazi **fiksan** (1 analizator, 2 bu
 
 ### A — dinamika i otpornost
 1. Conductor računa broj agenata po formulama iz `architecture.md` §9 (vrednosti u `core/config.ts`) i zapisuje razlog u log („5 ekrana → 1 analizator, 4 buildera, 2 testera“). Broj se menja najviše jednom u minutu.
-2. Eskalacija: runde 3–4 na Sonnet 5.5, posle 4. neuspele runde jedinica je `failed`.
+2. Eskalacija: runde 3–4 na Sonnet 4.6, posle 4. neuspele runde jedinica je `failed`.
 3. Smanjenje paralelnosti na 429 i na `budget.exceeded`.
 4. Prilagođavanje u toku rada (dodaj testera kad red bez testova raste) **samo ako je sve ostalo zeleno**. Ovo je stavka 3 u redosledu izbacivanja.
 5. U `cli.ts` poveže `wemora verify <run-dir>` i `wemora sabotage <run-dir> <unitId>` sa B-ovim funkcijama.
@@ -301,7 +301,7 @@ Sada se uvode agenti. Broj agenata je u ovoj fazi **fiksan** (1 analizator, 2 bu
 | Faza kasni više od 1 h | Izbaci sledeću stavku iz redosleda izbacivanja; ne pomeraj kapiju unedogled |
 | Zadatak se ne slaže sa `architecture.md` ili `src/contracts/` | Stani, javi timu; promena ide kroz `docs/decisions.md` i granu koju spaja A |
 
-**Redosled izbacivanja ako se kasni:** 1. Android i Maestro (`androidExport`), 2. eskalacija modela (ostaju samo runde na Haiku 5.5), 3. prilagođavanje broja agenata u toku rada, 4. testovi toka, 5. regresija posle promocije.
+**Redosled izbacivanja ako se kasni:** 1. Android i Maestro (`androidExport`), 2. eskalacija modela (ostaju samo runde na Haiku 4.5), 3. prilagođavanje broja agenata u toku rada, 4. testovi toka, 5. regresija posle promocije.
 
 **Nikad se ne izbacuje:** testovi iz originala, testeri istovremeno sa builderima, Gatekeeper sa pravilom „nula testova nikad nije `proven`“, izveštaj i `verify`.
 

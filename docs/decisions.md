@@ -213,7 +213,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-018: Modeli se biraju kroz `.env`; cene za modele hakaton gateway-a
 - Datum: 2026-10-31
 - Ko: A
-- Status: prihvaćeno (A; pravi prolaz nad TodoMVC-om je stao na `plan.failed`, jer gateway ne nudi `claude-haiku-5-5` ni `claude-sonnet-5-5`)
+- Status: prihvaćeno (A; pravi prolaz nad TodoMVC-om je stao na `plan.failed`, jer gateway ne nudi `claude-haiku-5-5` ni `claude-sonnet-5-5`); podrazumevani modeli i cene delimično zamenjeni sa D-023
 - Odluka:
   1. `MODELS.default` i `MODELS.strong` (`src/core/config.ts`) čitaju `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` iz okruženja, pri svakom pristupu (CLI učitava `.env` posle `config.ts`). Bez njih važe modeli iz `architecture.md` §12 (`DEFAULT_MODELS`: `claude-haiku-5-5`, `claude-sonnet-5-5`).
   2. `PRICING` ima i `claude-haiku-4-5` ($1 / $5) i `claude-sonnet-4-6` ($3 / $15 po milionu tokena), po Anthropic cenovniku. Budžet i dalje odbija model bez cene.
@@ -270,3 +270,15 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   5. Tok koji pada ne vraća nijedan ekran. Samo se prijavljuje u `results/flows/` i u izveštaju.
 - Zašto: C3.3 ne može bez mesta za testove toka. Opciono polje umesto novog tipa ne menja postojeći kod. Vraćanje ekrana zbog toka bi poništilo dokaze koje ekran već ima i kvarilo druge tokove.
 - Posledice: `src/contracts/scenario.ts`, `types.ts`, `state.ts`, `events.ts`, `src/core/state.ts`, `architecture.md` §5, §6, §7, §11. Korak 2 (A, grana `a/flow-dispatch`): `TestTask` dobija `flowId?`, a Conductor daje testeru `{ flowId }` kad sve jedinice toka imaju `tests.ready`. B: tester piše scenario toka kad dobije `{ flowId }`. C: C3.3 nad ovim ugovorom. Ako ponestane vremena, tokovi ostaju neprovereni, a izveštaj to kaže.
+
+## D-023: Podrazumevani modeli su oni koje stvarno koristimo: `claude-haiku-4-5` i `claude-sonnet-4-6`
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A; zamenjuje podrazumevane modele i cene iz D-018 i `architecture.md` §12)
+- Odluka:
+  1. `DEFAULT_MODELS` (`src/core/config.ts`) su `claude-haiku-4-5` (osnovni: analizator, tester, builder runde 1–2) i `claude-sonnet-4-6` (arhitekta, builder runde 3–4). `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` i dalje mogu da ih zamene (D-018).
+  2. `PRICING` ima samo te modele (Anthropic cene: $1 / $5 i $3 / $15 po milionu tokena). Cene za `claude-haiku-5-5` i `claude-sonnet-5-5` i pravilo „×5 preko 100k ulaznih tokena“ su izbačeni.
+  3. Oba modela su u Mozaikovom `supportedModels`, pa `src/core/runner.ts` više ne registruje nijedan model (`models = [...supportedModels]`).
+  4. `DEFAULTS.budgetUsd` (`--budget`) je $5 umesto $3, zbog cena iz tačke 2 i do 4 runde po jedinici (A15).
+- Zašto: gateway hakatona nudi samo ova dva modela (D-018), a kod i dokumentacija su i dalje navodili modele 5.5 i njihove cene. To je zbunjivalo i tražilo `.env` podešavanje za jedini gateway koji koristimo.
+- Posledice: `src/core/config.ts`, `runner.ts` i njihovi testovi, `.env.example`, `CLAUDE.md`, `.claude/rules/mozaik.md` §3, `architecture.md` §9 i §12, `tasks/a.md`, `tim-plan.md`, `wemora-plan.md` (i nova procena troška, §6.1). `claude-haiku-5-5` je ostao samo kao tekst u testovima i fixture-ima kod C-a i D-a i u `tasks/b.md` i `c.md` (poruke u inboxu, po jedna za B, C i D).

@@ -25,7 +25,7 @@ export type CliCommand =
 export class UsageError extends Error {}
 
 export const USAGE = `Usage:
-  wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 3] [--mock] [--mock-dir <dir>]
+  wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 5] [--mock] [--mock-dir <dir>]
 
   --original-url  the running original web app, for the tester (start it first, e.g. npm run serve in examples/todomvc)
   wemora verify <run-dir>

@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import {
-  AnthropicMessages,
   FunctionCallItem,
   ModelMessageItem,
   SemanticEvent,
@@ -13,7 +12,7 @@ import {
 } from "@mozaik-ai/core"
 import { z } from "zod"
 import type { AgentKind } from "../contracts"
-import { costUsd, DEFAULT_MODELS, DEFAULTS, PRICING, type CacheTokens } from "./config"
+import { costUsd, DEFAULTS, PRICING, type CacheTokens } from "./config"
 import { log } from "./log"
 
 // Every model call goes through a runner from this file. Runners never throw: Mozaik's runLoop is not
@@ -24,14 +23,8 @@ export const WEMORA_ERROR = "__WEMORA_ERROR__"
 
 type GenerativeModel = (typeof supportedModels)[number]
 
-const haiku45 = supportedModels.find((m) => m.specification.name === "claude-haiku-4-5")
-if (!haiku45) throw new Error("Mozaik no longer ships claude-haiku-4-5; update the haiku-5-5 registration in core/runner.ts")
-
-// claude-haiku-5-5 is not built into Mozaik 4.1.0, so it reuses the haiku-4-5 specification.
-export const models: GenerativeModel[] = [
-  ...supportedModels,
-  { endpoint: new AnthropicMessages(), specification: { ...haiku45.specification, name: DEFAULT_MODELS.default } },
-]
+// Both default models are built into Mozaik 4.1.0 (D-023), so nothing is registered here.
+export const models: GenerativeModel[] = [...supportedModels]
 
 export function errorOutput(reason: string): InferenceOutput {
   return { items: [ModelMessageItem.rehydrate({ text: `${WEMORA_ERROR} ${reason}` })], tokenUsage: undefined, rowResponse: null }
