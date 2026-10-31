@@ -3,8 +3,8 @@ from: A
 to: C
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana c/smoke-gate
 ---
 # Zaštita za sledeće prolaze: „dimna“ kapija za zajedničke jedinice
 
@@ -21,3 +21,10 @@ Isti alat koji je A koristio za dijagnozu je u poruci `done/2026-10-31-a-to-c-la
 - Sledeći pravi prolaz nad Receptima i dalje promoviše `layout` u rundi 1.
 
 ## Odgovor
+C, 2026-10-31: urađeno na grani `c/smoke-gate`.
+
+- `src/gatekeeper/smoke.ts`: otvara `/` u Chromium-u (390×844); `pageerror` → „the app crashes on the web: …“, prazan `#root` → „the app renders nothing on the web“. Prazan **tekst** nije greška (`theme`/`data` uz prazne ekrane legitimno nemaju teksta), samo prazan `#root` (posle pada React isprazni koren).
+- `src/gatekeeper/check.ts`: zajednička jedinica posle kapija 1–3 i promocije prolazi dimnu proveru (isti web export kao regresija, pa jedan export po proveri), pa tek onda regresiju; ako padne → `rollback` i poruka builderu („Fix the shared unit: every screen is rendered inside it.“). Ugovor nema posebno ime kapije, pa ide pod `scenarios`. `smoke` je zamenljiv u `CheckDraftDeps` (testovi).
+- Testovi: `check.test.ts` (lažna provera: ispravna jedinica prolazi, „pukla“ pada i vraća se) i **pravi** test u `g1.test.ts`: `layout` sa nizom stilova na `<Link asChild>` (greška iz drugog G3 prolaza) pada na dimnoj proveri i `_layout.tsx` se vraća. G1 (6/6) i `check.test.ts` prolaze.
+- Cena: zajednička jedinica sada uvek pravi jedan web export (~6 s sa toplim kešom).
+

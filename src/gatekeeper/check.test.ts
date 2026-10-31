@@ -45,6 +45,14 @@ const fakeRun: RunScenarios = async (url, scenarios, opts) => {
       : { scenarioId: s.id, unitId: s.unitId, ok, durationMs: 1, failedStep: 0, error: 'text "Lista za kupovinu": not found on screen within 5000 ms' }
   })
 }
+// Lažna dimna provera: aplikacija „puca“ ako neki zajednički deo sadrži "// crash".
+let smokeCalls = 0
+const fakeSmoke = async () => {
+  smokeCalls++
+  const crashed = ["data", "layout"].some((u) => existsSync(join(app, "src/shared", u, "index.ts")) && readFileSync(join(app, "src/shared", u, "index.ts"), "utf8").includes("// crash"))
+  return crashed ? { ok: false as const, message: "the app crashes on the web: Failed to set an indexed property [0] on 'CSSStyleDeclaration'" } : { ok: true as const }
+}
+
 const fakeServe: ServeApp = async () => {
   serveCalls++
   return { url: "http://fake", close: async () => {} }
@@ -69,7 +77,8 @@ beforeEach(async () => {
   app = join(run, "app")
   serveCalls = 0
   runCalls = []
-  checkDraft = createCheckDraft({ runScenarios: fakeRun, serveApp: fakeServe })
+  smokeCalls = 0
+  checkDraft = createCheckDraft({ runScenarios: fakeRun, serveApp: fakeServe, smoke: fakeSmoke })
 })
 afterEach(() => {
   rmSync(run, { recursive: true, force: true })
@@ -117,6 +126,7 @@ describe("checkDraft (lažni runScenarios)", () => {
         ["parse", true],
         ["forbiddenApis", true],
         ["tsc", true],
+        ["scenarios", true],
         ["regression", false],
       ])
       expect(results.at(-1)!.brokenTests).toEqual(["sl-1"])
@@ -126,15 +136,31 @@ describe("checkDraft (lažni runScenarios)", () => {
       expect(screenFile("shopping-list")).toContain("// pass:sl-1")
     }, 60_000)
 
-    it("zajednička jedinica: samo kapije 1–3, bez sopstvenih UI testova", async () => {
+    it("zajednička jedinica: kapije 1–3 i dimna provera (aplikacija se otvara), bez sopstvenih UI testova", async () => {
       const results = await check("data", { "shared/data/index.ts": "export const store = {}\n" }, [])
       expect(gates(results)).toEqual([
         ["parse", true],
         ["forbiddenApis", true],
         ["tsc", true],
+        ["scenarios", true],
       ])
-      expect(serveCalls).toBe(0)
+      expect(results.at(-1)!.message).toContain("opens on the web without errors")
+      expect(serveCalls).toBe(1)
+      expect(smokeCalls).toBe(1)
       expect(readFileSync(join(app, "src/shared/data/index.ts"), "utf8")).toBe("export const store = {}\n")
+    }, 60_000)
+
+    it("zajednička jedinica koja obara aplikaciju pada na dimnoj proveri i vraća se (A → C)", async () => {
+      const results = await check("layout", { "shared/layout/index.ts": "export const bar = 1\n// crash\n" }, [])
+      expect(gates(results)).toEqual([
+        ["parse", true],
+        ["forbiddenApis", true],
+        ["tsc", true],
+        ["scenarios", false],
+      ])
+      expect(results.at(-1)!.message).toContain("the app crashes on the web: Failed to set an indexed property")
+      expect(results.at(-1)!.message).toContain("every screen is rendered inside it")
+      expect(readdirSync(join(app, "src/shared/layout"))).toEqual([".gitkeep"])
     }, 60_000)
 
     it("ekran bez testova ulazi kao nedokazan (bez browsera)", async () => {
