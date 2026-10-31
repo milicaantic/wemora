@@ -23,7 +23,13 @@ Poslednja izmena: 2026-10-30
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
 - **Novi zadatak za B (D-014, PD5):** `serveOriginal(webDir)` koja sama pokreće original, da `--original-url` ne bi bio obavezan („radi iz README-a“, F3).
 
-## Gotovo, nije poslato (grana `contracts/submit`, uz A-ovu dozvolu; A pregleda i spaja)
+## Gotovo, čeka PR (grana `b/tester-gives-up`): A-ova poruka `docs/inbox/2026-10-31-a-to-b-tester-gives-up-and-logs.md`
+- **Log razloga:** posle svakog neuspelog `try_scenario`/`save_scenario` tester upiše `tester.try_failed` / `tester.save_failed` `{ unitId, scenarioId, obligation, problem }` (prvih 300 znakova razloga) u `run.jsonl`.
+- **Odustajanje (u kodu, ne samo u promptu):** posle `MAX_FAILURES_PER_OBLIGATION` (3) neuspeha za istu obavezu alat modelu kaže „Give up on obligation X … move to the next one: …“ i loguje `tester.obligation_skipped`; nov pokušaj za tu obavezu se odbija bez validacije. Prompt objašnjava pravilo.
+- **Kraj bez čekanja limita:** kad je svaka obaveza sačuvana ili napuštena, a elementi pokriveni (ili model 3 puta zaredom ne napreduje), tester sam završi (sopstveni `CancelGuard`, nije prekid spolja) i pošalje `tests.ready`; `tester.finished` ima `reason` i listu `givenUp`.
+- Testovi u `agents/tester.test.ts`: 3 neuspeha → `tester.obligation_skipped`, kraj pre ostatka odgovora modela, razlozi u logu; napuštena obaveza se odbija bez validacije, ostale se nastavljaju. Ceo repo: 474 testa. Pravi prolaz sa modelom nad TodoMVC-om nije pušten (treba API ključ).
+
+## Spojeno: korak `submit` (PR #56, D-017 predlog)
 - **Korak `submit` (D-017, predlog):** `{ submit: { label, value } }` u `StepSchema` (+ test ugovora): upis u polje pa Enter; na telefonu `TextInput onSubmitEditing`.
 - B-ov deo (A-ove stavke 1–5): `compile.ts` (akcija `submit`, meta kao `fill`, pa ga pokrivenost, `notPortable` i `reveal` vide kao korišćenje polja; nepoznat korak sada obara `tsc` umesto da se tiho izvrši kao `expectNotVisible`), `run.ts` (`fill` pa `press("Enter")`), `validate.ts` (`submit` je radnja za pravilo 3), `prompts/tester.md` (red u tabeli, pravilo 3, kada koristiti `submit`), `mocks/todomvc/tester.json` (5 scenarija za svih 5 obaveza `todo-list`; dovršavanje preko „❯ Toggle All Input“, jer checkbox jednog zadatka nema ime). Testovi: kompajler, izvršilac (strana `mocks/static/zadaci.html`, samo Enter dodaje zadatak), validacija, pokrivenost, ugovor. Ceo repo: 465 testova.
 - Stavka 6 provereno: Enter u RN `TextInput` na Expo web exportu (390×844) okida `onSubmitEditing`.
