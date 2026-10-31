@@ -22,13 +22,13 @@
             "mobileIssues": [
               "8-column table is too wide for a phone screen",
               "the category filter buttons take a whole row next to the search field",
-              "the ingredients tooltip appears on mouse hover over a row; phones have no hover"
+              "the ingredients tooltip appears on mouse hover over a row; phones have no hover",
+              "'Sortiraj po vremenu' only changes the order of the recipes, which a test cannot check"
             ],
             "suggestedObligations": [
               "shows every recipe with its name, category, time, difficulty and rating ('Sarma', 'Glavna jela', '180 min', 'Teško', '4,9')",
               "typing 'sarma' in 'Pretraga' shows only 'Sarma'; with no match it shows 'Nema recepata za zadatu pretragu'",
               "tapping 'Deserti' shows only desserts ('Palačinke' visible, 'Sarma' hidden); 'Sve kategorije' shows all again",
-              "tapping 'Sortiraj po vremenu' orders recipes from the shortest time",
               "tapping 'Dodaj u omiljene: Sarma' turns the button into 'Ukloni iz omiljenih: Sarma'"
             ]
           },

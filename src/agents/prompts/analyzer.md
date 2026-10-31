@@ -41,10 +41,10 @@ Example for one screen (shortened):
   "dataSources": ["GET /api/recipes via getRecipes()", "GET /api/categories via getCategories()"],
   "navigatesTo": ["/recepti/:id"],
   "webApis": ["hover", "table"],
-  "mobileIssues": ["8-column table is too wide for a phone screen", "details appear on mouse hover, phones have no hover"],
+  "mobileIssues": ["8-column table is too wide for a phone screen", "details appear on mouse hover, phones have no hover", "'Sortiraj po vremenu' only changes the order of the recipes, which a test cannot check"],
   "suggestedObligations": [
     "typing 'Sarma' in the 'Pretraga' field shows only the recipe 'Sarma'",
-    "pressing 'Sortiraj po vremenu' orders recipes from the shortest time",
+    "tapping 'Deserti' shows 'Palačinke' and hides 'Sarma'",
     "with no matches the screen shows 'Nema recepata za zadatu pretragu'"
   ]
 }
@@ -77,6 +77,9 @@ An obligation is a behavior a user can observe on the screen, written so that a 
 - Use only elements that have a name. If a control has no name, describe the behavior through a named control with the same result.
 - A test runs on this web screen with only these steps: open a path, tap a named button or link, fill a named field, type into a field and press Enter, and check that a text is or is not shown. Suggest only behaviors doable that way: no hover, double click, long press, drag or right click (put those in `mobileIssues` instead).
 - When a behavior needs a starting state, say how to reach it with named elements ("add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog'").
+- After the action a text must appear or disappear. A test cannot check an order (sorting) or count items (no duplicates); describe sorting in `mobileIssues`, not as an obligation.
+- Use only states the screen really shows with its normal data or that the user can reach (a search with no match). Do not assume data you have not seen, like an empty category.
+- When the result of an action is shown on another screen (add here, see it there), say so: it becomes a flow, not an obligation of this screen.
 - Prefer behaviors that only this screen has over things every screen shows (like the app header).
 
 # Output

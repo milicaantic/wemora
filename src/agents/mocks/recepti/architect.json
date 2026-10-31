@@ -190,10 +190,6 @@
                 "description": "Shows every recipe from the API with its name, category, time, difficulty and rating (e.g. 'Sarma', 'Glavna jela', '180 min', 'Teško', '4,9')."
               },
               {
-                "id": "sort-by-time",
-                "description": "Tapping 'Sortiraj po vremenu' orders recipes from the shortest to the longest preparation time; tapping it again restores the original order."
-              },
-              {
                 "id": "toggle-favorite",
                 "description": "Tapping 'Dodaj u omiljene: <name>' marks the recipe as a favorite and the button becomes 'Ukloni iz omiljenih: <name>'."
               }
@@ -266,6 +262,14 @@
                   "name": "Sastojci"
                 },
                 "reason": "The ingredients tooltip appears on mouse hover over a table row; touch screens have no hover. Ingredients are shown on the recipe detail screen."
+              },
+              {
+                "kind": "notPortable",
+                "element": {
+                  "role": "button",
+                  "name": "Sortiraj po vremenu"
+                },
+                "reason": "Sorting only changes the order of the recipes; every recipe stays on the screen, and a test can only check whether a text is shown, not the order."
               }
             ],
             "size": 0
@@ -291,7 +295,7 @@
               },
               {
                 "id": "clear-bought",
-                "description": "Tapping 'Obriši kupljene' removes checked items and keeps the others."
+                "description": "Add 'Hleb' and 'Mleko', check 'Hleb', then tap 'Obriši kupljene': 'Hleb' disappears and 'Mleko' stays."
               },
               {
                 "id": "empty-state",
@@ -299,7 +303,7 @@
               },
               {
                 "id": "mark-bought",
-                "description": "Checking an item's checkbox updates the counter ('Kupljeno: 1 od 1')."
+                "description": "Add 'Hleb' ('Namirnica', 'Dodaj'), then check 'Hleb': the counter changes from 'Kupljeno: 0 od 1' to 'Kupljeno: 1 od 1'."
               }
             ],
             "intentionalDifferences": [],

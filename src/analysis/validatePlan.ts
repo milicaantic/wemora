@@ -29,6 +29,18 @@ function untestableGesture(description: string): string | null {
   return GESTURES.find(([pattern]) => pattern.test(plain))?.[1] ?? null
 }
 
+// Checks the test DSL cannot make: it only sees whether a text is shown or not, so it cannot compare
+// an order or count items (A, docs/inbox 2026-10-31, G3). Narrow on purpose: "orders" alone may be data.
+const UNCHECKABLE: [RegExp, string][] = [
+  [/\bsort(s|ed|ing)?\b|\b(re)?orders? (them |the \w+ |\w+ )?(by|from)\b|\b(same|original|reverse|new|different) order\b|\bascending\b|\bdescending\b|\balphabetical(ly)?\b/i, "an order of items"],
+  [/\bduplicates?\b|\btwice\b|\bhow many\b|\bonly once\b|\bmore than once\b|\bexactly (one|two|three|\d+)\b/i, "counting items"],
+]
+
+function uncheckable(description: string): string | null {
+  const plain = description.replace(QUOTED, "''")
+  return UNCHECKABLE.find(([pattern]) => pattern.test(plain))?.[1] ?? null
+}
+
 const mentions = (description: string, name: string) =>
   [`'${name}'`, `"${name}"`, `‘${name}’`, `“${name}”`].some((quoted) => description.includes(quoted))
 
@@ -190,6 +202,12 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
       if (gesture) {
         errors.push(
           `obligation "${obligation.id}" of unit "${unit.id}" needs ${gesture}, which a test cannot do; tests run on the original web with only goto, tap, fill, submit (type and press Enter), expectVisible and expectNotVisible on named elements. Rewrite it with those steps, or drop it and keep the element in intentionalDifferences`,
+        )
+      }
+      const check = uncheckable(obligation.description)
+      if (check) {
+        errors.push(
+          `obligation "${obligation.id}" of unit "${unit.id}" checks ${check}, which a test cannot do: a test only sees whether a text is shown or not. Rewrite it so that after the action a text appears or disappears, or drop it (if its element then has no testable effect, list the element as notPortable and say why)`,
         )
       }
       for (const name of notPortable) {
