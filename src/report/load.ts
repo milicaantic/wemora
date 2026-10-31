@@ -79,8 +79,17 @@ function readLog(runDir: string, warnings: string[]): LogLine[] {
       bad++
     }
   }
-  if (bad > 0) warnings.push(`run.jsonl: ${bad} ${bad === 1 ? "neispravna linija je preskočena" : "neispravnih linija je preskočeno"}`)
+  if (bad > 0) warnings.push(`run.jsonl: ${bad} ${badLines(bad)}`)
   return lines
+}
+
+/** Serbian plural: 1 / 21 → singular, 2–4 / 22–24 → paucal, the rest (and 11–14) → genitive plural. */
+function badLines(n: number): string {
+  const tens = n % 100
+  const ones = n % 10
+  if (ones === 1 && tens !== 11) return "neispravna linija je preskočena"
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return "neispravne linije su preskočene"
+  return "neispravnih linija je preskočeno"
 }
 
 /** Reads everything the report needs from output/<run-id>/. Never throws for missing or bad files. */

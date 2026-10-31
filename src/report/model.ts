@@ -1,6 +1,8 @@
 import { z } from "zod"
 import type { ElementRef, IntentionalDifference, ScreenStatus, TapTarget, Unit, UnitResult } from "../contracts"
+import { costTable, type CostTable } from "./costs"
 import type { RunData } from "./load"
+import { buildTimeline, rescales, unitRounds, type Rescale, type Timeline, type UnitRounds } from "./timeline"
 
 // Pure: RunData → what the page shows. No disk, no clock, so the same run always gives the same report.
 
@@ -56,6 +58,11 @@ export type ReportModel = {
   counts: Record<RowStatus, number>
   screens: ScreenRow[]
   shared: SharedRow[]
+  /** v2 (D17): computed from run.jsonl only. */
+  timeline: Timeline | null
+  rescales: Rescale[]
+  costs: CostTable
+  rounds: UnitRounds[]
   warnings: string[]
 }
 
@@ -171,7 +178,7 @@ function sharedRow(unit: Unit, data: RunData): SharedRow {
   }
 }
 
-function formatDuration(ms: number): string {
+export function formatDuration(ms: number): string {
   const total = Math.round(ms / 1000)
   const minutes = Math.floor(total / 60)
   const seconds = total % 60
@@ -216,5 +223,19 @@ export function toReportModel(data: RunData): ReportModel {
   const finishedAt = times[times.length - 1] ?? null
   const durationText = startedAt && finishedAt ? formatDuration(Date.parse(finishedAt) - Date.parse(startedAt)) : null
 
-  return { runId: data.runId, startedAt, finishedAt, durationText, stop: runStop(data), counts, screens, shared, warnings: data.warnings }
+  return {
+    runId: data.runId,
+    startedAt,
+    finishedAt,
+    durationText,
+    stop: runStop(data),
+    counts,
+    screens,
+    shared,
+    timeline: buildTimeline(data.log),
+    rescales: rescales(data.log),
+    costs: costTable(data.log),
+    rounds: unitRounds(data.log),
+    warnings: data.warnings,
+  }
 }
