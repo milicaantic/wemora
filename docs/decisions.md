@@ -257,3 +257,16 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   6. `ConductorOptions.team` fiksira tim (testovi, poređenje). `FIXED_TEAM.maxRounds` (2) važi dok A15 ne uvede runde 3–4.
 - Zašto: (2) bez najmanje jednog buildera, nov posao bi čekao do minut na sledeću dozvoljenu promenu. (3) Recepti otključavaju 5 ekrana desetak sekundi posle prve promene (`data`, pa `layout`). Bez ponovnog računanja ostali bi sa 1 builderom do sledećeg događaja.
 - Posledice: `src/orchestration/scaling.ts` (nov), `conductor.ts`, `migrate.ts` (više ne šalje fiksni tim), `architecture.md` §9. D čita `agents.rescaled` za sekciju izveštaja „broj agenata i razlog“.
+
+## D-022: Ugovor za testove toka (`Flow`, C3.3)
+- Datum: 2026-10-31
+- Ko: A (na predlog C-a, `docs/inbox/2026-10-31-c-to-ab-flow-tests.md`)
+- Status: prihvaćeno (A; ugovor). Ko i kada piše testove toka: korak 2, posle A15 i A16.
+- Odluka:
+  1. Test toka je `Scenario` sa opcionim poljem `flowId`. `unitId` je prva jedinica toka (od nje kreće `goto`), a `obligation` je `Flow.id`. Zato `validateScenario`, `runScenarios` i kapije rade nad testom toka bez izmena.
+  2. Na tabli: `flowTests: Record<flowId, Scenario[]>` i `flowResults: Record<flowId, FlowResult>`. Na disku: `tests/flows/<flowId>.json` (tester) i `results/flows/<flowId>.json` (Gatekeeper).
+  3. `FlowResult = { flowId, ok, scenarios: ScenarioResult[] }` (`src/contracts/types.ts`).
+  4. Nov događaj `flow.tests.ready { flowId }` (tester → Gatekeeper). Gatekeeper pušta tok posle `unit.promoted` kad su sve jedinice toka promovisane i stigao je `flow.tests.ready`.
+  5. Tok koji pada ne vraća nijedan ekran. Samo se prijavljuje u `results/flows/` i u izveštaju.
+- Zašto: C3.3 ne može bez mesta za testove toka. Opciono polje umesto novog tipa ne menja postojeći kod. Vraćanje ekrana zbog toka bi poništilo dokaze koje ekran već ima i kvarilo druge tokove.
+- Posledice: `src/contracts/scenario.ts`, `types.ts`, `state.ts`, `events.ts`, `src/core/state.ts`, `architecture.md` §5, §6, §7, §11. Korak 2 (A, grana `a/flow-dispatch`): `TestTask` dobija `flowId?`, a Conductor daje testeru `{ flowId }` kad sve jedinice toka imaju `tests.ready`. B: tester piše scenario toka kad dobije `{ flowId }`. C: C3.3 nad ovim ugovorom. Ako ponestane vremena, tokovi ostaju neprovereni, a izveštaj to kaže.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { EventPayloadSchemas, IntentionalDifferenceSchema, PlanSchema, ScenarioSchema, type Plan } from "./index"
+import { EventPayloadSchemas, FlowResultSchema, IntentionalDifferenceSchema, PlanSchema, ScenarioSchema, type Plan } from "./index"
 
 // Example from docs/wemora-plan.md §4.1.
 const exampleScenario = {
@@ -59,6 +59,12 @@ describe("ScenarioSchema", () => {
     expect(ScenarioSchema.safeParse(bad).success).toBe(false)
   })
 
+  it("accepts a flow test: flowId, the flow's first unit and the flow as obligation (D-022)", () => {
+    const flowTest = { ...exampleScenario, id: "favorite-flow-1", unitId: "recipe-detail", obligation: "add-to-favorites", flowId: "add-to-favorites" }
+    expect(ScenarioSchema.safeParse(flowTest).success).toBe(true)
+    expect(ScenarioSchema.safeParse({ ...flowTest, flowId: "" }).success).toBe(false)
+  })
+
   it("accepts submit (type and press Enter, D-017) with a label and a value only", () => {
     const addTodo = { ...exampleScenario, steps: [{ goto: "/" }, { submit: { label: "New Todo Input", value: "Buy milk" } }] }
     expect(ScenarioSchema.safeParse(addTodo).success).toBe(true)
@@ -92,6 +98,18 @@ describe("IntentionalDifferenceSchema", () => {
   })
 })
 
+describe("FlowResultSchema", () => {
+  it("accepts a flow result with its scenario results (D-022)", () => {
+    const result = {
+      flowId: "add-to-favorites",
+      ok: false,
+      scenarios: [{ scenarioId: "favorite-flow-1", unitId: "recipe-detail", ok: false, failedStep: 3, error: "not found", durationMs: 812 }],
+    }
+    expect(FlowResultSchema.safeParse(result).success).toBe(true)
+    expect(FlowResultSchema.safeParse({ ...result, rolledBack: ["favorites"] }).success).toBe(false)
+  })
+})
+
 describe("EventPayloadSchemas", () => {
   it("accepts an ID-only payload", () => {
     expect(EventPayloadSchemas["unit.promoted"].safeParse({ unitId: "u1" }).success).toBe(true)
@@ -105,6 +123,11 @@ describe("EventPayloadSchemas", () => {
   it("has tests.missing with only the unit ID (D-016)", () => {
     expect(EventPayloadSchemas["tests.missing"].safeParse({ unitId: "recipe-list" }).success).toBe(true)
     expect(EventPayloadSchemas["tests.missing"].safeParse({ unitId: "recipe-list", attempts: 2 }).success).toBe(false)
+  })
+
+  it("has flow.tests.ready with only the flow ID (D-022)", () => {
+    expect(EventPayloadSchemas["flow.tests.ready"].safeParse({ flowId: "add-to-favorites" }).success).toBe(true)
+    expect(EventPayloadSchemas["flow.tests.ready"].safeParse({ flowId: "add-to-favorites", unitId: "favorites" }).success).toBe(false)
   })
 
   it("has plan.failed with an empty payload (D-012)", () => {

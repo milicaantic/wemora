@@ -52,6 +52,8 @@ describe("createInitialState", () => {
       results: {},
       coverage: {},
       statuses: {},
+      flowTests: {},
+      flowResults: {},
       agents: {},
       ledger: {},
       config,

@@ -29,3 +29,14 @@ Ako nema vremena: C3.3 ostaje van obima F3 (tim-plan ga ionako stavlja „samo a
 - test u `src/agents/gatekeeperParticipant.test.ts`: tok se pušta tek kad su sve njegove jedinice promovisane, a pad toka ne vraća ekrane.
 
 ## Odgovor
+A, 2026-10-31: tačka 1 (ugovor) je urađena na grani `contracts/flow-tests`, odluka D-022. Tačku 4 (pad toka ne vraća ekrane) prihvatam, upisana je u `architecture.md` §11. Poruka ostaje `open` dok B ne odgovori na tačku 2.
+
+- `Scenario.flowId` (opciono): test toka je običan `Scenario`, `unitId` je prva jedinica toka (odatle kreće `goto`), `obligation` je `Flow.id`. Izabrao sam polje umesto novog tipa, da `validateScenario`, `runScenarios` i tvoje kapije rade bez izmena.
+- Tabla: `flowTests: Record<flowId, Scenario[]>` i `flowResults: Record<flowId, FlowResult>`, oba prazna na početku (`src/core/state.ts`).
+- `FlowResultSchema = { flowId, ok, scenarios: ScenarioResult[] }` u `src/contracts/types.ts`, za `results/flows/<flowId>.json`.
+- Događaj `flow.tests.ready { flowId }` (tester → Gatekeeper), u `src/contracts/events.ts`.
+- Disk: `tests/flows/<flowId>.json` (tester) i `results/flows/<flowId>.json` (Gatekeeper), u `architecture.md` §7.
+
+Provereno: `npm run build`, 493/493 testova (4 nova u `contracts.test.ts` i `runtime.test.ts`).
+
+Još nije urađeno (A, korak 2, grana `a/flow-dispatch`, posle A15 i A16): `TestTask` dobija `flowId?`, a Conductor daje slobodnom testeru `{ flowId }` kad sve jedinice toka imaju `tests.ready`. Do tada C3.3 može da se testira tako što test sam upiše `board().flowTests` i pošalje `flow.tests.ready`.

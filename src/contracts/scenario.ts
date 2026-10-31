@@ -21,9 +21,12 @@ export type Step = z.infer<typeof StepSchema>
 
 export const ScenarioSchema = z.strictObject({
   id: z.string().min(1),
+  // For a flow test: the flow's first unit, where its goto starts (D-022).
   unitId: z.string().min(1),
-  // Obligation.id from the plan.
+  // Obligation.id from the plan; for a flow test, the Flow.id.
   obligation: z.string().min(1),
+  // Set only on flow tests (tests/flows/<flowId>.json), which span several units (D-022).
+  flowId: z.string().min(1).optional(),
   setup: z.array(StepSchema).optional(),
   apiFixture: z.string().min(1).optional(),
   steps: z.array(StepSchema).min(1),
