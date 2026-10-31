@@ -202,6 +202,17 @@ describe("validatePlan catches broken plans", () => {
     expect(check((p) => void unit(p, "recipe-detail").obligations.push({ id: "leave", description: "Tapping 'Nazad na recepte' leaves the detail ('Nazad na recepte' is no longer shown)." }))).toEqual([])
   })
 
+  it("accepts navigating to this screen's own route (A: the 20:18 run failed its plan on this)", () => {
+    const notFound = {
+      id: "missing-recipe",
+      description:
+        "Navigating to a non-existent recipe (e.g. /recepti/9999) shows 'Recept nije pronađen'; tapping 'Nazad na recepte' leaves the detail screen ('Recept nije pronađen' is no longer shown).",
+    }
+    expect(check((p) => void unit(p, "recipe-detail").obligations.push(notFound))).toEqual([])
+    const toList = { id: "to-list", description: "Tapping 'Nazad na recepte' navigates to the recipe list." }
+    expectError(check((p) => void unit(p, "recipe-detail").obligations.push(toList)), `obligation "to-list" of unit "recipe-detail" checks what another screen shows`)
+  })
+
   it("obligations that need a state made on another screen, or name another screen's route (A, 19:39 run)", () => {
     const errors = check((p) => {
       unit(p, "favorites").obligations.push(

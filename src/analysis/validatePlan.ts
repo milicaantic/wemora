@@ -36,8 +36,9 @@ const UNCHECKABLE: [RegExp, string][] = [
   [/\bsort(s|ed|ing)?\b|\b(re)?orders? (them |the \w+ |\w+ )?(by|from)\b|\b(same|original|reverse|new|different) order\b|\bascending\b|\bdescending\b|\balphabetical(ly)?\b/i, "an order of items"],
   [/\bduplicates?\b|\btwice\b|\bhow many\b|\bonly once\b|\bmore than once\b|\bexactly (one|two|three|\d+)\b/i, "counting items"],
   // A screen is checked while the other screens may still be empty in app/, so its test may not look at
-  // another screen (A, inbox 2026-10-31: recipe-list and recipe-detail blocked each other).
-  [/\bnavigat\w* (back )?to\b|\b(goes|go|returns?|takes \w+) (back )?to (the|its|that|a)\b|\bopens (the|its|that|a) [\w' -]{0,40}?\b(screen|page)\b/i, NAVIGATION],
+  // another screen (A, inbox 2026-10-31: recipe-list and recipe-detail blocked each other). Only navigation
+  // to a screen, page or list counts: "Navigating to a non-existent recipe (/recepti/9999)" is this screen.
+  [/\bnavigat\w* (back )?to (the|another|its|that|a) [\w' -]{0,40}?\b(screen|page|list)\b|\b(goes|go|returns?|takes \w+) (back )?to (the|its|that|a)\b|\bopens (the|its|that|a) [\w' -]{0,40}?\b(screen|page)\b/i, NAVIGATION],
 ]
 
 function uncheckable(description: string): string | null {
