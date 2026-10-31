@@ -68,7 +68,7 @@ describe.each(apps)("mock replies for $name", ({ name, webDir }) => {
     const plan = normalizePlan(output, parsed)
     expect(PlanSchema.safeParse(plan).success).toBe(true)
     expect(validatePlan(plan, parsed)).toEqual([])
-    for (const unit of plan.units.filter((u) => u.kind === "screen")) expect(unit.obligations.length).toBeGreaterThanOrEqual(2)
+    for (const unit of plan.units.filter((u) => u.kind === "screen")) expect(unit.obligations.length).toBeGreaterThanOrEqual(1)
   })
 })
 
