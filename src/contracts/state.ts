@@ -1,5 +1,5 @@
 import type { Scenario } from "./scenario"
-import type { AnalyzerReport, Coverage, ParsedApp, Plan, ScreenStatus, UnitResult } from "./types"
+import type { AnalyzerReport, Coverage, FlowResult, ParsedApp, Plan, ScreenStatus, UnitResult } from "./types"
 
 // Shape of the shared board (architecture.md §6). core/state.ts implements it on top of Mozaik RuntimeState.
 
@@ -53,6 +53,9 @@ export interface MigrationStateFields {
   results: Record<string, UnitResult>
   coverage: Record<string, Coverage>
   statuses: Record<string, ScreenStatus>
+  /** Keyed by Flow.id, as is flowResults (D-022). */
+  flowTests: Record<string, Scenario[]>
+  flowResults: Record<string, FlowResult>
   /** Keyed by agentId, as is ledger. */
   agents: Record<string, AgentInfo>
   ledger: Record<string, LedgerEntry>

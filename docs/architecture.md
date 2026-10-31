@@ -69,6 +69,7 @@ Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a
 | `plan.failed` | arhitekta-učesnik | `{}` | Conductor (završava prolaz, D-012) |
 | `tests.ready` | tester | `{ unitId }` | Gatekeeper |
 | `tests.missing` | Conductor | `{ unitId }` | Gatekeeper (promoviše ekran kao `unproven`, D-016) |
+| `flow.tests.ready` | tester | `{ flowId }` | Gatekeeper (pušta tok kad su sve jedinice promovisane, D-022) |
 | `draft.submitted` | builder | `{ unitId, round }` | Gatekeeper |
 | `gate.failed` | Gatekeeper | `{ unitId, round }` | Conductor |
 | `unit.promoted` | Gatekeeper | `{ unitId }` | Conductor, Gatekeeper (tokovi) |
@@ -77,7 +78,7 @@ Imena i payload su u `src/contracts/events.ts`. **Payload nosi samo ID-jeve**, a
 
 ## 6. Tabla (`MigrationState`)
 
-Polja (tačan oblik u `src/contracts/state.ts`): `runId`, `parsed`, `reports`, `plan`, `units` (status po jedinici: `waiting | building | submitted | promoted | failed`, runda, model, dodeljeni builder), `tests` (po jedinici), `results`, `coverage`, `statuses`, `agents` (ko je aktivan i na čemu), `ledger` (trošak po agentu), `config`.
+Polja (tačan oblik u `src/contracts/state.ts`): `runId`, `parsed`, `reports`, `plan`, `units` (status po jedinici: `waiting | building | submitted | promoted | failed`, runda, model, dodeljeni builder), `tests` (po jedinici), `results`, `coverage`, `statuses`, `flowTests` i `flowResults` (po ID-ju toka, D-022), `agents` (ko je aktivan i na čemu), `ledger` (trošak po agentu), `config`.
 
 ## 7. Izlaz na disku i ko gde piše
 
@@ -86,10 +87,12 @@ output/<run-id>/
 ├── plan.json                     arhitekta-učesnik
 ├── analysis/<partId>.json        analizator
 ├── tests/<unitId>.json           tester (samo validirani)
+├── tests/flows/<flowId>.json     tester (testovi toka, D-022)
 ├── staging/<builderId>/<unitId>/ builder — SAMO ovde
 ├── app/                          Gatekeeper i scaffold — SAMO oni
 │   └── src/app/…                 Expo Router rute;  src/screens/<unitId>/;  src/shared/<unitId>/
 ├── results/<unitId>.json         Gatekeeper
+├── results/flows/<flowId>.json   Gatekeeper (`FlowResult`, D-022)
 ├── run.jsonl                     core/log (svi događaji sa vremenom i troškom)
 └── report.html                   izveštaj
 ```
@@ -177,7 +180,7 @@ Testeri uzimaju jedinice istim redom.
 
 **Pokrivenost** (`computeCoverage`): obaveze iz plana pokrivene testovima, plus interaktivni elementi originala (iz ARIA snapshota) korišćeni u bar jednom testu, minus `notPortable`.
 
-**Testovi toka** (`Flow`) prelaze više jedinica i puštaju se tek kad su sve promovisane.
+**Testovi toka** (`Flow`) prelaze više jedinica i puštaju se tek kad su sve promovisane. Test toka je običan `Scenario` sa poljem `flowId`: `unitId` je prva jedinica toka, a `obligation` je ID toka. **Tok koji pada ne vraća nijedan ekran**, jer je svaki već dokazan svojim testovima, a vraćanje bi kvarilo druge tokove. Pad se samo prijavljuje u `results/flows/<flowId>.json` i u izveštaju (D-022).
 
 **Ugovor za buildera:** labele polja i tekst dugmadi ostaju isti kao u originalu. Izgled sme da se menja. Da bi testovi našli elemente na Expo webu (D-005): dugme je `Pressable role="button"` sa `Text`, lista je `role="list"` sa stavkama `role="listitem"`, a polje je `TextInput accessibilityLabel` sa istom labelom kao na webu.
 

@@ -8,6 +8,7 @@ export const EVENTS = {
   planFailed: "plan.failed",
   testsReady: "tests.ready",
   testsMissing: "tests.missing",
+  flowTestsReady: "flow.tests.ready",
   draftSubmitted: "draft.submitted",
   gateFailed: "gate.failed",
   unitPromoted: "unit.promoted",
@@ -32,6 +33,8 @@ export const EventPayloadSchemas = {
   "tests.ready": z.strictObject({ unitId: id }),
   // Two testers in a row timed out on this screen; the Gatekeeper promotes it as unproven (D-016).
   "tests.missing": z.strictObject({ unitId: id }),
+  // The flow's tests are on the board (flowTests) and in tests/flows/<flowId>.json (D-022).
+  "flow.tests.ready": z.strictObject({ flowId: id }),
   "draft.submitted": z.strictObject({ unitId: id, round }),
   "gate.failed": z.strictObject({ unitId: id, round }),
   "unit.promoted": z.strictObject({ unitId: id }),

@@ -147,3 +147,11 @@ export const UnitResultSchema = z.strictObject({
   reason: z.string().optional(),
 })
 export type UnitResult = z.infer<typeof UnitResultSchema>
+
+// results/flows/<flowId>.json (D-022). A failing flow is only reported; it rolls back no unit.
+export const FlowResultSchema = z.strictObject({
+  flowId: id,
+  ok: z.boolean(),
+  scenarios: z.array(ScenarioResultSchema),
+})
+export type FlowResult = z.infer<typeof FlowResultSchema>

@@ -3,6 +3,7 @@ import type {
   AgentInfo,
   AnalyzerReport,
   Coverage,
+  FlowResult,
   LedgerEntry,
   MigrationStateFields,
   ParsedApp,
@@ -24,6 +25,8 @@ export class MigrationState extends RuntimeState implements MigrationStateFields
   results: Record<string, UnitResult> = {}
   coverage: Record<string, Coverage> = {}
   statuses: Record<string, ScreenStatus> = {}
+  flowTests: Record<string, Scenario[]> = {}
+  flowResults: Record<string, FlowResult> = {}
   agents: Record<string, AgentInfo> = {}
   ledger: Record<string, LedgerEntry> = {}
 
