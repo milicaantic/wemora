@@ -118,6 +118,23 @@ Poslednja izmena: 2026-10-31
   3. `verify` → `FAILED: 1/5`, padaju tačno 4 testa koja koriste polje.
 - Original u `runs/` je netaknut.
 
+## Gotovo, čeka PR (grana `b/tester-changes-nothing`): A-ova poruka `2026-10-31-a-to-b-scenario-changes-nothing.md` (G3)
+- **Greška u pravilu 3 (`scenarios/validate.ts`):**
+  - Proba je proveru puštala tik pre akcije i izbacivala `goto` korake između njih.
+  - Zato je dobar scenario (`tap "Dodaj u omiljene"` → `goto /omiljeni` → recept) bio odbijen: provera se puštala na listi, gde se recept uvek vidi.
+  - Sada proba izostavlja samo akciju, a `goto` koraci do provere ostaju.
+  - U lokalnom G3 prolazu (`output/20261031-164156-recepti`) ima 21 odbijanje „changes nothing“; deo njih su ovakvi scenariji (`favorites`, tokovi).
+- **Poruka modelu:**
+  - navodi korake provere koji prolaze i bez akcije;
+  - dodaje savet: posle navigacije proveriti tekst koji ima samo novi ekran, posle dugmeta ono što dugme menja, a pripremu stanja staviti u `setup`;
+  - prompt testera ima ista dva pravila.
+- **Testovi:** 2 nova u `validate.test.ts` (nova stranica `mocks/static/omiljeni.html`). Ceo repo: 562.
+- **Ručno, na pravim Receptima (sa mock-api-jem):**
+  - omiljeni pa `goto /omiljeni` → validan (ranije odbijen);
+  - klik na recept pa samo ime → odbijen sa savetom;
+  - klik na recept pa „Nazad na recepte“ → validan.
+- Kriterijum A-ove poruke (tester ne odustaje od `navigate-to-detail`) proverava se u sledećem pravom prolazu.
+
 ## U radu
 - ništa
 
