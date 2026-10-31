@@ -1,0 +1,8 @@
+{
+  "name": "wemora-mock-webapp",
+  "private": true,
+  "description": "Test web app for serveOriginal: its build writes dist/index.html, no dependencies.",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

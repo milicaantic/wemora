@@ -8,7 +8,11 @@ export { ariaSnapshot, extractInteractive } from "./interactive"
 export { computeCoverage } from "./coverage"
 // Used by agents/tester.ts.
 export { coverageNote, openablePath, readTests, scenarioProblem, testerBrief, testsFile, writeTests } from "./tester"
+// Flow tests (D-022), also used by agents/tester.ts.
+export { flowAsUnit, flowBrief, flowTestsFile, readFlowTests, writeFlowTests } from "./tester"
 // Used by the CLI to give testers the placeholder app as the blank screen.
 export { blankApp, type BlankApp } from "./blank"
 // Also used by gatekeeper/serveApp (C) and verify, so the mobile app is served the same way everywhere.
 export { serveStatic } from "./serve"
+// For the CLI (A): builds and serves the original web app when --original-url is not given (D-014).
+export { serveOriginal, type ServeOriginalOptions } from "./original"

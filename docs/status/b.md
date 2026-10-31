@@ -1,6 +1,6 @@
 # Status: osoba B
 Faza: F2
-Poslednja izmena: 2026-10-30
+Poslednja izmena: 2026-10-31
 
 ## Gotovo (spojeno u main)
 - F0 (PR #3): `docs/tasks/b.md`, folderi, B0 (review ugovora, potvrda D-001–D-003), B1 (`playwright@1.64.1`)
@@ -21,6 +21,18 @@ Poslednja izmena: 2026-10-30
 - Posle C-ovog `builder:app-entry:1` (PR #52) i A-ovog povezivanja Gatekeeper-a (PR #49), **`npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` prolazi ceo tok** (ishod `finished`, ~30 s): `app-entry` promovisan kao `unproven` (zajednička jedinica nema testove); `todo-list` posle namerno lošeg nacrta u rundi 1 promovisan u rundi 2 (svih 5 kapija, uključujući B-ove testove na telefonu) kao **`partial`**. Tester i builder rade istovremeno; Gatekeeper čeka `tests.ready` pre provere ekrana; u `tests/` je samo validiran scenario; pokrivenost iz testera je u `results/todo-list.json`.
 - **2026-10-31, posle koraka `submit` (PR #56) i C-ovog usklađenog nacrta: `todo-list` je u mock prolazu `proven`** (5/5 obaveza, 5/5 testova na telefonu, link `TodoMVC` `notPortable`).
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
+
+## Gotovo, čeka PR (grana `b/serve-original`): `serveOriginal(webDir)` (D-014, PD5)
+- `src/scenarios/original.ts`, izvoz kroz `scenarios/index.ts`: `serveOriginal(webDir, { build?, outDir? })` pokrene `npm run build` u web folderu i servira izlaz (`dist/`) preko `serveStatic` (slobodan port, SPA fallback) → `{ url, close }`. Jasne greške: nema `package.json`, nema `build` skripte, ima zavisnosti a nema `node_modules` („run npm ci“), build pao (poslednjih 15 redova izlaza), nema `index.html` u izlazu. Mock-api (Recepti) ne pokreće: aplikacija čita adresu iz `VITE_API_URL` pri build-u, a mock-api se pokreće ručno (README).
+- Testovi: `src/scenarios/original.test.ts` (4), nad lažnim web projektom bez zavisnosti (`mocks/webapp/`, kopira se u privremeni folder).
+- **Ručno:** `serveOriginal("examples/todomvc")` (26 s) → svih 5 TodoMVC scenarija prolazi; `serveOriginal("examples/recepti")` (4 s, mock-api pokrenut) → scenario pretrage prolazi.
+- **Za A (CLI):** kad `--original-url` nije dat, `migrate` može da pozove `serveOriginal(webDir)` i na kraju `close()`.
+
+## Gotovo, čeka PR (grana `b/tester-flows`, iznad `b/serve-original`): tester za tokove (D-022, priprema)
+- Tester prima i zadatak toka: `assign({ flowId })` pored `assign({ unitId })` (`TesterTask` u `agents/tester.ts`; `AgentHandle<TesterTask>` se i dalje uklapa u Conductor-ov `AgentHandle<TestTask>`). Tok se vidi kao jedna jedinica (`flowAsUnit`): prvi ekran toka, tok kao jedina obaveza, `notPortable` svih ekrana toka. Ista tri pravila validacije; scenario mora da nosi `flowId` toka, a test ekrana ne sme da ga ima (`scenarioProblem`).
+- Čuva u `tests/flows/<flowId>.json` i `board().flowTests[flowId]`, pa šalje `flow.tests.ready { flowId }` (C-ov Gatekeeper ga već sluša). Za tok nema pokrivenosti ni `tests.ready`; bez sačuvanog scenarija ne šalje ništa (`tests.none`). Brief: `flowBrief` (ekrani redom, id-jevi koje treba upisati, do 2 sačuvana testa po ekranu, elementi koje ne sme da koristi). Prompt ima odeljak „Flow tasks“.
+- Testovi: 3 nova u `agents/tester.test.ts`, 5 u `scenarios/tester.test.ts`. Ceo repo: 534.
+- **Za A (Conductor):** posle F2 da dodeli testeru `{ flowId }` za svaki tok iz plana, oslobodi ga na `flow.tests.ready` (ili `tests.none` / svoj timeout) i doda `flowId` u `TestTask`. Kapija G3 nad tokovima ostaje za kasnije.
 
 ## Gotovo, čeka PR (grana `b/sabotage`): B13 `sabotage`
 - `src/verify/sabotage.ts`, izvoz kroz `verify/index.ts`: `sabotage(runDir, unitId)` po ugovoru, plus `sabotageDetailed` (vraća šta je promenjeno: fajl, ime, vrsta) za A-ov CLI (A18). `scripts/sabotage.ts` nije potreban: `npm run sabotage` ide kroz `src/cli.ts` (b.md Q14).
@@ -91,7 +103,7 @@ Poslednja izmena: 2026-10-30
 
 ## Sledeće
 - pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
-- F3: `serveOriginal(webDir)`; testovi toka kad A spoji `a/flow-dispatch` (inbox `2026-10-31-b-to-c-flow-tests.md`)
+- F3: kapija G3 za tokove (ostavljena za kasnije); povezivanje testera za tokove kad A doda dodelu tokova u Conductor
 - A (A18): povezati `wemora verify <run-dir>` (`verifyDetailed` + `formatVerifyReport`, exit 0 kad je `ok`) i `wemora sabotage <run-dir> <unitId>` (`sabotageDetailed`, ispisati šta je promenjeno)
 
 ## Mockovi koje koristim

@@ -2,8 +2,21 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import type { InteractiveElement, Scenario, Unit } from "../contracts"
-import { coverageNote, openablePath, readTests, scenarioProblem, testerBrief, testsFile, writeTests } from "./tester"
+import type { Flow, InteractiveElement, Plan, Scenario, Unit } from "../contracts"
+import {
+  coverageNote,
+  flowAsUnit,
+  flowBrief,
+  flowTestsFile,
+  openablePath,
+  readFlowTests,
+  readTests,
+  scenarioProblem,
+  testerBrief,
+  testsFile,
+  writeFlowTests,
+  writeTests,
+} from "./tester"
 
 const unit: Unit = {
   id: "orders",
@@ -111,5 +124,67 @@ describe("tests file", () => {
   it("refuses to write an invalid scenario", () => {
     const runDir = mkdtempSync(path.join(tmpdir(), "wemora-tests-"))
     expect(() => writeTests(runDir, "orders", [{ ...search, steps: [] }])).toThrow()
+  })
+})
+
+// A flow from the orders list to one order (D-022).
+const details: Unit = {
+  ...unit,
+  id: "order-details",
+  route: "/narudzbine/:id",
+  obligations: [{ id: "show", description: "Shows the order" }],
+  intentionalDifferences: [{ kind: "notPortable", element: { role: "button", name: "Štampaj" }, reason: "no printing on mobile" }],
+}
+const flow: Flow = { id: "open-order", description: "Tapping #1043 in the list opens its details", unitIds: ["orders", "order-details"] }
+const plan: Plan = { units: [unit, details], flows: [flow], routeMap: {} }
+const flowTest: Scenario = {
+  id: "open-order-1043",
+  unitId: "orders",
+  obligation: "open-order",
+  flowId: "open-order",
+  steps: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "#1043" } }, { expectVisible: { text: "Detalji" } }],
+}
+
+describe("flow tests (D-022)", () => {
+  it("sees a flow as its first unit, with the flow as the only obligation and every unit's differences", () => {
+    const asUnit = flowAsUnit(flow, plan)
+    expect(asUnit.id).toBe("orders")
+    expect(asUnit.route).toBe("/narudzbine")
+    expect(asUnit.obligations).toEqual([{ id: "open-order", description: flow.description }])
+    expect(asUnit.intentionalDifferences.map((d) => (d.kind === "notPortable" ? d.element.name : ""))).toEqual(["Info", "Štampaj"])
+  })
+
+  it("refuses a flow that names a missing unit or does not start on a screen with a route", () => {
+    expect(() => flowAsUnit({ ...flow, unitIds: ["orders", "nope"] }, plan)).toThrow('names unit "nope"')
+    const shared: Unit = { ...unit, id: "data", kind: "shared", route: undefined }
+    expect(() => flowAsUnit({ ...flow, unitIds: ["data", "orders"] }, { ...plan, units: [shared, unit] })).toThrow("must start with a screen")
+  })
+
+  it("requires flowId on a flow test and refuses it on a screen test", () => {
+    const asUnit = flowAsUnit(flow, plan)
+    expect(scenarioProblem(flowTest, asUnit, [], "open-order")).toBeNull()
+    expect(scenarioProblem({ ...flowTest, flowId: undefined }, asUnit, [], "open-order")).toBe('flowId must be "open-order" for this flow test.')
+    expect(scenarioProblem({ ...search, flowId: "open-order" }, unit, [])).toContain("Leave flowId out")
+    const printing: Scenario = { ...flowTest, steps: [...flowTest.steps, { tap: { role: "button", name: "Štampaj" } }] }
+    expect(scenarioProblem(printing, asUnit, [], "open-order")).toContain('button "Štampaj", which does not exist on mobile')
+  })
+
+  it("briefs the flow: screens in order, the ids to use, saved screen tests and elements to avoid", () => {
+    const brief = flowBrief(flow, plan, { orders: [search, save], "order-details": [] }, [])
+    expect(brief).toContain("Flow: open-order")
+    expect(brief).toContain("- orders: route /narudzbine\n- order-details: route /narudzbine/:id")
+    expect(brief).toContain('unitId "orders", obligation "open-order" and flowId "open-order"')
+    expect(brief).toContain("- orders-search: ")
+    expect(brief).toContain('- button "Štampaj" (no printing on mobile)')
+    expect(brief).toContain("No scenario is saved for this flow yet.")
+    expect(flowBrief(flow, plan, {}, [flowTest])).toContain("Already saved for this flow: open-order-1043")
+  })
+
+  it("writes tests/flows/<flowId>.json and reads it back", () => {
+    const runDir = mkdtempSync(path.join(tmpdir(), "wemora-tests-"))
+    expect(readFlowTests(runDir, "open-order")).toEqual([])
+    writeFlowTests(runDir, "open-order", [flowTest])
+    expect(flowTestsFile(runDir, "open-order")).toBe(path.join(runDir, "tests", "flows", "open-order.json"))
+    expect(readFlowTests(runDir, "open-order")).toEqual([flowTest])
   })
 })
