@@ -53,6 +53,7 @@ Poslednja izmena: 2026-10-30
 - D-018: modeli kroz `.env` (`WEMORA_MODEL_DEFAULT`, `WEMORA_MODEL_STRONG`; podrazumevano 5-5), cene za `claude-haiku-4-5` i `claude-sonnet-4-6`, registracija `haiku-5-5` sa stalnim imenom; `.env.example`; `architecture.md` §12; 4 nova testa. Razlog: gateway hakatona nudi samo 4-5 i 4-6 (prvi pravi prolaz je stao na `plan.failed`, $0)
 
 ## Sledeće
+- brojač troška potcenjuje preko gateway-a (`output/20261031-030034-todomvc`: $0.00027 za ~100 poziva). Uzrok: gateway radi prompt caching, a Anthropic `usage.input_tokens` ne sadrži keširane tokene (`cache_read_input_tokens`, `cache_creation_input_tokens`). `BudgetedRunner` (`core/runner.ts:118`) računa samo `tokenUsage.inputTokens`. Tačni brojevi su u `output.rowResponse.usage` (Mozaik ga vraća). Predlog popravke čeka odobrenje
 - D-017 prihvatiti (A) i dopisati `submit` u `architecture.md` §11
 - G2: provera stavki iz pravog prolaza, rezultat u `runs/todomvc-<vreme>/`
 - `contracts/f1`: šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, uklanjanje `roundsExhausted`
