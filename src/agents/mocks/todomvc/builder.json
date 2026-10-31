@@ -1,4 +1,38 @@
 {
+  "builder:theme:1": [
+    {
+      "call": {
+        "name": "read_source",
+        "args": {
+          "path": "node_modules/todomvc-app-css/index.css"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "shared/theme/index.tsx",
+          "content": "import { Platform, StyleSheet, Text as RNText, type TextProps } from \"react-native\"\n\nexport const fonts = {\n  body: Platform.select({ web: \"'Helvetica Neue', Helvetica, Arial, sans-serif\", default: undefined }),\n}\nexport const fontSizes = { body: 14, h1: 80 }\nexport const fontWeights = { body: \"400\", h1: \"200\" } as const\nexport const lineHeights = { body: 20 }\nexport const colors = { text: \"#111111\", background: \"#f5f5f5\", heading: \"#b83f45\" }\n\nexport function Text({ style, ...props }: TextProps) {\n  return <RNText {...props} style={[styles.body, style]} />\n}\n\nconst styles = StyleSheet.create({\n  body: { fontFamily: fonts.body, fontSize: fontSizes.body, lineHeight: lineHeights.body, color: colors.text },\n})\n"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "check_draft",
+        "args": {}
+      }
+    },
+    {
+      "call": {
+        "name": "submit_draft",
+        "args": {}
+      }
+    },
+    {
+      "text": "Theme from todomvc-app-css: Helvetica Neue stack on the web, 14px body, line height 20, colors #111111, #f5f5f5 and #b83f45."
+    }
+  ],
   "builder:app-entry:1": [
     {
       "call": {

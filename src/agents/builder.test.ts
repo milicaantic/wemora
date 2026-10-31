@@ -18,7 +18,7 @@ import { board, initializeRuntime, join } from "../core/runtime"
 import { createInitialState } from "../core/state"
 import { runGates } from "../gatekeeper"
 import { scaffold } from "../scaffold"
-import { builderBrief, createBuilder } from "./builder"
+import { builderBrief, createBuilder, readableSources } from "./builder"
 
 // All tests that need the runtime live in this file: Mozaik allows one runtime per process.
 
@@ -264,6 +264,40 @@ describe("builder agent", () => {
   }, 120_000)
 })
 
+describe("tema i izvori zavisnosti (D-025)", () => {
+  const withTheme = (): Plan => {
+    const theme = { ...plan.units.find((u) => u.id === "data")!, id: "theme", sources: ["src/components/Layout.css"], writes: ["src/shared/theme/"], dependsOn: [] }
+    const units = plan.units.map((u) => (u.id === "theme" ? u : { ...u, dependsOn: [...u.dependsOn, "theme"], sources: u.sources.filter((s) => s !== "src/components/Layout.css") }))
+    return { ...plan, units: [theme, ...units] }
+  }
+
+  it("ekran sme da čita i globalni CSS teme, ali ne i tuđe izvore", () => {
+    const p = withTheme()
+    const screen = p.units.find((u) => u.id === "favorites")!
+    const readable = readableSources(screen, p)
+    expect(readable).toContain("src/components/Layout.css")
+    expect(readable).toContain("src/pages/FavoritesPage.tsx")
+    expect(readable).not.toContain("src/pages/RecipeListPage.tsx")
+  })
+
+  it("zadatak ekrana kaže da koristi temu i navodi izvore zavisnosti", () => {
+    const p = withTheme()
+    const unit = p.units.find((u) => u.id === "favorites")!
+    const brief = builderBrief({ unit, round: 1, allowed: ["screens/favorites/"] }, p, null)
+    expect(brief).toContain('Theme: import { Text, colors, fonts, fontSizes } from "@/shared/theme"')
+    expect(brief).toContain("Also readable with read_source")
+    expect(brief).toContain("- src/components/Layout.css")
+  })
+
+  it("zadatak teme kaže šta tema pravi; plan bez teme ne pominje temu", () => {
+    const p = withTheme()
+    const theme = p.units.find((u) => u.id === "theme")!
+    expect(builderBrief({ unit: theme, round: 1, allowed: ["shared/theme/"] }, p, null)).toContain("You build the theme")
+    const screen = plan.units.find((u) => u.id === "favorites")!
+    expect(builderBrief({ unit: screen, round: 1, allowed: ["screens/favorites/"] }, plan, null)).not.toContain("@/shared/theme")
+  })
+})
+
 describe("builderBrief", () => {
   it("prva runda: jedinica, rute, izvori, dozvoljene putanje, obaveze", () => {
     const unit = plan.units.find((u) => u.id === "recipe-detail")!
@@ -295,13 +329,28 @@ describe("MockRunner primeri za TodoMVC (za A12)", () => {
     todomvc[key]!.flatMap((r) => ("call" in r && r.call.name === "write_file" ? [String(r.call.args.content)] : []))
 
   it("ima app-entry, rundu 1 (pada na kapiji 2), rundu 2 (popravka) i rezervni odgovor", () => {
-    expect(Object.keys(todomvc)).toEqual(["builder:app-entry:1", "builder:todo-list:1", "builder:todo-list:2", "builder"])
+    expect(Object.keys(todomvc)).toEqual(["builder:theme:1", "builder:app-entry:1", "builder:todo-list:1", "builder:todo-list:2", "builder"])
     // runda 1 uvek pada (ostatak web koda <div> → kapija 2), bez obzira na testove
     expect(written("builder:todo-list:1")[0]).toContain("<div")
     expect(written("builder:todo-list:1")[0]).not.toContain('accessibilityLabel="New Todo Input"')
     expect(written("builder:todo-list:2")[0]).not.toContain("<div")
     expect(written("builder:todo-list:2")[0]).toContain('accessibilityLabel="New Todo Input"')
   })
+
+  it.skipIf(!hasTemplateModules)("tema (builder:theme:1) prolazi kapije 1–4 i nosi vrednosti iz CSS-a", async () => {
+    const theme = written("builder:theme:1")[0]!
+    for (const v of ["'Helvetica Neue', Helvetica, Arial, sans-serif", "body: 14", "#111111", "#f5f5f5", "#b83f45"]) expect(theme).toContain(v)
+    const draftDir = path.join(runDir, "staging", "mock-check", "theme")
+    mkdirSync(path.join(draftDir, "shared/theme"), { recursive: true })
+    writeFileSync(path.join(draftDir, "shared/theme/index.tsx"), theme)
+    const results = await runGates({ draftDir, appDir: path.join(runDir, "app"), tests: [], originalFiles: [] })
+    expect(results.map((r) => [r.gate, r.ok, r.ok ? "" : r.message])).toEqual([
+      ["parse", true, ""],
+      ["forbiddenApis", true, ""],
+      ["tsc", true, ""],
+      ["labels", true, ""],
+    ])
+  }, 120_000)
 
   it.skipIf(!hasTemplateModules)("nacrt za zajedničku jedinicu app-entry prolazi kapije 1–4", async () => {
     const draftDir = path.join(runDir, "staging", "mock-check", "app-entry")
