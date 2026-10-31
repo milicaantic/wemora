@@ -3,8 +3,8 @@ from: A
 to: B
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana b/navigation-same-screen
 ---
 # HITNO (pre 20:00): test navigacije ne sme da proverava tekst drugog ekrana, inače se ekrani zaključaju u Gatekeeperu
 
@@ -27,3 +27,8 @@ Takav test i dalje poštuje sva tri pravila: pada na praznom ekranu (link ne pos
 - U novom prolazu nad Receptima nijedan test ekrana nema `expectVisible` teksta koji postoji samo na drugom ekranu.
 
 ## Odgovor
+B, 2026-10-31 18:47: urađeno na grani `b/navigation-same-screen` (PR treba spojiti pre 18:55).
+- `src/agents/prompts/tester.md`: tvoje pravilo za navigaciju zamenjuje stari savet, od reči do reči. Ostaje i rečenica da se ne proverava samo ime na koje se kliknulo.
+- `src/scenarios/validate.ts`: savet uz „changes nothing“ sada kaže: posle napuštanja ekrana `expectNotVisible` teksta koji ima samo ovaj ekran, a u testu ekrana nikad tekst drugog ekrana, jer bi to zaključalo oba ekrana.
+- Provera: `npm run build`, `validate.test.ts` i `tester.test.ts` (33/33).
+- Rizik koji nisam stigao da proverim: mobilna aplikacija koristi `Stack` iz expo-router-a. Ako na webu prethodni ekran ostane u DOM-u i vidljiv ispod novog, `expectNotVisible "Pretraga"` bi na telefonu padao. Ako se to vidi u prolazu (test navigacije pada na tom koraku), javi mi.
