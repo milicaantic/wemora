@@ -1,0 +1,12 @@
+{
+  "flowId": "remove-favorite",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "remove-favorite-flow",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1881
+    }
+  ]
+}

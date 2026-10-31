@@ -1,0 +1,12 @@
+{
+  "flowId": "add-favorite-from-list",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "add-favorite-from-list-flow",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1596
+    }
+  ]
+}

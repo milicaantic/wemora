@@ -1,0 +1,205 @@
+[
+  {
+    "partId": "part-1",
+    "route": "/",
+    "screen": "Recipe list",
+    "summary": "Displays all recipes in an 8-column table with search by name, filtering by category, and sorting by time. The user can click on a recipe name to view details or add it to favorites. A tooltip with ingredients appears on mouse hover.",
+    "files": [
+      "src/api/client.ts",
+      "src/api/useAsync.ts",
+      "src/components/FavoriteButton.tsx",
+      "src/components/Status.tsx",
+      "src/format.ts",
+      "src/pages/RecipeListPage.css",
+      "src/pages/RecipeListPage.tsx",
+      "src/store/favorites.ts",
+      "src/store/localStore.ts"
+    ],
+    "components": [
+      "ErrorMessage",
+      "FavoriteButton",
+      "Loading",
+      "RecipeListPage"
+    ],
+    "dataSources": [
+      "GET /api/categories via getCategories()",
+      "GET /api/recipes via getRecipes()",
+      "localStorage \"recepti.favorites\" via store/favorites.ts"
+    ],
+    "navigatesTo": [
+      "/recepti/:id"
+    ],
+    "webApis": [
+      "hover",
+      "table"
+    ],
+    "mobileIssues": [
+      "8-column table with minimum width 1000px is too wide for a phone screen",
+      "ingredient details appear only on mouse hover; phones have no hover",
+      "sorting by time ('Sortiraj po vremenu') cannot be verified by a test that only checks visible text",
+      "favorite button shows only a star (☆/★) with no visible label on each row; tests cannot address it by name"
+    ],
+    "suggestedObligations": [
+      "typing 'Sarma' in the 'Pretraga' field shows only the recipe named 'Sarma'",
+      "tapping the 'Sve kategorije' button shows recipes from all categories",
+      "tapping 'Deserti' in the category filter shows only recipes from the 'Deserti' category",
+      "when no recipes match the search and category filters, the screen shows 'Nema recepata za zadatu pretragu'",
+      "tapping the recipe name 'Sarma' in the table navigates to the recipe detail page"
+    ]
+  },
+  {
+    "partId": "part-1",
+    "route": "/kategorije",
+    "screen": "Categories",
+    "summary": "Shows a list of categories on the left side with recipe counts, and details of the selected category on the right side. Tapping a category name displays the recipes in that category with their time and difficulty; no category selected shows a hint message.",
+    "files": [
+      "src/api/client.ts",
+      "src/api/useAsync.ts",
+      "src/components/Status.tsx",
+      "src/pages/CategoriesPage.css",
+      "src/pages/CategoriesPage.tsx"
+    ],
+    "components": [
+      "CategoriesPage",
+      "ErrorMessage",
+      "Loading"
+    ],
+    "dataSources": [
+      "GET /api/categories via getCategories()",
+      "GET /api/recipes via getRecipes()"
+    ],
+    "navigatesTo": [
+      "/recepti/:id"
+    ],
+    "webApis": [],
+    "mobileIssues": [
+      "two-column master-detail layout (280px sidebar plus 1fr content) designed for desktop; on a phone these must stack vertically or one replaces the other",
+      "category buttons with no visible names use internal logic ('aria-pressed') that tests cannot verify without semantic changes"
+    ],
+    "suggestedObligations": [
+      "tapping the 'Jela' category button shows the heading 'Jela' and the recipes in that category",
+      "tapping a category button with no recipes in it shows the text 'U ovoj kategoriji nema recepata'",
+      "before selecting a category, the screen shows the text 'Izaberite kategoriju'",
+      "tapping a recipe name in the category detail navigates to the recipe detail page"
+    ]
+  },
+  {
+    "partId": "part-1",
+    "route": "/kupovina",
+    "screen": "Shopping list",
+    "summary": "A two-column table showing items to buy, with checkboxes to mark items as bought. The user enters a new item in the 'Namirnica' field, clicks 'Dodaj' or presses Enter to add it, and can clear bought items. The footer shows the count of bought and total items.",
+    "files": [
+      "src/pages/ShoppingListPage.css",
+      "src/pages/ShoppingListPage.tsx",
+      "src/store/localStore.ts",
+      "src/store/shoppingList.ts"
+    ],
+    "components": [
+      "ShoppingListPage"
+    ],
+    "dataSources": [
+      "localStorage \"recepti.shopping\" via store/shoppingList.ts"
+    ],
+    "navigatesTo": [],
+    "webApis": [
+      "table"
+    ],
+    "mobileIssues": [
+      "table has fixed width of 720px, wider than most phone screens",
+      "the footer is also 720px wide and may overflow a narrow phone",
+      "checkbox in the first column has no visible label; only the second column label addresses the item, and tests cannot toggle the checkbox by name alone"
+    ],
+    "suggestedObligations": [
+      "typing 'Mleko' in 'Namirnica' and clicking 'Dodaj' shows 'Mleko' in the table",
+      "the empty shopping list shows 'Lista za kupovinu je prazna'",
+      "checking the checkbox for 'Mleko' marks the row with strikethrough and updates the footer to 'Kupljeno: 1 od 1'",
+      "the 'Obriši kupljene' button is disabled when no items are bought",
+      "clicking 'Obriši kupljene' when items are bought removes them from the table"
+    ]
+  },
+  {
+    "partId": "part-1",
+    "route": "/omiljeni",
+    "screen": "Favorites",
+    "summary": "Displays favorite recipes in a three-column grid of cards. Each card shows the recipe name as a link, its time, difficulty, and calories, and a favorite button to remove it. An empty state shows when no favorites are saved.",
+    "files": [
+      "src/api/client.ts",
+      "src/api/useAsync.ts",
+      "src/components/FavoriteButton.tsx",
+      "src/components/Status.tsx",
+      "src/pages/FavoritesPage.css",
+      "src/pages/FavoritesPage.tsx",
+      "src/store/favorites.ts",
+      "src/store/localStore.ts"
+    ],
+    "components": [
+      "ErrorMessage",
+      "FavoriteButton",
+      "FavoritesPage",
+      "Loading"
+    ],
+    "dataSources": [
+      "GET /api/recipes via getRecipes()",
+      "localStorage \"recepti.favorites\" via store/favorites.ts"
+    ],
+    "navigatesTo": [
+      "/recepti/:id"
+    ],
+    "webApis": [],
+    "mobileIssues": [
+      "three-column grid (3 × 300px = 900px) is too wide for phone screens; must be reflowed to one or two columns",
+      "favorite button on each card is not compact (no star icon); text labels may be long and wrap or overflow narrow cards"
+    ],
+    "suggestedObligations": [
+      "when no recipes are favorited, the screen shows 'Nemate omiljenih recepata'",
+      "tapping a recipe name on a card navigates to the recipe detail page",
+      "clicking the favorite button on a card removes the recipe from favorites and it disappears from the grid",
+      "the screen shows only recipes that were added to favorites on other screens (e.g. via the recipe list or detail page)"
+    ]
+  },
+  {
+    "partId": "part-1",
+    "route": "/recepti/:id",
+    "screen": "Recipe detail",
+    "summary": "Shows the full recipe with ingredients and preparation steps in two columns. The user can adjust servings with buttons to increase or decrease portions, see ingredients scaled accordingly, and add all ingredients to the shopping list. A back link returns to the recipe list.",
+    "files": [
+      "src/api/client.ts",
+      "src/api/useAsync.ts",
+      "src/components/FavoriteButton.tsx",
+      "src/components/Status.tsx",
+      "src/format.ts",
+      "src/pages/RecipeDetailPage.css",
+      "src/pages/RecipeDetailPage.tsx",
+      "src/store/localStore.ts",
+      "src/store/shoppingList.ts"
+    ],
+    "components": [
+      "ErrorMessage",
+      "FavoriteButton",
+      "Loading",
+      "RecipeDetailPage"
+    ],
+    "dataSources": [
+      "GET /api/categories via getCategories()",
+      "GET /api/recipes/:id via getRecipe(id)",
+      "local state for servings",
+      "localStorage \"recepti.shopping\" via store/shoppingList.ts"
+    ],
+    "navigatesTo": [
+      "/"
+    ],
+    "webApis": [],
+    "mobileIssues": [
+      "two-column layout (380px ingredients | 1fr steps) designed for desktop; on a phone ingredients and steps must stack vertically",
+      "detail-panel background boxes may not fit comfortably on a narrow phone"
+    ],
+    "suggestedObligations": [
+      "the recipe name is shown as the page title",
+      "clicking 'Smanji porcije' decreases servings and ingredient amounts scale down; clicking 'Povećaj porcije' increases them and amounts scale up",
+      "when servings change, the 'Porcije:' count updates to match",
+      "clicking 'Dodaj sastojke u listu za kupovinu' shows the message 'Sastojci su dodati u listu za kupovinu' on this page",
+      "clicking the back link 'Nazad na recepte' navigates back to the recipe list",
+      "when the recipe ID does not exist, the page shows 'Recept nije pronađen' and the back link"
+    ]
+  }
+]

@@ -1,0 +1,55 @@
+[
+  {
+    "id": "add-ingredients-to-shopping",
+    "unitId": "recipe-detail",
+    "obligation": "add-ingredients-to-shopping",
+    "flowId": "add-ingredients-to-shopping",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sastojci su dodati u listu za kupovinu"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Lista za kupovinu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Piletina: 500 g"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Šargarepa: 2 kom"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Celer: 1 kom"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Rezanci: 100 g"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 0 od 4"
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,92 @@
+{
+  "unitId": "categories",
+  "status": "partial",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 1 labela/tekstova; preskočeno 7 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (3)."
+    },
+    {
+      "unitId": "categories",
+      "round": 1,
+      "gate": "regression",
+      "ok": true,
+      "message": "Već promovisani ekrani i dalje rade (6 testova)."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "categories-initial-hint",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 546
+    },
+    {
+      "scenarioId": "categories-select-jela",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 821
+    },
+    {
+      "scenarioId": "categories-navigate-to-detail",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 1602
+    }
+  ],
+  "coverage": {
+    "unitId": "categories",
+    "obligations": {
+      "covered": [
+        "initial-hint",
+        "navigate-to-detail",
+        "select-category"
+      ],
+      "missing": [
+        "empty-category"
+      ]
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "button",
+          "name": "Supe"
+        }
+      ],
+      "missing": [],
+      "notPortable": []
+    }
+  }
+}

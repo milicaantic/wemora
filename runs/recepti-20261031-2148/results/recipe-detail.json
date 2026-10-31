@@ -1,0 +1,99 @@
+{
+  "unitId": "recipe-detail",
+  "status": "proven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 7 labela/tekstova; preskočeno 2 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (5)."
+    },
+    {
+      "unitId": "recipe-detail",
+      "round": 1,
+      "gate": "regression",
+      "ok": true,
+      "message": "Već promovisani ekrani i dalje rade (1 testova)."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "recipe-detail-add-to-shopping-list",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 873
+    },
+    {
+      "scenarioId": "recipe-detail-back-link",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 891
+    },
+    {
+      "scenarioId": "recipe-detail-decrease-servings",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 857
+    },
+    {
+      "scenarioId": "recipe-detail-increase-servings",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 841
+    },
+    {
+      "scenarioId": "recipe-detail-not-found",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 519
+    }
+  ],
+  "coverage": {
+    "unitId": "recipe-detail",
+    "obligations": {
+      "covered": [
+        "add-to-shopping-list",
+        "back-link",
+        "decrease-servings",
+        "increase-servings",
+        "not-found"
+      ],
+      "missing": []
+    },
+    "elements": {
+      "covered": [],
+      "missing": [],
+      "notPortable": []
+    }
+  }
+}

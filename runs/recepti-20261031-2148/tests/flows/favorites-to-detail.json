@@ -1,0 +1,40 @@
+[
+  {
+    "id": "favorites-to-detail-flow",
+    "unitId": "favorites",
+    "obligation": "favorites-to-detail",
+    "flowId": "favorites-to-detail",
+    "setup": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene: Pileća supa"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "goto": "/omiljeni"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Pileća supa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije:"
+        }
+      }
+    ]
+  }
+]

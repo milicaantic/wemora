@@ -1,0 +1,12 @@
+{
+  "flowId": "add-ingredients-to-shopping",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "add-ingredients-to-shopping",
+      "unitId": "recipe-detail",
+      "ok": true,
+      "durationMs": 1275
+    }
+  ]
+}

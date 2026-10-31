@@ -1,0 +1,17 @@
+{
+  "source": "20261031-214821-recepti",
+  "skipped": [
+    {
+      "path": "app/.expo",
+      "why": "dependencies or build output"
+    },
+    {
+      "path": "app/node_modules",
+      "why": "link"
+    },
+    {
+      "path": "staging",
+      "why": "builder drafts are not proof"
+    }
+  ]
+}

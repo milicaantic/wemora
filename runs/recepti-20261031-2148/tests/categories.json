@@ -1,0 +1,80 @@
+[
+  {
+    "id": "categories-initial-hint",
+    "unitId": "categories",
+    "obligation": "initial-hint",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "expectVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-select-jela",
+    "unitId": "categories",
+    "obligation": "select-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Glavna jela"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Glavna jela"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Musaka"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Punjene paprike"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-navigate-to-detail",
+    "unitId": "categories",
+    "obligation": "navigate-to-detail",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Supe"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Pileća supa"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Jela"
+        }
+      }
+    ]
+  }
+]

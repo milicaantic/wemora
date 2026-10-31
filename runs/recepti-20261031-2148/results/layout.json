@@ -1,0 +1,37 @@
+{
+  "unitId": "layout",
+  "status": "unproven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "layout",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "2 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "layout",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "layout",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "layout",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "The app with this shared unit opens on the web without errors."
+    }
+  ],
+  "scenarios": [],
+  "coverage": null
+}

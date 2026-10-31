@@ -1,0 +1,81 @@
+[
+  {
+    "id": "shopping-list-empty-state",
+    "unitId": "shopping-list",
+    "obligation": "empty-state",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-add-item",
+    "unitId": "shopping-list",
+    "obligation": "add-item",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectNotVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 0 od 1"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-clear-bought-disabled",
+    "unitId": "shopping-list",
+    "obligation": "clear-bought-disabled",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Obriši kupljene"
+        }
+      }
+    ]
+  }
+]

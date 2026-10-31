@@ -1,0 +1,35 @@
+[
+  {
+    "id": "add-favorite-from-detail-flow",
+    "unitId": "recipe-detail",
+    "obligation": "add-favorite-from-detail",
+    "flowId": "add-favorite-from-detail",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Omiljeni"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "45 min · Lako · 220 kcal"
+        }
+      }
+    ]
+  }
+]

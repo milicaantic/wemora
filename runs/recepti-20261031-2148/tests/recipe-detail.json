@@ -1,0 +1,106 @@
+[
+  {
+    "id": "recipe-detail-add-to-shopping-list",
+    "unitId": "recipe-detail",
+    "obligation": "add-to-shopping-list",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sastojci su dodati u listu za kupovinu"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-back-link",
+    "unitId": "recipe-detail",
+    "obligation": "back-link",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Nazad na recepte"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Nazad na recepte"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-decrease-servings",
+    "unitId": "recipe-detail",
+    "obligation": "decrease-servings",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Smanji porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 3"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-increase-servings",
+    "unitId": "recipe-detail",
+    "obligation": "increase-servings",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Povećaj porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 5"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-not-found",
+    "unitId": "recipe-detail",
+    "obligation": "not-found",
+    "steps": [
+      {
+        "goto": "/recepti/9999"
+      },
+      {
+        "expectVisible": {
+          "text": "Recept nije pronađen"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Nazad na recepte"
+        }
+      }
+    ]
+  }
+]
