@@ -64,7 +64,8 @@ export const DEFAULTS = {
   idleCheckMs: 1_000,
 } as const
 
-// tim-plan F2: a fixed team and only the cheap rounds, until A14/A15 (F3) switch to the formulas below.
+// tim-plan F2: a fixed team and only the cheap rounds. Since A14 only tests and comparisons fix the team
+// (ConductorOptions.team); maxRounds stays here until A15 adds rounds 3–4.
 export const FIXED_TEAM = { analyzers: 1, builders: 2, testers: 1, maxRounds: 2 } as const
 
 export function analyzerCount(totalTokens: number): number {

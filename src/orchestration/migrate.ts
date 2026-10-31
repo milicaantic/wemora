@@ -2,7 +2,6 @@ import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { parseApp, splitParts } from "../analysis"
 import type { RunConfig } from "../contracts"
-import { FIXED_TEAM } from "../core/config"
 import { initLog, log } from "../core/log"
 import { BudgetedRunner, loadMockFixtureDir, MockRunner, type UsageRecord } from "../core/runner"
 import { board, initializeRuntime } from "../core/runtime"
@@ -68,11 +67,8 @@ export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv
   })
 
   const agents = createAgentFactories({ originalUrl: options.originalUrl })
-  conductor = new Conductor(
-    { parseApp, splitParts, scaffold, buildReport, agents: agents.factories },
-    // F2 keeps a fixed team (tim-plan F2); the flags can only make it smaller until A14.
-    { builders: Math.min(FIXED_TEAM.builders, options.maxBuilders), testers: Math.min(FIXED_TEAM.testers, options.maxTesters) },
-  )
+  // The team follows the §9 formulas, up to --max-builders and --max-testers from the board's config (A14).
+  conductor = new Conductor({ parseApp, splitParts, scaffold, buildReport, agents: agents.factories })
   const summary = await conductor.run()
   try {
     await agents.close()

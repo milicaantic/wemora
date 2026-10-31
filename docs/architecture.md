@@ -120,10 +120,10 @@ Staging folder ima isti raspored kao `app/src/`, pa je promocija kopiranje. Owne
 **Broj agenata** (vrednosti su u `core/config.ts`):
 
 - analizatori = `clamp(ceil(totalTokens / 60_000), 1, 4)`
-- builderi = `min(spremne jedinice + zauzeti builderi, maxBuilders)`, podrazumevano `maxBuilders = 4`
+- builderi = `min(spremne jedinice + zauzeti builderi, maxBuilders)`, najmanje 1 (D-021), podrazumevano `maxBuilders = 4`
 - testeri = `max(1, ceil(builderi / 2))`, najviše `maxTesters`
 - arhitekta = 1
-- Broj se menja najviše jednom u minutu. Gasi se samo agent bez aktivne petlje.
+- Broj se menja najviše jednom u minutu. Gasi se samo agent bez aktivne petlje. Promena odbijena unutar tog minuta računa se ponovo kad minut istekne. Svaka promena ide u `run.jsonl` kao `agents.rescaled` (sa razlogom), a ugašen agent kao `agent.stopped` (D-021).
 
 **Izbor sledeće jedinice za buildera:**
 1. sve `dependsOn` su promovisane;
