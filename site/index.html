@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wemora</title>
+<meta name="description" content="Wemora rewrites a React web app as an Expo mobile app, screen by screen, and proves each screen with the web app's own tests.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one long proof sheet. Hero = the same test running on a web app and a phone app side by side;
+   below it, the run as a real sequence (pipeline → gates → statuses → rerun). Cool mineral neutrals,
+   one teal "pass" accent, semantic status colors kept separate. */
+:root {
+  --bg: #f1f4f2;
+  --surface: #ffffff;
+  --sunk: #e6ebe8;
+  --ink: #111814;
+  --muted: #56635c;
+  --line: #cfd8d3;
+  --accent: #0b7a68;
+  --accent-ink: #ffffff;
+  --accent-soft: #d4ece6;
+  --proven: #1f8a4c;
+  --partial: #b7791f;
+  --unproven: #6b7480;
+  --failed: #c2412d;
+  --code-bg: #0f1613;
+  --code-fg: #d8e4de;
+  --code-dim: #7f948a;
+  --code-hit: #5fe0bf;
+  --code-bad: #ff8a73;
+  --shadow: 0 1px 2px rgb(17 24 20 / .06), 0 8px 28px rgb(17 24 20 / .08);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c110f; --surface: #141b18; --sunk: #1a2420; --ink: #e5ece8; --muted: #9aaba2; --line: #26332d;
+    --accent: #3fd0b0; --accent-ink: #062019; --accent-soft: #123a31;
+    --proven: #4cc47e; --partial: #e2a843; --unproven: #94a0ac; --failed: #ff7a63;
+    --code-bg: #070b09; --code-fg: #d8e4de; --code-dim: #6d8278; --code-hit: #5fe0bf; --code-bad: #ff8a73;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c110f; --surface: #141b18; --sunk: #1a2420; --ink: #e5ece8; --muted: #9aaba2; --line: #26332d;
+  --accent: #3fd0b0; --accent-ink: #062019; --accent-soft: #123a31;
+  --proven: #4cc47e; --partial: #e2a843; --unproven: #94a0ac; --failed: #ff7a63;
+  --code-bg: #070b09; --code-fg: #d8e4de; --code-dim: #6d8278; --code-hit: #5fe0bf; --code-bad: #ff8a73;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+@media (prefers-color-scheme: dark) { html { color-scheme: dark; } }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+section { padding-block: clamp(56px, 8vw, 104px); border-top: 1px solid var(--line); }
+.eyebrow {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 14px;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -.02em; }
+h2 { font-size: clamp(30px, 4.2vw, 48px); line-height: 1.05; font-weight: 700; max-width: 18ch; }
+h3 { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.lede { color: var(--muted); max-width: 62ch; font-size: 18px; margin: 18px 0 0; }
+
+/* ---------- top bar ---------- */
+.top { padding-block: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -.03em; color: var(--ink); text-decoration: none; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: var(--ink); color: var(--bg); display: grid; place-items: center; }
+.mark svg { display: block; }
+.toplinks { display: flex; gap: 22px; font-size: 15px; flex-wrap: wrap; }
+.toplinks a { color: var(--muted); text-decoration: none; }
+.toplinks a:hover { color: var(--ink); }
+
+/* ---------- hero ---------- */
+.hero { padding-block: clamp(36px, 6vw, 72px) clamp(48px, 7vw, 88px); }
+.hero h1 { font-size: clamp(44px, 7.4vw, 92px); line-height: .95; font-weight: 800; max-width: 15ch; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { font-size: clamp(18px, 1.6vw, 21px); }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px;
+  font-weight: 700; text-decoration: none; font-size: 16px; border: 1px solid transparent; cursor: pointer;
+  font-family: var(--body);
+}
+.btn-primary { background: var(--ink); color: var(--bg); }
+.btn-primary:hover { background: var(--accent); color: var(--accent-ink); }
+.cmd {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 10px 10px 14px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); font-family: var(--mono); font-size: 14px; color: var(--ink);
+  max-width: 100%; min-width: 0;
+}
+.cmd span { overflow-x: auto; white-space: nowrap; }
+.cmd .dollar { color: var(--muted); }
+.copy {
+  font: 600 12px var(--mono); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--sunk); color: var(--ink); cursor: pointer; flex: none;
+}
+.copy:hover { border-color: var(--accent); }
+
+/* stage: web | test | phone */
+.stage {
+  margin-top: clamp(40px, 6vw, 64px);
+  display: grid; gap: 22px; align-items: center;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr) minmax(0, .62fr);
+}
+.frame-label { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
+.frame-label b { color: var(--proven); font-weight: 600; }
+
+.browser { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.browser-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--sunk); border-bottom: 1px solid var(--line); }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: block; }
+.url { flex: 1; min-width: 0; font: 12px var(--mono); color: var(--muted); background: var(--surface); border-radius: 6px; padding: 4px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.webapp { display: grid; grid-template-columns: 132px 1fr; min-height: 290px; font-size: 13px; }
+.side { background: var(--sunk); padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+.side strong { font-family: var(--display); font-size: 16px; margin-bottom: 6px; }
+.side span { color: var(--muted); padding: 3px 6px; border-radius: 5px; }
+.side span.on { background: var(--surface); color: var(--ink); font-weight: 700; }
+.webmain { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.webmain h4 { margin: 0; font-family: var(--display); font-size: 19px; }
+.webform { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.webform label { font-weight: 700; }
+.field { border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; min-width: 90px; background: var(--surface); color: var(--ink); }
+.wbtn { border: 1px solid var(--ink); border-radius: 5px; padding: 3px 10px; font-weight: 700; }
+table.mini { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+table.mini th, table.mini td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+table.mini th { color: var(--muted); font-weight: 400; font-size: 11.5px; }
+.webfoot { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12.5px; flex-wrap: wrap; }
+
+.hit { position: relative; box-shadow: 0 0 0 2px var(--accent); border-radius: 5px; }
+.tag {
+  position: absolute; left: 0; top: calc(100% + 6px); white-space: nowrap; z-index: 2;
+  font: 600 10.5px var(--mono); background: var(--accent); color: var(--accent-ink); padding: 2px 6px; border-radius: 4px;
+}
+
+.phone {
+  width: 100%; max-width: 230px; margin: 0 auto; aspect-ratio: 390 / 844;
+  background: var(--ink); border-radius: 34px; padding: 9px; box-shadow: var(--shadow);
+}
+.screen { height: 100%; background: var(--surface); border-radius: 26px; overflow: hidden; display: flex; flex-direction: column; font-size: 12.5px; }
+.notch { height: 26px; display: flex; justify-content: center; align-items: center; }
+.notch i { width: 64px; height: 16px; border-radius: 10px; background: var(--ink); display: block; }
+.app { flex: 1; padding: 8px 14px 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.app h4 { margin: 0; font-family: var(--display); font-size: 19px; line-height: 1.1; }
+.app .lbl { font-weight: 700; font-size: 11.5px; color: var(--muted); }
+.app .field { width: 100%; padding: 7px 9px; border-radius: 8px; }
+.pbtn { background: var(--ink); color: var(--bg); text-align: center; border-radius: 9px; padding: 7px; font-weight: 700; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; gap: 8px; align-items: center; }
+.count { color: var(--muted); font-size: 11.5px; }
+.tabs { margin-top: auto; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; font-size: 9.5px; color: var(--muted); padding: 8px 4px 14px; }
+.tabs .on { color: var(--accent); font-weight: 700; }
+.phone .tag { left: 50%; transform: translateX(-50%); }
+
+.test {
+  background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.5; min-width: 0;
+}
+.test .file { color: var(--code-dim); font-size: 11px; margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.steps li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 6px; }
+.steps .k { color: var(--code-hit); }
+.steps .ok { color: var(--code-hit); font-size: 11px; }
+.steps li { animation: scan 6s infinite; }
+.steps li:nth-child(2) { animation-delay: 1.2s; }
+.steps li:nth-child(3) { animation-delay: 2.4s; }
+.steps li:nth-child(4) { animation-delay: 3.6s; }
+.steps li:nth-child(5) { animation-delay: 4.8s; }
+@keyframes scan { 0%, 18% { background: rgb(95 224 191 / .14); } 22%, 100% { background: transparent; } }
+.test .legend { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #2b3a33; color: var(--code-dim); font-size: 11px; gap: 8px; flex-wrap: wrap; }
+.test .legend b { color: var(--code-hit); font-weight: 600; }
+.caption { margin-top: 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
+
+/* ---------- pipeline ---------- */
+.flow { list-style: none; padding: 0; margin: 40px 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; counter-reset: s; }
+.flow li { position: relative; padding: 0 18px 0 0; }
+.flow li::before {
+  counter-increment: s; content: counter(s, decimal-leading-zero);
+  font: 600 12px var(--mono); color: var(--accent); display: block; margin-bottom: 10px;
+}
+.flow li::after { content: ""; position: absolute; left: 30px; right: 10px; top: 8px; height: 1px; background: var(--line); }
+.flow li:last-child::after { display: none; }
+.flow h3 { font-size: 18px; }
+.flow p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+.who { display: inline-block; margin-top: 10px; font: 11px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
+
+/* ---------- gates ---------- */
+.gates-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 40px; align-items: start; }
+.gates { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.gates li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.gates li:last-child { border-bottom: 0; }
+.gates .n { font: 600 13px var(--mono); color: var(--accent); grid-row: span 2; padding-top: 2px; }
+.gates .g { font: 600 14px var(--mono); }
+.gates .d { color: var(--muted); font-size: 15px; }
+.gates li.later .n, .gates li.later .g { color: var(--muted); }
+.gates li.later .g::after { content: " · optional"; font-weight: 400; color: var(--muted); }
+
+.terminal { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; min-width: 0; }
+.terminal .bar { padding: 10px 14px; font: 12px var(--mono); color: var(--code-dim); border-bottom: 1px solid #1f2b26; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.terminal pre { margin: 0; padding: 16px; font: 12.5px/1.65 var(--mono); overflow-x: auto; }
+.t-dim { color: var(--code-dim); }
+.t-ok { color: var(--code-hit); }
+.t-bad { color: var(--code-bad); }
+.t-msg { display: block; padding: 6px 10px; margin: 4px 0 6px; border-left: 2px solid var(--code-bad); background: rgb(255 138 115 / .08); color: #ffd3c9; white-space: pre-wrap; }
+.note { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+/* ---------- statuses ---------- */
+.statuses { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+.status { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font: 600 12px var(--mono); padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.s-proven { color: var(--proven); } .s-partial { color: var(--partial); } .s-unproven { color: var(--unproven); } .s-failed { color: var(--failed); }
+.status p { margin: 0; color: var(--muted); font-size: 15px; }
+.rule {
+  margin-top: 28px; padding: 18px 22px; border-radius: 14px; background: var(--accent-soft);
+  font-family: var(--display); font-size: clamp(20px, 2.4vw, 28px); font-weight: 700; letter-spacing: -.01em; line-height: 1.2;
+}
+
+/* ---------- rerun + mozaik ---------- */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; margin-top: 40px; }
+.cmds { display: flex; flex-direction: column; gap: 12px; }
+.cmds .cmd { width: 100%; justify-content: space-between; }
+.cmds p { margin: 2px 0 0 2px; font-size: 14px; color: var(--muted); }
+.facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.facts li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+.facts li::before { content: "→"; color: var(--accent); font-family: var(--mono); }
+.facts p { margin: 0; color: var(--muted); font-size: 15.5px; }
+.facts strong { color: var(--ink); }
+
+/* ---------- team + footer ---------- */
+.team { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 36px; }
+.member { border-top: 2px solid var(--ink); padding-top: 14px; }
+.member .l { font-family: var(--display); font-size: 34px; font-weight: 800; line-height: 1; }
+.member p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+footer { border-top: 1px solid var(--line); padding-block: 28px 40px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 980px) {
+  .stage { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); }
+  .stage .test { grid-column: 1 / -1; order: 3; }
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
+  .flow li:nth-child(3)::after { display: none; }
+  .statuses, .team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gates-grid, .two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .webapp { grid-template-columns: minmax(0, 1fr); }
+  .side { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .side strong { margin: 0 6px 0 0; }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .flow li::after { display: none; }
+  .statuses, .team { grid-template-columns: minmax(0, 1fr); }
+  .toplinks { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .steps li { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#top" aria-label="Wemora home">
+      <span class="mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1.5" y="3" width="9" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="11" y="6" width="5.5" height="9" rx="1.6" style="fill: var(--accent)"/></svg>
+      </span>
+      Wemora
+    </a>
+    <nav class="toplinks" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#gatekeeper">Gatekeeper</a>
+      <a href="#proof">Proof</a>
+      <a href="#try">Try it</a>
+    </nav>
+  </header>
+</div>
+
+<main id="top">
+  <div class="wrap hero">
+    <p class="eyebrow">React web app → Expo mobile app</p>
+    <h1>Port the app. <em>Prove</em> every screen.</h1>
+    <p class="lede">Wemora rewrites a React single-page app as an Expo app, one screen at a time. A screen gets into the app only after the tests written against the web original pass on the phone build, unchanged.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/milicaantic/wemora">View on GitHub</a>
+      <div class="cmd"><span><span class="dollar">$ </span>npm run migrate -- examples/recepti</span><button class="copy" type="button" data-copy="npm run migrate -- examples/recepti">Copy</button></div>
+    </div>
+
+    <div class="stage" aria-label="The same test passing on the web app and on the mobile app">
+      <figure style="margin:0; min-width:0">
+        <div class="frame-label"><span>Original · web · 1280×800</span><b>passes</b></div>
+        <div class="browser">
+          <div class="browser-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="url">localhost:5173/kupovina</span></div>
+          <div class="webapp">
+            <div class="side"><strong>Recepti</strong><span>Recepti</span><span>Kategorije</span><span>Omiljeni</span><span class="on">Lista za kupovinu</span></div>
+            <div class="webmain">
+              <h4>Lista za kupovinu</h4>
+              <div class="webform">
+                <label class="hit" for="demo-web">Namirnica<span class="tag">&lt;label&gt;</span></label>
+                <input class="field" id="demo-web" value="Hleb" readonly aria-label="Namirnica (demo)">
+                <span class="wbtn">Dodaj</span>
+              </div>
+              <table class="mini" style="margin-top:14px">
+                <thead><tr><th>Kupljeno</th><th>Namirnica</th></tr></thead>
+                <tbody><tr><td>☐</td><td>Hleb</td></tr></tbody>
+              </table>
+              <div class="webfoot"><span>Kupljeno: 0 od 1</span><span>Obriši kupljene</span></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="test" role="group" aria-label="Test scenario">
+        <div class="file"><span>tests/shopping-list.json</span><span>add-item</span></div>
+        <ol class="steps">
+          <li><span><span class="k">goto</span> /kupovina</span><span class="ok">web ✓</span><span class="ok">app ✓</span></li>
+          <li><span><span class="k">fill</span> "Namirnica" = "Hleb"</span><span class="ok">✓</span><span class="ok">✓</span></li>
+          <li><span><span class="k">tap</span> button "Dodaj"</span><span class="ok">✓</span><span class="ok">✓</span></li>
+          <li><span><span class="k">expect</span> "Kupljeno: 0 od 1"</span><span class="ok">✓</span><span class="ok">✓</span></li>
+          <li><span><span class="k">expectNot</span> "…je prazna"</span><span class="ok">✓</span><span class="ok">✓</span></li>
+        </ol>
+        <div class="legend"><span>written by the tester on the web</span><b>5/5 on both</b></div>
+      </div>
+
+      <figure style="margin:0; min-width:0">
+        <div class="frame-label"><span>Expo · phone · 390×844</span><b>passes</b></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="notch"><i></i></div>
+            <div class="app">
+              <h4>Lista za kupovinu</h4>
+              <div>
+                <div class="lbl">Namirnica</div>
+                <div class="hit" style="margin-top:4px"><div class="field">Hleb</div><span class="tag">accessibilityLabel</span></div>
+              </div>
+              <div class="pbtn" style="margin-top:18px">Dodaj</div>
+              <div class="card"><span>☐</span><span>Hleb</span></div>
+              <div class="count">Kupljeno: 0 od 1</div>
+              <div class="tabs"><span>Recepti</span><span>Kategorije</span><span>Omiljeni</span><span class="on">Kupovina</span></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+    <p class="caption">Layout is free to change: the sidebar becomes a bottom bar and the table becomes a card. Field labels, button names and visible text stay the same, so the web test finds everything on the phone.</p>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <p class="eyebrow">How a run works</p>
+      <h2>Agents write the code. Tests decide what stays.</h2>
+      <p class="lede">Each step is a Mozaik participant. Agents get a fresh context per task, events carry only IDs, and the shared board holds the plan, tests and results.</p>
+      <ol class="flow">
+        <li><h3>Analyze</h3><p>Parse routes, imports and web-only APIs, then describe every screen with its exact texts.</p><span class="who">analyzer · haiku-4-5</span></li>
+        <li><h3>Plan</h3><p>Split the app into screens and shared units, with obligations each screen must still meet.</p><span class="who">architect · sonnet-4-6</span></li>
+        <li><h3>Scaffold</h3><p>Create an empty Expo app with one route per screen and blank placeholder screens.</p><span class="who">scaffold</span></li>
+        <li><h3>Test</h3><p>Write scenarios on the original. A test is kept only if it passes there and fails on the blank screen.</p><span class="who">tester · haiku-4-5</span></li>
+        <li><h3>Build</h3><p>Rewrite each screen in React Native, in its own staging folder. Builders never see the tests.</p><span class="who">builder · haiku-4-5 → sonnet-4-6</span></li>
+        <li><h3>Gatekeeper</h3><p>Check every draft, promote it into the app, and roll it back if an older screen breaks.</p><span class="who">deterministic · no model</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="gatekeeper">
+    <div class="wrap">
+      <p class="eyebrow">The Gatekeeper</p>
+      <h2>Five gates, in order. The first failure goes back to the builder.</h2>
+      <p class="lede">Every message names the file, the line and what is missing, so the next round fixes that one thing instead of starting over.</p>
+      <div class="gates-grid">
+        <ol class="gates">
+          <li><span class="n">1</span><span class="g">parse</span><span class="d">The draft is valid TypeScript. One syntax error would take down every screen.</span></li>
+          <li><span class="n">2</span><span class="g">forbiddenApis</span><span class="d">No <code>div</code>, <code>window</code>, <code>localStorage</code> or <code>react-router-dom</code>, with the React Native replacement for each.</span></li>
+          <li><span class="n">3</span><span class="g">tsc</span><span class="d">The draft type-checks against the rest of the app.</span></li>
+          <li><span class="n">4</span><span class="g">labels</span><span class="d">Every label and button name the tests use is in the code, copied from the original.</span></li>
+          <li><span class="n">5</span><span class="g">scenarios</span><span class="d">The tests pass on the phone build, then the tests of every promoted screen run again.</span></li>
+          <li class="later"><span class="n">6</span><span class="g">androidExport</span><span class="d">The app also bundles for Android, without a device.</span></li>
+        </ol>
+        <div>
+          <div class="terminal">
+            <div class="bar"><span>output/…-todomvc/run.jsonl</span><span>TodoMVC · todo-list</span></div>
+<pre><span class="t-dim">builder-1   </span>draft.submitted   todo-list  <span class="t-dim">round 1</span>
+<span class="t-dim">gatekeeper  </span><span class="t-bad">gate.failed</span>       todo-list  <span class="t-dim">round 1</span>
+<span class="t-msg">forbiddenApis
+screens/todo-list/index.tsx:19: &lt;div&gt; ne postoji u React Native, koristi &lt;View&gt;.</span><span class="t-dim">conductor   </span>same builder, round 2, with the message above
+<span class="t-dim">builder-1   </span>draft.submitted   todo-list  <span class="t-dim">round 2</span>
+<span class="t-dim">gatekeeper  </span><span class="t-ok">parse ✓ forbiddenApis ✓ tsc ✓ labels ✓</span>
+<span class="t-dim">gatekeeper  </span><span class="t-ok">scenarios ✓</span>  5/5 at 390×844
+<span class="t-dim">gatekeeper  </span><span class="t-ok">unit.promoted</span>     todo-list  status <span class="t-ok">proven</span></pre>
+          </div>
+          <p class="note">From a TodoMVC run. Gate messages are written for the builder; the team wrote them in Serbian.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="proof">
+    <div class="wrap">
+      <p class="eyebrow">What the report claims</p>
+      <h2>Every screen gets one of four statuses.</h2>
+      <div class="statuses">
+        <div class="status"><span class="chip s-proven">proven</span><p>All tests pass on the phone, every obligation is covered, and every interactive element is tested or marked as not portable.</p></div>
+        <div class="status"><span class="chip s-partial">partial</span><p>All existing tests pass, but some obligation or element has no test yet. The report lists which.</p></div>
+        <div class="status"><span class="chip s-unproven">unproven</span><p>The screen is in the app, but no validated test exists for it.</p></div>
+        <div class="status"><span class="chip s-failed">failed</span><p>Tests exist and the screen still fails them after its last round.</p></div>
+      </div>
+      <p class="rule">A screen with zero tests is never proven.</p>
+
+      <div class="two" id="try">
+        <div>
+          <p class="eyebrow">Check it yourself</p>
+          <h3>Rerun the proof without a model or an API key.</h3>
+          <div class="cmds" style="margin-top:20px">
+            <div><div class="cmd"><span><span class="dollar">$ </span>npm run migrate:mock -- examples/todomvc</span><button class="copy" type="button" data-copy="npm run migrate:mock -- examples/todomvc">Copy</button></div><p>The whole flow with recorded model answers. Costs $0.</p></div>
+            <div><div class="cmd"><span><span class="dollar">$ </span>npm run verify -- output/&lt;run-id&gt;</span><button class="copy" type="button" data-copy="npm run verify -- output/<run-id>">Copy</button></div><p>Runs every saved test against the finished app again. Same result every time.</p></div>
+            <div><div class="cmd"><span><span class="dollar">$ </span>npm run sabotage -- output/&lt;run-id&gt; recipe-list</span><button class="copy" type="button" data-copy="npm run sabotage -- output/<run-id> recipe-list">Copy</button></div><p>Breaks one screen on purpose, so you can watch verify catch it.</p></div>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">Built on Mozaik</p>
+          <h3>Many small agents, one shared board.</h3>
+          <ul class="facts" style="margin-top:20px">
+            <li><p><strong>Builders write only to their staging folder.</strong> An OwnershipGuard intercepts every write outside it before it happens.</p></li>
+            <li><p><strong>Only the Gatekeeper writes to the app.</strong> Promotion is a copy, and rollback restores the exact previous files.</p></li>
+            <li><p><strong>One loop per agent, fresh context per task.</strong> Parallel work comes from more builders and testers, scaled to the size of the app.</p></li>
+            <li><p><strong>Events carry IDs.</strong> Plans, tests and results live on the board and on disk, so every run can be replayed and reported.</p></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Team</p>
+      <h2>Four people, four layers.</h2>
+      <div class="team">
+        <div class="member"><div class="l">A</div><p>Contracts, runtime and the Conductor that hands out work and scales the team.</p></div>
+        <div class="member"><div class="l">B</div><p>The test language, the tester agent, verify and sabotage.</p></div>
+        <div class="member"><div class="l">C</div><p>The Expo template, scaffold, the builder agent and the Gatekeeper.</p></div>
+        <div class="member"><div class="l">D</div><p>App analysis, the architect agent and the report.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Wemora · JigJoy × NTP Novi Sad Hackathon · Freestyle</span>
+    <span>Built with Mozaik · Expo · Playwright</span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll(".copy").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const text = btn.dataset.copy;
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy"), 1400); };
+    const fallback = () => {
+      const span = btn.previousElementSibling;
+      const range = document.createRange();
+      range.selectNodeContents(span);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      btn.textContent = "Press Ctrl+C";
+      setTimeout(() => (btn.textContent = "Copy"), 2000);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } catch (e) {
+      fallback();
+    }
+  });
+});
+</script>
+</body>
+</html>
