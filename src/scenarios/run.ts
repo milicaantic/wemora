@@ -1,6 +1,7 @@
 import { chromium, errors, type Browser, type BrowserContext, type Locator, type Page } from "playwright"
-import { ScenarioSchema, type RunScenarios, type RunScenariosOptions, type Scenario, type ScenarioResult, type Viewport } from "../contracts"
+import { ScenarioSchema, type RunScenarios, type RunScenariosOptions, type Scenario, type ScenarioResult, type Step, type Viewport } from "../contracts"
 import { compileSteps, describeAction, type Action, type Target } from "./compile"
+import { DESKTOP } from "./viewports"
 
 export type RunnerSettings = {
   stepTimeoutMs: number
@@ -22,7 +23,8 @@ export const DEFAULT_RUNNER_SETTINGS: RunnerSettings = {
 }
 
 type Failure = { step: number; message: string }
-type WaitForQuiet = () => Promise<void>
+/** `fromNow`: count the quiet time from now, so requests that start just after an action are waited for. */
+type WaitForQuiet = (fromNow?: boolean) => Promise<void>
 
 /**
  * Runs scenarios one after another in a fresh browser context each (empty localStorage): setup first, then steps.
@@ -49,6 +51,29 @@ export function createRunScenarios(settings: RunnerSettings = DEFAULT_RUNNER_SET
 }
 
 export const runScenarios: RunScenarios = createRunScenarios()
+
+/**
+ * What a user sees after these steps (desktop viewport, fresh browser), as an ARIA snapshot: the tester uses it to
+ * read names that appear only after a tap. A failed step is reported with the page as it is at that moment.
+ */
+export async function snapshotAfterSteps(baseUrl: string, input: Step[], settings: RunnerSettings = DEFAULT_RUNNER_SETTINGS): Promise<string> {
+  const compiled = compileSteps(input, [])
+  if (!compiled.ok) return `Step ${compiled.step} is invalid: ${compiled.error}`
+  const browser = await chromium.launch()
+  try {
+    const context = await browser.newContext({ viewport: DESKTOP })
+    context.setDefaultTimeout(settings.stepTimeoutMs)
+    context.setDefaultNavigationTimeout(settings.navigationTimeoutMs)
+    const page = await context.newPage()
+    const waitForQuiet = trackNetwork(page, settings)
+    const failure = await runActions(page, baseUrl, DESKTOP, settings, waitForQuiet, compiled.actions)
+    await waitForQuiet()
+    const snapshot = await page.locator("body").ariaSnapshot()
+    return failure ? `Step ${failure.step} failed: ${failure.message}\nThe page at that moment:\n${snapshot}` : snapshot
+  } finally {
+    await browser.close().catch(() => {})
+  }
+}
 
 async function runOne(
   browser: Browser,
@@ -103,6 +128,8 @@ async function runActions(
     try {
       if (action.kind === "expectNotVisible") await waitForQuiet()
       await perform(page, baseUrl, viewport, settings, action)
+      // A tap may open another screen that loads its data; the next check must not run on the old screen.
+      if (action.kind === "tap" || action.kind === "fill" || action.kind === "submit") await waitForQuiet(true)
     } catch (err) {
       return { step: action.step, message: `${describeAction(action)}: ${explain(err, action, settings)}` }
     }
@@ -193,7 +220,8 @@ function trackNetwork(page: Page, settings: RunnerSettings): WaitForQuiet {
   page.on("requestfinished", done)
   page.on("requestfailed", done)
 
-  return async () => {
+  return async (fromNow = false) => {
+    if (fromNow) lastActivity = Date.now()
     const deadline = Date.now() + settings.stepTimeoutMs
     while (Date.now() < deadline) {
       if (inFlight === 0 && Date.now() - lastActivity >= settings.networkQuietMs) return

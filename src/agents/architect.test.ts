@@ -161,6 +161,30 @@ describe("architect agent", () => {
     expect(readLog().some((l) => l.event === "plan.rejected" && l.data.attempt === 1)).toBe(true)
   })
 
+  it("salvages the last plan by dropping an obligation validatePlan keeps rejecting (A: 20:24 run)", async () => {
+    const stubborn = {
+      ...goodOutput,
+      units: goodOutput.units.map((u) =>
+        u.id === "favorites"
+          ? { ...u, obligations: [...u.obligations, { id: "from-the-list", description: "Tapping 'Ukloni iz omiljenih: Sarma' (added via the recipe list flow) removes it." }] }
+          : u,
+      ),
+    }
+    runner.use({ architect: [{ json: stubborn }] })
+    const architect = newArchitect()
+    architect.assign({ partIds: parsed.parts.map((p) => p.id) })
+    await finished(architect)
+
+    expect(runner.calls).toBe(3)
+    expect(planReady).toBe(1)
+    expect(planFailed).toBe(0)
+    const plan = PlanSchema.parse(JSON.parse(readFileSync(path.join(runDir, "plan.json"), "utf8")))
+    expect(validatePlan(plan, parsed)).toEqual([])
+    expect(plan.units.find((u) => u.id === "favorites")?.obligations.map((o) => o.id)).not.toContain("from-the-list")
+    const salvaged = readLog().find((l) => l.event === "plan.salvaged")
+    expect(salvaged?.data.dropped).toEqual(["obligation favorites/from-the-list"])
+  })
+
   it("gives up after three bad plans: plan.failed instead of plan.ready, plan.errors.json written, the process keeps going", async () => {
     runner.use({ architect: [{ json: badOutput }] })
     const architect = newArchitect()
@@ -177,7 +201,7 @@ describe("architect agent", () => {
     expect(errors.attempts).toBe(3)
     expect(errors.errors.join("\n")).toContain("/kupovina")
     expect(errors.lastPlan.units.length).toBe(badOutput.units.length)
-    expect(readLog().some((l) => l.event === "plan.gave_up" && l.agent === "architect-3" && l.data.attempts === 3)).toBe(true)
+    expect(readLog().some((l) => l.event === "plan.gave_up" && l.agent === architect.id && l.data.attempts === 3)).toBe(true)
   })
 
   it("normalizes the model's plan before checking it (wrong size and wave are fixed, not rejected)", async () => {
@@ -207,6 +231,6 @@ describe("architect agent", () => {
     expect(runner.contexts.size).toBeLessThanOrEqual(1)
     const errors = JSON.parse(readFileSync(path.join(runDir, "plan.errors.json"), "utf8"))
     expect(errors.errors.join("\n")).toContain("timeout")
-    expect(readLog().some((l) => l.event === "task.ignored" && l.agent === "architect-5")).toBe(true)
+    expect(readLog().some((l) => l.event === "task.ignored" && l.agent === architect.id)).toBe(true)
   })
 })

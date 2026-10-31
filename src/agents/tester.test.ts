@@ -76,6 +76,7 @@ const saveCall = (scenario: Scenario) => call("save_scenario", { scenario })
 const fixture: MockFixture = {
   "tester:u-full": [
     call("aria_snapshot", { path: "/narudzbine" }),
+    call("aria_snapshot", { path: "/narudzbine", steps: [{ tap: { role: "button", name: "Sačuvaj" } }] }),
     // Fails validateScenario (the fake rejects ids starting with "bad").
     saveCall({ ...search("u-full"), id: "bad-search" }),
     call("try_scenario", { scenario: search("u-full") }),
@@ -114,16 +115,28 @@ const fixture: MockFixture = {
   "tester:u-own-limit": [saveCall(search("u-own-limit")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
   "tester:u-blank": [saveCall(search("u-blank")), { text: "Done." }],
   "tester:u-blank-down": [saveCall(search("u-blank-down")), { text: "Done." }],
-  // A flow task: refused without flowId, refused with "Info" (notPortable on the second screen), then saved.
+  // A flow task: refused with another flowId, refused with "Info" (notPortable on the second screen), then saved
+  // without flowId, which the tester fills in from the task.
   "tester:checkout": [
-    saveCall(checkout({ flowId: undefined })),
+    saveCall(checkout({ flowId: "other" })),
     saveCall(checkout({ id: "flow-info", steps: [{ goto: "/narudzbine" }, { tap: { role: "button", name: "Info" } }, { expectVisible: { text: "Detalji" } }] })),
-    saveCall(checkout()),
+    saveCall(checkout({ flowId: undefined })),
     { text: "Done." },
   ],
   "tester:empty-flow": [{ text: "Nothing to test." }],
   // A screen task that tries to save a flow test.
   "tester:u-flow-id": [saveCall({ ...search("u-flow-id"), flowId: "checkout" }), saveCall(search("u-flow-id")), { text: "Done." }],
+  // "search" saved, "save" given up after 3 failures: "Sačuvaj" still has no test, so the task goes on (A's
+  // inbox 2026-10-31). A failure for the element does not give up the covered "search"; then it is covered.
+  "tester:u-elements": [
+    saveCall(search("u-elements")),
+    call("try_scenario", { scenario: { ...save("u-elements"), id: "bad-e-1" } }),
+    call("try_scenario", { scenario: { ...save("u-elements"), id: "bad-e-2" } }),
+    call("try_scenario", { scenario: { ...save("u-elements"), id: "bad-e-3" } }),
+    call("try_scenario", { scenario: { ...searchAndSave("u-elements"), id: "bad-e-element" } }),
+    saveCall(searchAndSave("u-elements")),
+    { text: "Done." },
+  ],
 }
 
 // Keeps every tool output the model saw, so tests can check what came back from a tool.
@@ -181,7 +194,8 @@ function newTester(overrides: Partial<TesterDeps> = {}) {
         { role: "button", name: "Info" },
       ]
     },
-    ariaSnapshot: async (_url, route) => `- searchbox "Pretraga"\n- button "Sačuvaj"\n# snapshot of ${route}`,
+    ariaSnapshot: async (_url, route, steps = []) =>
+      `- searchbox "Pretraga"\n- button "Sačuvaj"\n# snapshot of ${route}${steps.length > 0 ? ` after ${steps.length} step(s)` : ""}`,
     ...overrides,
   })
   join(tester.participant)
@@ -218,6 +232,7 @@ beforeAll(() => {
     "u-give-up",
     "u-give-up-later",
     "u-flow-id",
+    "u-elements",
   ]
   const plan: Plan = {
     units: [
@@ -304,6 +319,7 @@ describe("tester agent", () => {
   it("tells the model why a scenario was refused, and what is still missing after a save", () => {
     const outputs = runner.toolOutputs.join("\n")
     expect(outputs).toContain("# snapshot of /narudzbine")
+    expect(outputs).toContain("# snapshot of /narudzbine after 1 step(s)")
     expect(outputs).toContain("Not saved: Passes on the blank placeholder screen too.")
     expect(outputs).toContain("Valid. Call save_scenario")
     expect(outputs).toContain('Not saved: unitId must be "u-full", not "other".')
@@ -491,7 +507,7 @@ describe("tester agent", () => {
     tester.assign({ flowId: "checkout" })
     await untilIdle(tester)
 
-    expect(readFlowTests(runDir, "checkout").map((s) => s.id)).toEqual(["flow-checkout"])
+    expect(readFlowTests(runDir, "checkout").map((s) => [s.id, s.flowId])).toEqual([["flow-checkout", "checkout"]])
     expect(board().flowTests["checkout"]?.map((s) => s.id)).toEqual(["flow-checkout"])
     expect(flowsReady).toEqual(["checkout"])
     // A flow test is not a screen test: nothing in tests/<unitId>.json, no coverage, no tests.ready.
@@ -528,5 +544,22 @@ describe("tester agent", () => {
     await untilIdle(tester)
     expect(runner.toolOutputs.join("\n")).toContain("Not saved: Leave flowId out: this task tests one screen, not a flow.")
     expect(readTests(runDir, "u-flow-id").map((s) => s.id)).toEqual(["u-flow-id-search"])
+  })
+
+  it("does not stop while an element has no test: after the obligations, the elements get their own attempts", async () => {
+    const tester = newTester()
+    tester.assign({ unitId: "u-elements" })
+    await untilIdle(tester)
+
+    const outputs = runner.toolOutputs.join("\n")
+    expect(outputs).toContain('these elements have no test yet: button "Sačuvaj"')
+    // The element scenario after the give-up was validated and saved: the task had not ended.
+    expect(validated).toContain("bad-e-element")
+    expect(readTests(runDir, "u-elements").map((s) => s.id)).toEqual(["u-elements-search", "u-elements-search-and-save"])
+    expect(board().coverage["u-elements"]?.elements.missing).toEqual([])
+    const lines = logLines().filter((l) => l.data?.unitId === "u-elements")
+    // Only "save" was given up; the failed element scenario did not give up the covered "search".
+    expect(lines.filter((l) => l.event === "tester.obligation_skipped").map((l) => JSON.stringify(l))).toHaveLength(1)
+    expect(JSON.stringify(lines.find((l) => l.event === "tester.finished"))).toContain('"reason":"every obligation is saved or given up"')
   })
 })

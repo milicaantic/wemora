@@ -419,6 +419,41 @@ describe("Conductor timeouts", () => {
     ])
   })
 
+  it("tries a flow again as soon as its tester ends with no tests, then leaves it unchecked, with no timeout (D-028)", async () => {
+    const { clock, calls, running } = startRun({ emptyTests: { open: Infinity } })
+    await vi.waitFor(() => expect(calls.flowTester).toEqual(["open"]))
+
+    // One idle check instead of TESTS_WAIT: the tester is no longer busy and sent nothing.
+    clock.advance(DEFAULTS.idleCheckMs)
+    await vi.waitFor(() => expect(calls.flowTester).toEqual(["open", "open"]))
+    clock.advance(DEFAULTS.idleCheckMs)
+
+    const summary = await running
+    expect(summary.outcome).toBe("finished")
+    expect(calls.flowChecks).toEqual([])
+    expect(calls.cancels).toEqual([])
+    expect(logEvents().filter((e) => e.event === "tests.ended_empty").map((e) => e.data)).toEqual([
+      expect.objectContaining({ flowId: "open", attempt: 1, gaveUp: false }),
+      expect.objectContaining({ flowId: "open", attempt: 2, gaveUp: true }),
+    ])
+    expect(logEvents().some((e) => e.event === "flow.tests.timeout")).toBe(false)
+  })
+
+  it("gives a screen to the next tester as soon as its tester ends with no tests (D-028)", async () => {
+    const { clock, calls, running } = startRun({ waitForTests: true, emptyTests: { detail: Infinity } })
+    await vi.waitFor(() => expect(testedUnits(calls)).toEqual(["detail"]))
+
+    clock.advance(DEFAULTS.idleCheckMs)
+    await vi.waitFor(() => expect(testedUnits(calls)).toEqual(["detail", "list", "edit", "detail"]))
+    clock.advance(DEFAULTS.idleCheckMs)
+
+    const summary = await running
+    expect(summary.statuses.detail).toBe("unproven")
+    expect(calls.cancels).toEqual([])
+    expect(logEvents().filter((e) => e.event === "tests.ended_empty").map((e) => e.data?.unitId)).toEqual(["detail", "detail"])
+    expect(logEvents().filter((e) => e.event === "tests.missing").map((e) => e.data?.unitId)).toEqual(["detail"])
+  })
+
   it("adds a tester when screens queue up for testers while drafts wait for their tests (A17)", async () => {
     // Four screens behind one shared unit; the tester never answers, so drafts pile up in the Gatekeeper.
     const queuePlan: Plan = {

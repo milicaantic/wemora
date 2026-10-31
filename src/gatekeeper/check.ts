@@ -20,11 +20,17 @@ import type {
 } from "../contracts"
 import { forbiddenApisGate, parseGate, runGates, tscGate } from "./gates/index"
 import { appDirOf, promote, rollback } from "./promote"
+import { smoke as realSmoke, type Smoke } from "./smoke"
 
 /** Telefon iz architecture.md §11. */
 export const PHONE: Viewport = { width: 390, height: 844 }
 
-export type CheckDraftDeps = { runScenarios: RunScenarios; serveApp: ServeApp }
+export type CheckDraftDeps = {
+  runScenarios: RunScenarios
+  serveApp: ServeApp
+  /** „Dimna“ provera zajedničke jedinice: aplikacija sa nacrtom se otvara na `/` bez pada (A → C). */
+  smoke?: Smoke
+}
 
 type Promoted = { unit: Unit; tests: Scenario[] }
 
@@ -76,7 +82,7 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraftWithResults {
     }
 
     const others = [...promoted.values()].filter((p) => p.unit.id !== unit.id && p.tests.length > 0)
-    const needsBrowser = (unit.kind === "screen" && tests.length > 0) || others.length > 0
+    const needsBrowser = unit.kind === "shared" || (unit.kind === "screen" && tests.length > 0) || others.length > 0
 
     let ok = true
     if (needsBrowser) {
@@ -84,6 +90,7 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraftWithResults {
       try {
         app = await deps.serveApp(appDir)
         if (unit.kind === "screen") ok = tests.length > 0 ? await gate5(app.url, unit, tests, add) : add("scenarios", true, NO_TESTS)
+        else ok = await smokeGate(app.url, add)
         if (ok) ok = await regression(app.url, others, add)
       } catch (error) {
         const why = `Gatekeeper: aplikacija nije mogla da se pokrene: ${message(error)}`
@@ -105,6 +112,14 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraftWithResults {
   }
 
   return Object.assign(check, { scenariosOf: (unitId: string) => lastRuns.get(unitId) ?? [] })
+
+  // Zajednička jedinica nema testove: bar da se aplikacija sa njom otvara. Ugovor nema posebno ime
+  // kapije za ovo, pa ide pod "scenarios" (poruka kaže šta je provereno).
+  async function smokeGate(url: string, add: AddResult): Promise<boolean> {
+    const result = await (deps.smoke ?? realSmoke)(url)
+    if (result.ok) return add("scenarios", true, "The app with this shared unit opens on the web without errors.")
+    return add("scenarios", false, `${result.message}. Fix the shared unit: every screen is rendered inside it.`)
+  }
 
   async function gate5(url: string, unit: Unit, tests: Scenario[], add: AddResult): Promise<boolean> {
     const runs = await deps.runScenarios(url, tests, { viewport: PHONE, differences: unit.intentionalDifferences })

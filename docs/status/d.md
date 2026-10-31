@@ -136,6 +136,9 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - Inbox A → D (19:10): obaveza ekrana ne sme da traži stanje napravljeno na drugom ekranu (pravilo 6 u promptu arhitekte i analizatora; 1–5 obaveza po ekranu). Ručni i mock plan: `favorites` samo `empty-state`, nov tok `manage-favorites-flow`. README: `.env` u `app/` pre `npx expo start --web`. B-ov `shows-favorites.json` je test toka, B-ov `validate.test.ts` prihvata tokove (poseban commit).
 - Spojeno pre toga: `d/navigation-flows` (PR #102), `d/testable-obligations`.
 
+## Gotovo, čeka spajanje (grana `d/fix2`, na `staging`-u)
+- Inbox A → D (obaveze koje mogu da se dokažu, prolaz `20261031-193916-recepti`): pravilo 5 (tekst vidljiv neposredno pre klika), pravilo 3 (bez stanja kog nema u podrazumevanim podacima); `validatePlan` odbija obavezu ekrana koja traži stanje napravljeno drugde ili pominje rutu drugog ekrana. 2 nova testa.
+
 ## U radu
 - ništa
 

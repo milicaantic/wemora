@@ -85,6 +85,44 @@ describe.skipIf(!hasTemplateModules)("G1: B-ov scenario preko C-ovog serveApp na
     expect(readFileSync(join(run, "app/src/screens/shopping-list/index.tsx"), "utf8")).toBe(GOOD)
   }, 240_000)
 
+  // A → C: „dimna“ provera, prava aplikacija i pravi browser. Niz stilova na <Link asChild> obara web
+  // aplikaciju (drugi G3 prolaz); layout ne sme da uđe u aplikaciju.
+  it("layout koji obara aplikaciju na webu pada na dimnoj proveri i vraća se", async () => {
+    const layoutBefore = readFileSync(join(run, "app/src/app/_layout.tsx"), "utf8")
+    const crashDraft = join(run, "staging", "builder-3", "layout")
+    mkdirSync(join(crashDraft, "app"), { recursive: true })
+    writeFileSync(
+      join(crashDraft, "app/_layout.tsx"),
+      `import { Link, Stack } from "expo-router"
+import { StyleSheet, Text, View } from "react-native"
+
+export default function RootLayout() {
+  return (
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }} />
+      <Link href="/" asChild>
+        <View style={[styles.link, styles.active]}>
+          <Text style={[styles.text, styles.bold]}>Recepti</Text>
+        </View>
+      </Link>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({ link: { padding: 8 }, active: { backgroundColor: "#eeeeee" }, text: { fontSize: 14 }, bold: { fontWeight: "700" } })
+`,
+    )
+    const results = await checkDraft({ unit: plan.units.find((u) => u.id === "layout")!, round: 1, draftDir: crashDraft, tests: [], webDir: root("examples/recepti") })
+    expect(results.map((r) => [r.gate, r.ok])).toEqual([
+      ["parse", true],
+      ["forbiddenApis", true],
+      ["tsc", true],
+      ["scenarios", false],
+    ])
+    expect(results.at(-1)!.message).toContain("the app crashes on the web")
+    expect(readFileSync(join(run, "app/src/app/_layout.tsx"), "utf8")).toBe(layoutBefore)
+  }, 240_000)
+
   // C3.1: regresija i rollback nad pravom aplikacijom i pravim B-ovim testom.
   it("nacrt koji pokvari već dokazan ekran se vraća, a builder dobija listu pokvarenih testova", async () => {
     const layoutBefore = readFileSync(join(run, "app/src/app/_layout.tsx"), "utf8")
@@ -111,6 +149,7 @@ describe.skipIf(!hasTemplateModules)("G1: B-ov scenario preko C-ovog serveApp na
       ["parse", true],
       ["forbiddenApis", true],
       ["tsc", true],
+      ["scenarios", true],
       ["regression", false],
     ])
     const regression = results.at(-1)!

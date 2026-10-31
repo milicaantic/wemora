@@ -141,6 +141,11 @@ Poslednja izmena: 2026-10-31
   - provera u `scenarioProblem` (`matchesRoute`); testovi toka su izuzeti.
 - Ranije, na `main`-u (PR #101): test navigacije proverava da je ovaj ekran nestao, a nikad tekst drugog ekrana.
 
+## Na `staging`-u: A-ova poruka `2026-10-31-a-to-b-cover-every-element.md`
+- Tester ne završava dok neki element nema test: posle obaveza elementi dobijaju svoja 3 pokušaja i poruku sa spiskom. Od već pokrivene obaveze se više ne odustaje.
+- Prompt: dugme koje menja svoje stanje proverava se na ovom ekranu (novo ime dugmeta); novo pravilo „Cover every element“.
+- Novi test u `agents/tester.test.ts`. Ceo repo: 576/576.
+
 ## U radu
 - ništa
 

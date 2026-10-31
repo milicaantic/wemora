@@ -1,0 +1,14 @@
+{
+  "flowId": "add-favorite-from-detail",
+  "ok": false,
+  "scenarios": [
+    {
+      "scenarioId": "add-favorite-from-detail-flow",
+      "unitId": "recipe-detail",
+      "ok": false,
+      "failedStep": 1,
+      "error": "tap button \"Dodaj u omiljene\": not found on screen within 5000 ms",
+      "durationMs": 8329
+    }
+  ]
+}

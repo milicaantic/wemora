@@ -1,0 +1,34 @@
+[
+  {
+    "id": "flow-categories-to-detail",
+    "unitId": "categories",
+    "obligation": "categories-to-detail",
+    "flowId": "categories-to-detail",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Glavna jela"
+        }
+      },
+      {
+        "tap": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije:"
+        }
+      }
+    ]
+  }
+]

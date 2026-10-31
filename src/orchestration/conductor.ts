@@ -288,36 +288,49 @@ export class Conductor {
     this.assign(builder, { unitId, round: next, model, lastError }, unitId)
   }
 
-  // A tester that sends nothing for testsWaitTimeoutMs is cancelled and the screen goes back to the queue,
-  // after untried screens; after the last attempt the Gatekeeper hears tests.missing (D-016).
-  private onTestsTimeout(unitId: string): Promise<void> | void {
-    if (unitId.startsWith(FLOW)) return this.onFlowTestsTimeout(unitId.slice(FLOW.length))
-    const tester = this.testers.find((t) => t.task === unitId)
-    if (!tester || this.finished) return
-    tester.handle.cancel(`timeout: no tests.ready within ${DEFAULTS.testsWaitTimeoutMs / 60_000} min`)
-    this.release(tester)
-    const attempts = (board().units[unitId]?.testAttempts ?? 0) + 1
-    this.setUnit(unitId, { testAttempts: attempts, testerId: null })
-    log({ agent: "conductor", event: "tests.timeout", data: { unitId, tester: tester.handle.id, attempt: attempts } })
-    if (attempts >= DEFAULTS.maxTestAttempts) emit("tests.missing", { unitId }, this.participant.getId())
-    this.dispatch()
+  private onTestsTimeout(label: string): Promise<void> | void {
+    return this.testerSentNothing(label, true)
   }
 
-  // A flow tester that sends nothing gets the same limit as a screen's; after the last try the flow stays
-  // without tests, and the report says it was not checked.
-  private onFlowTestsTimeout(flowId: string): Promise<void> | void {
-    const tester = this.testers.find((t) => t.task === flowLabel(flowId))
+  // A tester whose loop ended without its result event gave up (tests.none) or crashed, so the Conductor
+  // does not wait for the timeout (D-028). A result is always handled first: the tester sends it in the
+  // same step it becomes idle, and the event goes into the same queue before this check.
+  private watchTester(worker: AnyWorker, label: string): Promise<void> | void {
+    if (this.finished || worker.task !== label) return
+    if (!worker.handle.isBusy()) return this.testerSentNothing(label, false)
+    this.timers.start(`watch:${worker.handle.id}`, DEFAULTS.idleCheckMs, () => this.enqueue(() => this.watchTester(worker, label)))
+  }
+
+  // A tester that timed out (cancelled here) or ended with no tests: the screen goes back to the queue,
+  // after untried screens, and after the last attempt the Gatekeeper hears tests.missing (D-016). A flow
+  // is tried again, then stays without tests and the report says it was not checked.
+  private testerSentNothing(label: string, timedOut: boolean): Promise<void> | void {
+    const tester = this.testers.find((t) => t.task === label)
     if (!tester || this.finished) return
-    tester.handle.cancel(`timeout: no flow.tests.ready within ${DEFAULTS.testsWaitTimeoutMs / 60_000} min`)
+    const isFlow = label.startsWith(FLOW)
+    const minutes = DEFAULTS.testsWaitTimeoutMs / 60_000
+    if (timedOut) tester.handle.cancel(`timeout: no ${isFlow ? "flow.tests.ready" : "tests.ready"} within ${minutes} min`)
+    this.timers.clear(`tests:${label}`)
     this.release(tester)
-    this.flowsTesting.delete(flowId)
-    const attempt = (this.flowAttempts.get(flowId) ?? 0) + 1
-    this.flowAttempts.set(flowId, attempt)
-    const gaveUp = attempt >= DEFAULTS.maxTestAttempts
-    if (gaveUp) this.flowsSettled.add(flowId)
-    log({ agent: "conductor", event: "flow.tests.timeout", data: { flowId, tester: tester.handle.id, attempt, gaveUp } })
+    if (isFlow) {
+      const flowId = label.slice(FLOW.length)
+      this.flowsTesting.delete(flowId)
+      const attempt = (this.flowAttempts.get(flowId) ?? 0) + 1
+      this.flowAttempts.set(flowId, attempt)
+      const gaveUp = attempt >= DEFAULTS.maxTestAttempts
+      if (gaveUp) this.flowsSettled.add(flowId)
+      const event = timedOut ? "flow.tests.timeout" : "tests.ended_empty"
+      log({ agent: "conductor", event, data: { flowId, tester: tester.handle.id, attempt, gaveUp } })
+      this.dispatch()
+      return this.checkFinished()
+    }
+    const attempts = (board().units[label]?.testAttempts ?? 0) + 1
+    this.setUnit(label, { testAttempts: attempts, testerId: null })
+    const gaveUp = attempts >= DEFAULTS.maxTestAttempts
+    const event = timedOut ? "tests.timeout" : "tests.ended_empty"
+    log({ agent: "conductor", event, data: { unitId: label, tester: tester.handle.id, attempt: attempts, gaveUp } })
+    if (gaveUp) emit("tests.missing", { unitId: label }, this.participant.getId())
     this.dispatch()
-    return this.checkFinished()
   }
 
   // A builder that submits nothing for builderRoundTimeoutMs is cancelled; that round counts as failed (P10).
@@ -623,9 +636,13 @@ export class Conductor {
     }
     log({ agent: "conductor", event: "task.assigned", data: { to: worker.handle.id, task } })
     worker.handle.assign(task)
+    if (worker.kind === "tester") {
+      this.timers.start(`watch:${worker.handle.id}`, DEFAULTS.idleCheckMs, () => this.enqueue(() => this.watchTester(worker, label)))
+    }
   }
 
   private release(worker: AnyWorker): void {
+    this.timers.clear(`watch:${worker.handle.id}`)
     worker.task = null
     const info = board().agents[worker.handle.id]
     if (info) info.busyWith = null

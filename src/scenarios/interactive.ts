@@ -1,5 +1,6 @@
 import { chromium, type Page } from "playwright"
-import type { ExtractInteractive, InteractiveElement } from "../contracts"
+import type { ExtractInteractive, InteractiveElement, Step } from "../contracts"
+import { snapshotAfterSteps } from "./run"
 import { DESKTOP } from "./viewports"
 
 const INTERACTIVE_ROLES = new Set([
@@ -36,8 +37,12 @@ export const extractInteractive: ExtractInteractive = (url, route) =>
     return interactiveElements(parseAriaSnapshot(await root.ariaSnapshot()))
   })
 
-/** What a user sees on one screen of the original (desktop viewport), as Playwright's ARIA snapshot YAML. */
-export function ariaSnapshot(url: string, route: string): Promise<string> {
+/**
+ * What a user sees on one screen of the original (desktop viewport), as Playwright's ARIA snapshot YAML.
+ * With `steps`, they run after opening the route, so the snapshot shows what appears only after a tap.
+ */
+export function ariaSnapshot(url: string, route: string, steps: Step[] = []): Promise<string> {
+  if (steps.length > 0) return snapshotAfterSteps(url, [{ goto: route }, ...steps])
   return onLoadedPage(url, route, (page) => page.locator("body").ariaSnapshot())
 }
 

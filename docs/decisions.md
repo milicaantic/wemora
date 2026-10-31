@@ -329,3 +329,14 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   5. Nivo 3 iz C-ovog predloga (kapija koja poredi izgled) ostaje van obima hakatona.
 - Zašto: builder je namerno ignorisao izgled, pa je mobilna verzija imala druge fontove, veličine i boje, iako ih ima u izvoru. Zajednička tema daje isti izgled na svim ekranima jednim mestom, umesto da svaki builder sam prepisuje CSS.
 - Posledice: `architecture.md` §8 (talas 0) i §11 (ugovor za buildera). D: arhitekta i `validatePlan` (jedinica `theme`). C: prompt buildera (`builder.md`, `web-to-rn.md`) i `read_source`. Kod A-a nema izmena.
+
+## D-028: Tester koji završi bez rezultata se ne čeka do isteka vremena
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A)
+- Odluka:
+  1. Dok tester drži zadatak (ekran ili tok), Conductor svakih `idleCheckMs` (1 s) proverava `handle.isBusy()`. Ako tester više nije zauzet, a `tests.ready` / `flow.tests.ready` nije stigao, tester je odustao (`tests.none`) ili pao. Conductor to tada obrađuje isto kao istek vremena (D-016, D-025), samo bez `cancel`: ekran se vraća u red, a posle poslednjeg pokušaja ide `tests.missing`; tok dobija još jedan pokušaj, pa ostaje bez testova. U logu je `tests.ended_empty { unitId | flowId, tester, attempt, gaveUp }`.
+  2. Rezultat se uvek obradi pre provere: tester se oslobađa i šalje događaj u istom koraku, a događaj i provera idu kroz isti red Conductora.
+  3. `testsWaitTimeoutMs` (10 min) ostaje samo za testera koji se stvarno zaglavi. Builder se ne menja.
+- Zašto: `tests.none` je samo zapis u logu, pa je Conductor čekao 10 min za svaki tok od kog je tester odustao, a ostali tokovi su stajali (`output/20261031-202913-recepti`: `categories-to-detail` 2 × 10 min). Ugovor i B-ov tester ostaju isti.
+- Posledice: `src/orchestration/conductor.ts` (`watchTester`, `testerSentNothing`), `progress.ts`, `mocks/fakeAgents.ts` (`emptyTests`), `src/agents/_shared/handle.ts` (pravilo za testera).

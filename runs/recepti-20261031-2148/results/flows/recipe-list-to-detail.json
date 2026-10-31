@@ -1,0 +1,12 @@
+{
+  "flowId": "recipe-list-to-detail",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "recipe-list-to-detail-flow",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1244
+    }
+  ]
+}

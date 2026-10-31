@@ -78,6 +78,9 @@ Poslednja izmena: 2026-10-30
 - D-020: trošak računa i keširane tokene (`a/cache-cost`). `costUsd` dobija `cache` (čitanje 0,1×, upis 1,25×), `BudgetedRunner` čita keš iz `rowResponse.usage`, `model.usage` ima `cacheReadTokens` i `cacheWriteTokens`
 - F2 zatvoren po odluci tima (2026-10-31); prelazak na F3
 
+## Gotovo (na `staging`), G3
+- D-028: Conductor svake sekunde proverava `isBusy()` testera; tester koji završi bez rezultata (`tests.none` ili pad) odmah se tretira kao istek vremena, bez `cancel` (log `tests.ended_empty`). Ranije se čekalo 10 min po toku (`output/20261031-202913-recepti`: `categories-to-detail` 2 × 10 min). Red u terminalu, 2 nova testa u `conductor.test.ts` i 2 provere u `progress.test.ts`, 584/584
+
 ## Sledeće
 - proveriti D-020 u pravom prolazu: `model.usage` u `run.jsonl` treba da ima `cacheReadTokens` > 0, a `cost:` na kraju realan iznos
 - D-017 prihvatiti (A) i dopisati `submit` u `architecture.md` §11

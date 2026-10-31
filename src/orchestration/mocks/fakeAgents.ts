@@ -32,6 +32,8 @@ export type FakeScript = {
   lateDraftOnCancel?: boolean
   /** Per flow: the tester's first N attempts send nothing (Infinity = always). */
   silentFlows?: Record<string, number>
+  /** Per screen or flow: the tester's first N attempts end with no tests and no event, like tests.none. */
+  emptyTests?: Record<string, number>
 }
 
 export type FakeCalls = {
@@ -232,6 +234,7 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
               const attempt = (testerAttempts.get(`flow:${flowId}`) ?? 0) + 1
               testerAttempts.set(`flow:${flowId}`, attempt)
               if (attempt <= (script.silentFlows?.[flowId] ?? 0)) return "silent"
+              if (attempt <= (script.emptyTests?.[flowId] ?? 0)) return
               const first = script.plan.flows.find((f) => f.id === flowId)?.unitIds[0] ?? flowId
               board().flowTests[flowId] = [{ id: `${flowId}-t1`, unitId: first, obligation: flowId, flowId, steps: [{ goto: "/" }] }]
               emit("flow.tests.ready", { flowId }, pid)
@@ -242,6 +245,7 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
             const attempt = (testerAttempts.get(task.unitId) ?? 0) + 1
             testerAttempts.set(task.unitId, attempt)
             if (attempt <= (script.silentTests?.[task.unitId] ?? 0)) return "silent"
+            if (attempt <= (script.emptyTests?.[task.unitId] ?? 0)) return
             board().tests[task.unitId] = [{ id: `${task.unitId}-t1`, unitId: task.unitId, obligation: "o", steps: [{ goto: "/" }] }]
             emit("tests.ready", { unitId: task.unitId }, pid)
           },

@@ -1,0 +1,154 @@
+{
+  "unitId": "recipe-list",
+  "status": "proven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "2 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 3 labela/tekstova; preskočeno 10 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (8)."
+    },
+    {
+      "unitId": "recipe-list",
+      "round": 1,
+      "gate": "regression",
+      "ok": true,
+      "message": "Već promovisani ekrani i dalje rade (9 testova)."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "recipe-list-search-by-name",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 876
+    },
+    {
+      "scenarioId": "recipe-list-filter-by-category",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1220
+    },
+    {
+      "scenarioId": "recipe-list-navigate-to-detail",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1221
+    },
+    {
+      "scenarioId": "recipe-list-no-match",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 846
+    },
+    {
+      "scenarioId": "recipe-list-use-supe",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 858
+    },
+    {
+      "scenarioId": "recipe-list-use-glavna-jela",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 857
+    },
+    {
+      "scenarioId": "recipe-list-use-salate",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 905
+    },
+    {
+      "scenarioId": "recipe-list-favorite-button",
+      "unitId": "recipe-list",
+      "ok": true,
+      "durationMs": 1275
+    }
+  ],
+  "coverage": {
+    "unitId": "recipe-list",
+    "obligations": {
+      "covered": [
+        "filter-by-category",
+        "navigate-to-detail",
+        "no-match",
+        "search-by-name"
+      ],
+      "missing": []
+    },
+    "elements": {
+      "covered": [
+        {
+          "role": "searchbox",
+          "name": "Pretraga"
+        },
+        {
+          "role": "button",
+          "name": "Sve kategorije"
+        },
+        {
+          "role": "button",
+          "name": "Supe"
+        },
+        {
+          "role": "button",
+          "name": "Glavna jela"
+        },
+        {
+          "role": "button",
+          "name": "Salate"
+        },
+        {
+          "role": "button",
+          "name": "Deserti"
+        },
+        {
+          "role": "link",
+          "name": "Pileća supa"
+        },
+        {
+          "role": "button",
+          "name": "Dodaj u omiljene: Pileća supa"
+        }
+      ],
+      "missing": [],
+      "notPortable": [
+        {
+          "role": "button",
+          "name": "Sortiraj po vremenu"
+        }
+      ]
+    }
+  }
+}

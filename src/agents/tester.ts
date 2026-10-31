@@ -4,10 +4,12 @@ import { createAgent, type Tool } from "@mozaik-ai/core"
 import { z } from "zod"
 import {
   ScenarioSchema,
+  StepSchema,
   type Coverage,
   type ExtractInteractive,
   type InteractiveElement,
   type Scenario,
+  type Step,
   type Unit,
   type ValidateScenario,
 } from "../contracts"
@@ -52,7 +54,7 @@ export type TesterDeps = {
   // Replaceable so tests run without a browser.
   validateScenario?: ValidateScenario
   extractInteractive?: ExtractInteractive
-  ariaSnapshot?: (url: string, route: string) => Promise<string>
+  ariaSnapshot?: (url: string, route: string, steps?: Step[]) => Promise<string>
   /** The tester's own time limit per unit (D-016); default DEFAULTS.testerUnitTimeoutMs. */
   unitTimeoutMs?: number
 }
@@ -132,7 +134,6 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
   // returns what to tell the model next: move on after MAX_FAILURES_PER_OBLIGATION, or nothing.
   function failed(tool: "try_scenario" | "save_scenario", scenario: Scenario, problem: string): string {
     const active = current()
-    const { unit } = active
     log({
       agent: id,
       event: tool === "try_scenario" ? "tester.try_failed" : "tester.save_failed",
@@ -140,16 +141,33 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     })
     active.failuresInARow++
     let note = ""
-    const known = unit.obligations.some((o) => o.id === scenario.obligation)
+    // Only an obligation that still has no test can be given up: a failed scenario for an element may name an
+    // obligation that is already covered, and giving that up would refuse every later try.
+    const open = openObligations(active).includes(scenario.obligation)
     const count = (active.failures.get(scenario.obligation) ?? 0) + 1
     active.failures.set(scenario.obligation, count)
-    if (known && count >= MAX_FAILURES_PER_OBLIGATION && !active.givenUp.has(scenario.obligation)) {
+    if (open && count >= MAX_FAILURES_PER_OBLIGATION) {
       active.givenUp.add(scenario.obligation)
       log({ agent: id, event: "tester.obligation_skipped", data: { ...where(active), obligation: scenario.obligation, failures: count } })
       const next = openObligations(active)
       note = `\nGive up on obligation "${scenario.obligation}" after ${count} failed attempts and move to the next one${next.length > 0 ? `: ${next.join(", ")}` : ""}.`
+      // The failures so far were for obligations: the elements get their own attempts (A's inbox 2026-10-31).
+      if (next.length === 0) active.failuresInARow = 0
     }
-    return note + finishIfDone(active)
+    const end = finishIfDone(active)
+    return note + (end || elementsNote(active))
+  }
+
+  // Once no obligation is open, what still has no test, so the tester covers it instead of stopping.
+  function elementsNote(active: Task): string {
+    if (openObligations(active).length > 0) return ""
+    const missing = computeCoverage(active.unit, active.saved, active.interactive).elements.missing
+    if (missing.length === 0) return ""
+    const covered = active.unit.obligations.map((o) => o.id).filter((o) => !active.givenUp.has(o))
+    return (
+      `\nEvery obligation is covered or given up, but these elements have no test yet: ${missing.map((e) => `${e.role} "${e.name}"`).join(", ")}. ` +
+      `Write one scenario that taps or fills each${covered.length > 0 ? ` (obligation: one that already has a test, e.g. ${covered[0]})` : ""}, then save it.`
+    )
   }
 
   // Obligations without a saved scenario that were not given up.
@@ -167,14 +185,22 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     return "\nEvery obligation is saved or given up, so the task ends now."
   }
 
+  // A flow scenario without flowId is the most common slip and cost one of three attempts; the task knows the flow.
+  function withTaskFlowId(scenario: Scenario): Scenario {
+    const { flowId } = current()
+    return flowId && scenario.flowId === undefined ? { ...scenario, flowId } : scenario
+  }
+
   const tools: Tool[] = [
     defineTool({
       name: "aria_snapshot",
-      description: "What a user sees at a path of the original web app: role, name and text of every element. Example path: /kupovina",
-      args: z.strictObject({ path: z.string().min(1) }),
-      invoke: async ({ path }) => {
+      description:
+        "What a user sees at a path of the original web app: role, name and text of every element. Example path: /kupovina. " +
+        "With steps (tap, fill, submit), they run after opening the path, so you see what appears only after a tap.",
+      args: z.strictObject({ path: z.string().min(1), steps: z.array(StepSchema).optional() }),
+      invoke: async ({ path, steps }) => {
         current()
-        const text = await snapshot(deps.originalUrl, path)
+        const text = await snapshot(deps.originalUrl, path, steps ?? [])
         return text.length > MAX_SNAPSHOT_CHARS ? `${text.slice(0, MAX_SNAPSHOT_CHARS)}\n… (snapshot cut)` : text
       },
     }),
@@ -182,7 +208,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
       name: "try_scenario",
       description: "Check a scenario on the original and on a blank screen without saving it. Returns whether it is valid, and why not.",
       args: scenarioArgs,
-      invoke: async ({ scenario }) => {
+      invoke: async (args) => {
+        const scenario = withTaskFlowId(args.scenario)
         const problem = await check(scenario)
         if (problem) return `Invalid: ${problem}${failed("try_scenario", scenario, problem)}`
         return "Valid. Call save_scenario with exactly the same scenario to keep it."
@@ -192,7 +219,8 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
       name: "save_scenario",
       description: "Save a valid scenario for this unit. An invalid scenario is not saved; you get the reason.",
       args: scenarioArgs,
-      invoke: async ({ scenario }) => {
+      invoke: async (args) => {
+        const scenario = withTaskFlowId(args.scenario)
         const problem = await check(scenario)
         if (problem) return `Not saved: ${problem}${failed("save_scenario", scenario, problem)}`
         const active = current()

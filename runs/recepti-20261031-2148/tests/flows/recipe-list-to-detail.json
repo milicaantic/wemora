@@ -1,0 +1,29 @@
+[
+  {
+    "id": "recipe-list-to-detail-flow",
+    "unitId": "recipe-list",
+    "obligation": "recipe-list-to-detail",
+    "flowId": "recipe-list-to-detail",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 8"
+        }
+      }
+    ]
+  }
+]

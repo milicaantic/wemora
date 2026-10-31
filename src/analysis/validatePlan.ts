@@ -36,13 +36,33 @@ const UNCHECKABLE: [RegExp, string][] = [
   [/\bsort(s|ed|ing)?\b|\b(re)?orders? (them |the \w+ |\w+ )?(by|from)\b|\b(same|original|reverse|new|different) order\b|\bascending\b|\bdescending\b|\balphabetical(ly)?\b/i, "an order of items"],
   [/\bduplicates?\b|\btwice\b|\bhow many\b|\bonly once\b|\bmore than once\b|\bexactly (one|two|three|\d+)\b/i, "counting items"],
   // A screen is checked while the other screens may still be empty in app/, so its test may not look at
-  // another screen (A, inbox 2026-10-31: recipe-list and recipe-detail blocked each other).
-  [/\bnavigat\w* (back )?to\b|\b(goes|go|returns?|takes \w+) (back )?to (the|its|that|a)\b|\bopens (the|its|that|a) [\w' -]{0,40}?\b(screen|page)\b/i, NAVIGATION],
+  // another screen (A, inbox 2026-10-31: recipe-list and recipe-detail blocked each other). Only navigation
+  // to a screen, page or list counts: "Navigating to a non-existent recipe (/recepti/9999)" is this screen.
+  [/\bnavigat\w* (back )?to (the|another|its|that|a) [\w' -]{0,40}?\b(screen|page|list)\b|\b(goes|go|returns?|takes \w+) (back )?to (the|its|that|a)\b|\bopens (the|its|that|a) [\w' -]{0,40}?\b(screen|page)\b/i, NAVIGATION],
 ]
 
 function uncheckable(description: string): string | null {
   const plain = description.replace(QUOTED, "''")
   return UNCHECKABLE.find(([pattern]) => pattern.test(plain))?.[1] ?? null
+}
+
+// A screen is checked while the other screens may still be empty, so its obligation may not need a state
+// made on another screen (A, inbox 2026-10-31: favorites "added via the recipe list flow" was given up).
+const ELSEWHERE =
+  /\b(added|marked|created|saved|selected|put) (via|from|on|in|through) (the|a|an|another) [\w' -]{0,30}?\b(list|screen|page|flow|detail)\b|\bvia the [\w' -]{0,30}?\bflow\b|\b(on|in|from) (another|the other|a different) (screen|page)\b|\bafter (a|an|the) [\w' -]{0,40}? (appears|is added|has been added|was added) (on|in) this screen\b/i
+
+const routePattern = (route: string) =>
+  new RegExp(`^${route.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/:[\w]+\??/g, "[^/]+").replace(/\*/g, ".*")}/?$`)
+
+/** A route of another screen named in the description ('/omiljeni', "/kupovina", /recepti/4), or null. */
+function otherScreenRoute(description: string, own: string | undefined, others: string[]): string | null {
+  const paths = [...description.matchAll(/'(\/[^'\s]*)'|"(\/[^"\s]*)"|(?<![\w'"/])(\/[a-z0-9][\w\-/:]*)/gi)].map((m) => m[1] ?? m[2] ?? m[3]!)
+  for (const path of paths) {
+    if (own && routePattern(own).test(path)) continue
+    const other = others.find((route) => routePattern(route).test(path))
+    if (other) return other
+  }
+  return null
 }
 
 const mentions = (description: string, name: string) =>
@@ -188,6 +208,8 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
   }
 
   // 10. Obligations: every screen has some; shared units have none (they have no UI tests of their own).
+  const otherScreenRoutes = (self: Unit) =>
+    units.flatMap((u) => (u.kind === "screen" && u.id !== self.id && typeof u.route === "string" ? [u.route] : []))
   for (const unit of units) {
     if (unit.kind === "screen" && unit.obligations.length === 0) {
       errors.push(`screen unit "${unit.id}" has no obligations; list the behaviors its tests must cover`)
@@ -215,6 +237,16 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
             ? `obligation "${obligation.id}" of unit "${unit.id}" checks ${check}; screens are checked while other screens may still be empty, so this test would block both. Say only that this screen is left (a text that exists only on this screen is no longer shown) and put what the other screen shows into a flow`
             : `obligation "${obligation.id}" of unit "${unit.id}" checks ${check}, which a test cannot do: a test only sees whether a text is shown or not. Rewrite it so that after the action a text appears or disappears, or drop it (if its element then has no testable effect, list the element as notPortable and say why)`,
         )
+      }
+      if (unit.kind === "screen") {
+        const otherRoute = otherScreenRoute(obligation.description, unit.route, otherScreenRoutes(unit))
+        const elsewhere = ELSEWHERE.exec(obligation.description.replace(QUOTED, "''"))?.[0]
+        if (otherRoute || elsewhere) {
+          const what = otherRoute ? `the route "${otherRoute}" of another screen` : `a state made elsewhere ("${elsewhere}")`
+          errors.push(
+            `obligation "${obligation.id}" of unit "${unit.id}" names ${what}; a screen is checked while the other screens may still be empty, so its obligations may only use this screen. Keep what this screen shows on its own (for example its empty state) and put the rest into a flow`,
+          )
+        }
       }
       for (const name of notPortable) {
         if (mentions(obligation.description, name)) {
