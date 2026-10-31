@@ -22,13 +22,13 @@ Poslednja izmena: 2026-10-31
 - **2026-10-31, posle koraka `submit` (PR #56) i C-ovog usklađenog nacrta: `todo-list` je u mock prolazu `proven`** (5/5 obaveza, 5/5 testova na telefonu, link `TodoMVC` `notPortable`).
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
 
-## Gotovo, čeka PR (grana `b/serve-original`): `serveOriginal(webDir)` (D-014, PD5)
+## Spojeno (PR #75): `serveOriginal(webDir)` (D-014, PD5)
 - `src/scenarios/original.ts`, izvoz kroz `scenarios/index.ts`: `serveOriginal(webDir, { build?, outDir? })` pokrene `npm run build` u web folderu i servira izlaz (`dist/`) preko `serveStatic` (slobodan port, SPA fallback) → `{ url, close }`. Jasne greške: nema `package.json`, nema `build` skripte, ima zavisnosti a nema `node_modules` („run npm ci“), build pao (poslednjih 15 redova izlaza), nema `index.html` u izlazu. Mock-api (Recepti) ne pokreće: aplikacija čita adresu iz `VITE_API_URL` pri build-u, a mock-api se pokreće ručno (README).
 - Testovi: `src/scenarios/original.test.ts` (4), nad lažnim web projektom bez zavisnosti (`mocks/webapp/`, kopira se u privremeni folder).
 - **Ručno:** `serveOriginal("examples/todomvc")` (26 s) → svih 5 TodoMVC scenarija prolazi; `serveOriginal("examples/recepti")` (4 s, mock-api pokrenut) → scenario pretrage prolazi.
 - **Za A (CLI):** kad `--original-url` nije dat, `migrate` može da pozove `serveOriginal(webDir)` i na kraju `close()`.
 
-## Gotovo, čeka PR (grana `b/tester-flows`, iznad `b/serve-original`): tester za tokove (D-022, priprema)
+## Spojeno (PR #75): tester za tokove (D-022, priprema)
 - Tester prima i zadatak toka: `assign({ flowId })` pored `assign({ unitId })` (`TesterTask` u `agents/tester.ts`; `AgentHandle<TesterTask>` se i dalje uklapa u Conductor-ov `AgentHandle<TestTask>`). Tok se vidi kao jedna jedinica (`flowAsUnit`): prvi ekran toka, tok kao jedina obaveza, `notPortable` svih ekrana toka. Ista tri pravila validacije; scenario mora da nosi `flowId` toka, a test ekrana ne sme da ga ima (`scenarioProblem`).
 - Čuva u `tests/flows/<flowId>.json` i `board().flowTests[flowId]`, pa šalje `flow.tests.ready { flowId }` (C-ov Gatekeeper ga već sluša). Za tok nema pokrivenosti ni `tests.ready`; bez sačuvanog scenarija ne šalje ništa (`tests.none`). Brief: `flowBrief` (ekrani redom, id-jevi koje treba upisati, do 2 sačuvana testa po ekranu, elementi koje ne sme da koristi). Prompt ima odeljak „Flow tasks“.
 - Testovi: 3 nova u `agents/tester.test.ts`, 5 u `scenarios/tester.test.ts`. Ceo repo: 534.
@@ -98,13 +98,30 @@ Poslednja izmena: 2026-10-31
 - C je po D-016 dodao reakciju na `tests.missing` (ekran ulazi kao `unproven`) i ignorisanje zakasnelog nacrta (PR #48); prompt buildera ima checkbox i `Link` (predlog uz D-005). Usklađeno sa testerom; build i 455 testova prolaze.
 - A je povezao Gatekeeper u CLI (PR #49), a C dodao mock buildera za `app-entry` (PR #52): mock prolaz nad TodoMVC-om radi do kraja (vidi B11).
 
+## B14 (pokrivenost → status → izveštaj): kod B nema novog koda
+- Koraci 1–4 iz `docs/tasks/b.md` su već pokriveni spojenim radom:
+  1. tester računa pokrivenost i stavlja je na tablu pre `tests.ready`, a Gatekeeper je upisuje u `results/<unitId>.json`;
+  2. C-ov `computeStatus` prima pokrivenost, a `notPortable` ne kvari `proven` (`status.test.ts`);
+  3. D-ov izveštaj čita `results.coverage`;
+  4. C-ov `status.test.ts` ima oba slučaja: puna pokrivenost daje `proven`, a element koji fali daje `partial`.
+- **Rupa:** Gatekeeper upisuje `scenarios: []` u `results/` (ugovor `CheckDraft` vraća samo `GateResult[]`), pa je izveštaj za dokazan ekran pisao „nije pušten“. D je to prijavio C-u (`docs/inbox/2026-10-31-d-to-c-results-scenarios-empty.md`) i u izveštaju dodao zamenu. B ne šalje posebnu poruku.
+- Zatvaram B14 kad C popravi: ponovo `migrate:mock -- examples/todomvc` i provera da se `report.html` slaže sa `results/`. Kriterijum „pravi prolaz nad Receptima“ ide uz G2/G3 (treba API ključ). Grana `b/coverage-status` verovatno nije potrebna.
+
+## A18 proveren kroz CLI (2026-10-31, PR #78)
+- Nad kopijom `runs/todomvc-mock-20261031-1454`, bez API ključa:
+  1. `npm run verify` → `OK: 5/5`, exit 0;
+  2. `npm run sabotage -- <kopija> todo-list` → `"New Todo Input" (label)`, exit 0;
+  3. `verify` → `FAILED: 1/5`, padaju tačno 4 testa koja koriste polje.
+- Original u `runs/` je netaknut.
+
 ## U radu
 - ništa
 
 ## Sledeće
 - pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
 - F3: kapija G3 za tokove (ostavljena za kasnije); povezivanje testera za tokove kad A doda dodelu tokova u Conductor
-- A (A18): povezati `wemora verify <run-dir>` (`verifyDetailed` + `formatVerifyReport`, exit 0 kad je `ok`) i `wemora sabotage <run-dir> <unitId>` (`sabotageDetailed`, ispisati šta je promenjeno)
+- A: `migrate` bez `--original-url` da pozove `serveOriginal(webDir)`, i dodela tokova testeru u Conductor-u (poruka `2026-10-31-b-to-a-serve-original-and-flow-tester.md`, bez odgovora)
+- B14: provera izveštaja kad C popuni `results.scenarios`
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
