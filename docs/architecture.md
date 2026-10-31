@@ -105,7 +105,7 @@ Staging folder ima isti raspored kao `app/src/`, pa je promocija kopiranje. Owne
 
 `Unit` (tačno u `contracts/types.ts`): `id`, `kind: "shared" | "screen"`, `wave`, `route?`, `sources` (izvorni web fajlovi, samo za čitanje), `writes` (putanje u `app/src/` koje jedinica sme da menja), `dependsOn` (ID-jevi jedinica), `obligations` (šta mora da se testira), `intentionalDifferences`, `size` (tokeni).
 
-- **Talas 0** su zajedničke jedinice: komponente, skladišta podataka, API klijent, navigacija. Ekrani zavise samo od njih, a ne jedni od drugih, jer se povezuju preko adresa iz `routeMap`.
+- **Talas 0** su zajedničke jedinice: tema (fontovi, veličine i boje iz globalnog CSS-a, D-027), komponente, skladišta podataka, API klijent, navigacija. Ekrani zavise samo od njih, a ne jedni od drugih, jer se povezuju preko adresa iz `routeMap`.
 - **Talas 2+** postoji samo kad ekran zavisi od koda druge jedinice-ekrana.
 - Svaki izvorni fajl pripada najviše jednoj jedinici. Svaka ruta iz parsera je u planu.
 - Modal ili deo koji postoji samo unutar drugog ekrana spaja se sa tim ekranom u istu jedinicu.
@@ -187,7 +187,7 @@ Testeri uzimaju jedinice istim redom.
 
 **Testovi toka** (`Flow`) prelaze više jedinica i puštaju se tek kad su sve promovisane. Test toka je običan `Scenario` sa poljem `flowId`: `unitId` je prva jedinica toka, a `obligation` je ID toka. **Tok koji pada ne vraća nijedan ekran**, jer je svaki već dokazan svojim testovima, a vraćanje bi kvarilo druge tokove. Pad se samo prijavljuje u `results/flows/<flowId>.json` i u izveštaju (D-022).
 
-**Ugovor za buildera:** labele polja i tekst dugmadi ostaju isti kao u originalu. Izgled sme da se menja. Da bi testovi našli elemente na Expo webu (D-005): dugme je `Pressable role="button"` sa `Text`, lista je `role="list"` sa stavkama `role="listitem"`, a polje je `TextInput accessibilityLabel` sa istom labelom kao na webu.
+**Ugovor za buildera:** labele polja i tekst dugmadi ostaju isti kao u originalu. Raspored sme da se menja (kolone, tabela → kartice, bočni meni → donja traka); tipografija i boje se prenose sa weba preko zajedničke jedinice `theme` (D-027). Testovi i kapije dokazuju ponašanje, ne izgled: `proven` ne znači „izgleda isto“. Da bi testovi našli elemente na Expo webu (D-005): dugme je `Pressable role="button"` sa `Text`, lista je `role="list"` sa stavkama `role="listitem"`, a polje je `TextInput accessibilityLabel` sa istom labelom kao na webu.
 
 ## 12. AI agenti
 

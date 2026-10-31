@@ -49,7 +49,10 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/load-control`)
+## Gotovo, čeka review i spajanje (grana `a/typography-decision`)
+- D-027 (na C-ov zahtev, tim izabrao Nivo 2): tipografija i boje se prenose sa weba preko zajedničke jedinice `theme` u talasu 0; raspored sme da se menja; dokaz i ugovor o labelama isti; Conductor bez izmena. `architecture.md` §8 i §11. Samo dokumentacija
+
+## Gotovo (spojeno u main), `a/load-control` (PR #87)
 - A17 (D-026): +1 tester (do `maxTesters`) dok najmanje 3 ekrana čekaju testera, a nacrt čeka testove u Gatekeeperu; kroz A14 `Rescaler`, razlog u `agents.rescaled`. 3 nova testa, 551/551
 
 ## Gotovo (spojeno u main), `a/flow-dispatch` (PR #85)
