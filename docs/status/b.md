@@ -98,14 +98,18 @@ Poslednja izmena: 2026-10-31
 - C je po D-016 dodao reakciju na `tests.missing` (ekran ulazi kao `unproven`) i ignorisanje zakasnelog nacrta (PR #48); prompt buildera ima checkbox i `Link` (predlog uz D-005). Usklađeno sa testerom; build i 455 testova prolaze.
 - A je povezao Gatekeeper u CLI (PR #49), a C dodao mock buildera za `app-entry` (PR #52): mock prolaz nad TodoMVC-om radi do kraja (vidi B11).
 
-## B14 (pokrivenost → status → izveštaj): kod B nema novog koda
+## Gotovo: B14 (pokrivenost → status → izveštaj), bez novog koda kod B
 - Koraci 1–4 iz `docs/tasks/b.md` su već pokriveni spojenim radom:
   1. tester računa pokrivenost i stavlja je na tablu pre `tests.ready`, a Gatekeeper je upisuje u `results/<unitId>.json`;
   2. C-ov `computeStatus` prima pokrivenost, a `notPortable` ne kvari `proven` (`status.test.ts`);
   3. D-ov izveštaj čita `results.coverage`;
   4. C-ov `status.test.ts` ima oba slučaja: puna pokrivenost daje `proven`, a element koji fali daje `partial`.
-- **Rupa:** Gatekeeper upisuje `scenarios: []` u `results/` (ugovor `CheckDraft` vraća samo `GateResult[]`), pa je izveštaj za dokazan ekran pisao „nije pušten“. D je to prijavio C-u (`docs/inbox/2026-10-31-d-to-c-results-scenarios-empty.md`) i u izveštaju dodao zamenu. B ne šalje posebnu poruku.
-- Zatvaram B14 kad C popravi: ponovo `migrate:mock -- examples/todomvc` i provera da se `report.html` slaže sa `results/`. Kriterijum „pravi prolaz nad Receptima“ ide uz G2/G3 (treba API ključ). Grana `b/coverage-status` verovatno nije potrebna.
+- **Rupa:** Gatekeeper je upisivao `scenarios: []` u `results/`, pa je izveštaj za dokazan ekran pisao „nije pušten“. D je to prijavio C-u, a C je popravio u PR #83, bez promene ugovora.
+- **Provera (2026-10-31)** nad `migrate:mock -- examples/todomvc` (`output/20261031-160553-todomvc`):
+  - `results/todo-list.json` ima 5 rezultata testova, svi `ok`, a status je `proven`;
+  - `report.html` pokazuje 5 ✓ i „5/5 obaveze, 1/1 elemenata“, što se slaže sa `results/`;
+  - `verify` daje OK 5/5, a posle `sabotage` FAILED 1/5.
+- Grana `b/coverage-status` nije bila potrebna. Kriterijum „pravi prolaz nad Receptima“ prelazi u kapiju G3 (korak 2), jer traži API ključ.
 
 ## A18 proveren kroz CLI (2026-10-31, PR #78)
 - Nad kopijom `runs/todomvc-mock-20261031-1454`, bez API ključa:
@@ -118,10 +122,10 @@ Poslednja izmena: 2026-10-31
 - ništa
 
 ## Sledeće
-- pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
-- F3: kapija G3 za tokove (ostavljena za kasnije); povezivanje testera za tokove kad A doda dodelu tokova u Conductor
-- A: `migrate` bez `--original-url` da pozove `serveOriginal(webDir)`, i dodela tokova testeru u Conductor-u (poruka `2026-10-31-b-to-a-serve-original-and-flow-tester.md`, bez odgovora)
-- B14: provera izveštaja kad C popuni `results.scenarios`
+- pravi prolaz `npm run migrate -- examples/todomvc --budget 1` (G2), uz API ključ; od D-025 (PR #85) `--original-url` nije potreban
+- kapija G3 (sa koracima iz B14 i tokovima): pravi prolaz nad Receptima, `verify`, `sabotage`, `report.html`
+- tokovi: A je povezao dodelu u Conductor-u (D-025). Za mock prolaz sa `tests/flows/` treba mock odgovor `tester:favorite-flow` za Recepte, kad C doda mock odgovore buildera za Recepte.
+- napomena za kasnije: tester toka koji ništa ne sačuva šalje samo log `tests.none`, pa Conductor čeka svoj timeout (10 min, 2 pokušaja) pre kraja prolaza
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
