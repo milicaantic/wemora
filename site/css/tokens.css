@@ -1,0 +1,47 @@
+/* Wemora site: color tokens (light + dark) and type families.
+   Layout: one long proof sheet. Hero = the same test running on a web app and a phone app side by side;
+   below it, the run as a real sequence (pipeline → gates → statuses → rerun). Cool mineral neutrals,
+   one teal "pass" accent, semantic status colors kept separate. */
+
+:root {
+  --bg: #f1f4f2;
+  --surface: #ffffff;
+  --sunk: #e6ebe8;
+  --ink: #111814;
+  --muted: #56635c;
+  --line: #cfd8d3;
+  --accent: #0b7a68;
+  --accent-ink: #ffffff;
+  --accent-soft: #d4ece6;
+  --proven: #1f8a4c;
+  --partial: #b7791f;
+  --unproven: #6b7480;
+  --failed: #c2412d;
+  --code-bg: #0f1613;
+  --code-fg: #d8e4de;
+  --code-dim: #7f948a;
+  --code-hit: #5fe0bf;
+  --code-bad: #ff8a73;
+  --shadow: 0 1px 2px rgb(17 24 20 / .06), 0 8px 28px rgb(17 24 20 / .08);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c110f; --surface: #141b18; --sunk: #1a2420; --ink: #e5ece8; --muted: #9aaba2; --line: #26332d;
+    --accent: #3fd0b0; --accent-ink: #062019; --accent-soft: #123a31;
+    --proven: #4cc47e; --partial: #e2a843; --unproven: #94a0ac; --failed: #ff7a63;
+    --code-bg: #070b09; --code-fg: #d8e4de; --code-dim: #6d8278; --code-hit: #5fe0bf; --code-bad: #ff8a73;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c110f; --surface: #141b18; --sunk: #1a2420; --ink: #e5ece8; --muted: #9aaba2; --line: #26332d;
+  --accent: #3fd0b0; --accent-ink: #062019; --accent-soft: #123a31;
+  --proven: #4cc47e; --partial: #e2a843; --unproven: #94a0ac; --failed: #ff7a63;
+  --code-bg: #070b09; --code-fg: #d8e4de; --code-dim: #6d8278; --code-hit: #5fe0bf; --code-bad: #ff8a73;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .35);
+  color-scheme: dark;
+}
