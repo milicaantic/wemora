@@ -34,11 +34,11 @@ Wemora's product is **the proof, not the code**:
 
 ---
 
-## Try it (about 10 minutes, no API key)
+## Quick start: migrate the example apps
 
-You need **Node 22 or newer** and **npm**. The commands work in Git Bash and PowerShell on Windows, and in any shell on macOS and Linux.
+You need **Node 22 or newer** and **npm**. The commands work in PowerShell and Git Bash on Windows, and in any shell on macOS and Linux.
 
-### 1. Install
+### 1. Install (once)
 
 ```bash
 git clone https://github.com/milicaantic/wemora.git
@@ -46,13 +46,100 @@ cd wemora
 npm ci
 npx playwright install chromium
 cd templates/expo && npm ci && cd ../..
+cd examples/todomvc && npm ci && cd ../..
+cd examples/recepti && npm ci && cd ../..
 ```
 
-The last line installs Expo, which Wemora uses to build the mobile app for the web.
+The `templates/expo` line installs Expo, which Wemora uses to build the mobile app. The last two lines install the two example apps.
 
-### 2. Check a finished migration
+### 2. Migrate TodoMVC, no API key needed
 
-[`runs/`](runs/) holds a finished migration of the [TodoMVC](https://github.com/tastejs/todomvc) app, made with recorded model answers (`--mock`, as in step 4). `verify` builds its mobile app and runs every test again:
+```bash
+npm run migrate:mock -- examples/todomvc
+```
+
+`--mock` replaces only the AI model with recorded answers, so it costs nothing. Everything else is real: Wemora builds and serves the original app, the mobile app is built, and the tests run in a browser. It takes about 3 minutes and ends with:
+
+```
+outcome: finished
+  app-entry: promoted
+  theme: promoted
+  todo-list: promoted
+report:  …/output/<run-id>/report.html
+```
+
+Open `output/<run-id>/report.html` in a browser.
+
+### 3. Migrate with a real model
+
+Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` (see the comments in [`.env.example`](.env.example)).
+
+**TodoMVC** (about 10 minutes):
+
+```bash
+npm run migrate -- examples/todomvc
+```
+
+**Recepti** (5 screens, about 25 minutes). The app reads its recipes from a small data server, so start that first and keep it running:
+
+```bash
+cd examples/mock-api && npm start          # terminal 1, http://localhost:3000
+```
+
+```bash
+npm run migrate -- examples/recepti        # terminal 2
+```
+
+`--budget` (default **$5**) is a hard limit: when it is reached, no new work starts and the report is still written.
+
+### What happens during a run
+
+1. **Wemora builds and serves the original web app** on a free local port, so the agents can use it in a browser.
+2. **Analyzer agents** read the code in parallel. An **architect agent** turns their reports into a plan: units of work, the **obligations** each screen must keep (with the exact texts of the original), and what may differ on a phone. Code checks the plan.
+3. **Tester and builder agents work at the same time.** Testers write UI tests against the original. Builders write the mobile screens, shared code first.
+4. **The Gatekeeper** (plain code) checks every draft and runs its tests on the mobile app. A screen that passes goes into the app; one that fails goes back to its builder with the exact failing step, up to 4 rounds.
+5. **The report** gives every screen a status (**proven**, **partially proven**, **unproven** or **failed**) and shows when each agent worked.
+
+Everything is written to `output/<run-id>/` ([what is in it](#what-a-run-writes)). To open the mobile app itself, run this in `output/<run-id>/app` (do not run `npm install` there, it shares the template's packages):
+
+```bash
+npx expo start --web
+```
+
+The example apps:
+
+| App | What it tests |
+|---|---|
+| [**Recepti**](examples/recepti/) | 5 screens built for desktop only on purpose: sidebar, wide table, side-by-side views, hover details |
+| [**TodoMVC**](examples/todomvc/) | the React TodoMVC from [tastejs/todomvc](https://github.com/tastejs/todomvc), unchanged, so Wemora is not tuned to our own example |
+
+---
+
+## Migrate your own app
+
+Your app needs to be:
+
+- a **React 18 or 19 single-page app** with **React Router 6 or 7** (Next.js and React Router 5 are refused with a clear message, see [Limitations](#limitations));
+- buildable with **`npm run build`**, which writes the app to **`dist/`** (with `dist/index.html`), as Vite does by default.
+
+Then:
+
+```bash
+cd path/to/your-app && npm ci && cd -     # install your app's packages once
+npm run migrate -- path/to/your-app       # from the wemora folder, with .env set up as in step 3
+```
+
+- **If your app calls an API**, start that server first. The mobile app reads it from `EXPO_PUBLIC_API_URL`, or from `VITE_API_URL` if that is set, for example `EXPO_PUBLIC_API_URL=http://localhost:4000 npm run migrate -- path/to/your-app` in Git Bash.
+- **If your app is already running** (for example `npm run dev`), pass its address instead of letting Wemora build it: `npm run migrate -- path/to/your-app --original-url http://localhost:5173`.
+- `--mock` only works for the example apps, because it needs recorded model answers. Your own app needs a real model.
+
+To keep a finished run and commit it, `npm run archive -- output/<run-id>` copies it into `runs/` without dependencies.
+
+---
+
+## Check the proof again, with no AI and no API key
+
+[`runs/`](runs/) holds a finished migration of TodoMVC. `verify` builds its mobile app and runs every saved test again:
 
 ```bash
 npm run verify -- runs/todomvc-mock-20261031-1454
@@ -69,11 +156,9 @@ todo-list  [proven]
 OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
-Open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser to see the full report. The first `verify` can take up to a minute (Expo's first build); later ones take seconds.
+The first `verify` can take up to a minute (Expo's first build); later ones take seconds. It works on any folder in `output/` too.
 
-### 3. Break a screen and watch `verify` catch it
-
-`sabotage` changes the mobile screen on purpose (it renames a field the tests look for):
+**Break a screen and watch `verify` catch it.** `sabotage` changes the mobile screen on purpose (it renames a field the tests look for):
 
 ```bash
 npm run sabotage -- runs/todomvc-mock-20261031-1454 todo-list
@@ -91,55 +176,7 @@ todo-list  [proven]
 FAILED: 1/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
-`verify` exits with code 1. Undo the change with:
-
-```bash
-git checkout -- runs/
-```
-
-### 4. Run a whole migration
-
-This runs the full pipeline on TodoMVC: analysis, plan, building and testing in parallel, the gates, and the report. `--mock` replaces only the AI model with recorded answers, so it costs nothing; the mobile app, the gates and the tests are real.
-
-```bash
-cd examples/todomvc && npm ci && cd ../..
-npm run migrate:mock -- examples/todomvc
-```
-
-It takes about 3 minutes and ends with a summary:
-
-```
-outcome: finished
-  app-entry: promoted
-  theme: promoted
-  todo-list: promoted
-report:  …/output/<run-id>/report.html
-```
-
----
-
-## Run it with a real model
-
-1. Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` (see the comments in [`.env.example`](.env.example)).
-2. Install and start the example's data server, then run Wemora:
-
-```bash
-cd examples/recepti && npm ci && cd ../..
-cd examples/mock-api && npm start          # keep this running (http://localhost:3000)
-```
-
-```bash
-npm run migrate -- examples/recepti        # in a second terminal
-```
-
-Wemora builds and serves the original app by itself, runs the agents, and writes everything to `output/<run-id>/`. `--budget` (default **$5**) is a hard limit: when it is reached, no new work starts and the report is still written. Keep a finished run with `npm run archive -- output/<run-id>`, which copies it into `runs/` without dependencies.
-
-The two example apps:
-
-| App | What it tests |
-|---|---|
-| [**Recepti**](examples/recepti/) | 5 screens built for desktop only on purpose: sidebar, wide table, side-by-side views, hover details |
-| [**TodoMVC**](examples/todomvc/) | the React TodoMVC from [tastejs/todomvc](https://github.com/tastejs/todomvc), unchanged, so Wemora is not tuned to our own example |
+`verify` exits with code 1. Undo the change with `git checkout -- runs/`.
 
 ---
 
@@ -147,18 +184,37 @@ The two example apps:
 
 ```mermaid
 flowchart LR
-  web["React web app"] --> parse["Parser<br/>(code)"]
-  parse --> analyzers["Analyzer agents<br/>in parallel"]
-  analyzers --> architect["Architect agent<br/>plan + obligations"]
-  architect --> check{"Plan check<br/>(code)"}
-  check -- errors --> architect
-  check --> testers["Tester agents<br/>tests on the original"]
-  check --> builders["Builder agents<br/>mobile screens"]
-  testers --> gate["Gatekeeper<br/>(code)"]
-  builders --> gate
-  gate -- fails --> builders
-  gate -- passes --> app["Expo app"]
-  gate --> report["report.html"]
+  web(["Your React app<br/>built and served by Wemora"])
+
+  subgraph rt["One Mozaik runtime: agents coordinate only through events, the data is on a shared board"]
+    direction LR
+    conductor["Conductor · code<br/>task queue, team size, timeouts, budget"]
+
+    subgraph plan["1 · Plan"]
+      direction TB
+      analyzers["Analyzer agents ×1–4<br/>in parallel"] --> architect["Architect agent<br/>plan + obligations"]
+      architect --> check{"Plan check<br/>code"}
+      check -- "errors" --> architect
+    end
+
+    subgraph work["2 · Build and test at the same time"]
+      direction TB
+      testers["Tester agents ×1–2<br/>UI tests on the original"]
+      builders["Builder agents ×1–4<br/>mobile screens, own folder only"]
+    end
+
+    gate{"3 · Gatekeeper · code<br/>parse, web APIs, tsc,<br/>labels, all tests"}
+  end
+
+  web --> analyzers
+  testers -. "test in a browser" .-> web
+  check -- "plan.ready" --> work
+  testers -- "tests.ready" --> gate
+  builders -- "draft.submitted" --> gate
+  gate -- "gate.failed: next round<br/>rounds 3–4 on a stronger model" --> builders
+  gate -- "unit.promoted" --> app(["Expo app"])
+  gate --> report(["report.html<br/>proven / partial / unproven / failed"])
+  conductor -. "assigns tasks,<br/>adds and removes agents" .-> work
 ```
 
 1. **Analyze.** A parser finds the routes, files and web-only APIs. Analyzer agents describe each screen: what it shows, what the user can do, what will not fit a phone. An architect agent turns this into a plan: units of work, the **obligations** each screen must keep (with the exact texts of the original), and the **intentional differences** (for example, filters that move behind a button on a phone). Code checks the plan and sends errors back to the architect.
@@ -223,17 +279,6 @@ output/<run-id>/
 - **Not covered:** server rendering, Tailwind, CSS-in-JS, auth, native APIs (camera, push), iOS, store publishing, pixel comparison.
 - **Tests run on the mobile app's web build** (390×844) in Chromium, not on a device.
 - Elements without a name and gestures with no web equivalent (hover, double click) are recorded as intentional differences instead of tested.
-
----
-
-## Team
-
-| | Part |
-|---|---|
-| **JavorFaks** | contracts, runtime, inference runner, Conductor and agent scaling, CLI |
-| **Vujic04** | test language and runners, tester agent, `verify` and `sabotage` |
-| **Milica Antić** | Expo template, Gatekeeper and its gates, builder agent |
-| **Kuzma04** | parser and plan checks, analyzer and architect agents, report, example apps |
 
 Design documents (in Serbian): [`docs/architecture.md`](docs/architecture.md).
 
