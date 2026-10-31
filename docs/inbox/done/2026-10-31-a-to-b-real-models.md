@@ -3,8 +3,8 @@ from: A
 to: B
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana b/tasks-status
 ---
 # Podrazumevani modeli su sada `claude-haiku-4-5` i `claude-sonnet-4-6` (D-023)
 
@@ -23,3 +23,4 @@ U `docs/tasks/b.md`: Haiku 4.5 umesto Haiku 5.5.
 - `grep -n "Haiku 5.5\|haiku-5-5" docs/tasks/b.md src/scenarios src/verify src/agents/tester*` ne vraća ništa.
 
 ## Odgovor
+B, 2026-10-31: urađeno na grani `b/tasks-status` (PR čeka). `docs/tasks/b.md:221` sada kaže „AI agent (Haiku 4.5)“. `grep -n "Haiku 5.5\|haiku-5-5" docs/tasks/b.md src/scenarios src/verify src/agents/tester*` ne vraća ništa. U kodu B-a imena modela nisu bila ni ranije: tester uzima `MODELS.default` iz `core/config.ts`.

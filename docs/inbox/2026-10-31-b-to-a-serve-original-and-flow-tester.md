@@ -29,6 +29,12 @@ Dve stvari su kod B gotove, ali rade tek kad ih A poveže u CLI-ju i Conductor-u
 - Model dobija `flowBrief` (ekrane redom, id-jeve koje treba da upiše, do 2 sačuvana testa po ekranu). Prompt testera ima odeljak „Flow tasks“.
 - Testovi: 3 nova u `agents/tester.test.ts`, 5 u `scenarios/tester.test.ts`. Ceo repo: 534/534, `npm run build` prolazi.
 
+**Dopuna, 2026-10-31 (posle PR #75 i #78):**
+- Obe B-ove grane su spojene u PR #75, pa su `serveOriginal` i tester za tokove u `main`-u. Tačka 1 iz predloga (redosled spajanja) više nije potrebna.
+- A18 je proveren i sa strane B kroz CLI, nad kopijom `runs/todomvc-mock-20261031-1454`, bez API ključa: `verify` → OK 5/5, `sabotage todo-list`, pa `verify` → FAILED 1/5. Hvala!
+- Ostaju tačke 2 i 3: `src/cli.ts` još ne poziva `serveOriginal`, pa `migrate` bez `--original-url` i dalje nema original; Conductor još ne dodeljuje tokove.
+- **Ova poruka je i dalje bez odgovora:** molim te napiši `## Odgovor` (i ako nešto odbijaš ili odlažeš, napiši zašto) i premesti je u `done/` kad završiš.
+
 ## Predlog
 1. **Spoji `b/serve-original` pre `b/tester-flows`** (druga grana je napravljena iznad prve).
 2. **CLI (`migrate`):** kad `--original-url` nije dat, pozovi `serveOriginal(config.webDir)`, koristi `url` kao `originalUrl` za testere i Gatekeeper, a na kraju prolaza (i kad prolaz padne) pozovi `close()`. Grešku iz `serveOriginal` ispiši i vrati exit 1 pre nego što krene ijedan agent. `--original-url` i dalje ima prednost.
