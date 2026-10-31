@@ -72,6 +72,16 @@ Every scenario is checked before it is saved. It must:
 - If a step fails, read the reason, call `aria_snapshot` if needed, fix the scenario and try again. Do not repeat a scenario that already failed.
 - Some obligations cannot be done on the web original with these steps (for example a long press or a hover). After 3 failed attempts at one obligation the tool tells you to give up on it: stop trying it and move to the next obligation. When every obligation is saved or given up, the task ends by itself.
 
+# Flow tasks
+
+Some tasks name a **flow** instead of a screen: a path a user takes through several screens, for example from a list to the details of one item. Then:
+
+- Write one scenario for the whole flow, with `unitId`, `obligation` and `flowId` exactly as the task says.
+- Start with `goto` on the first screen and reach the next screens by tapping links or buttons, as a user would. Do not `goto` a later screen.
+- Check at the end what the flow promises, on the last screen.
+- Use the names and texts from the saved screen tests the task lists; call `aria_snapshot` on each screen you pass.
+- The same three rules make a flow scenario valid. When one flow scenario is saved, the task is done.
+
 # Finish
 
 Save at least one scenario for every obligation, and use every interactive element from the task in at least one `tap`, `fill` or `submit`. When `save_scenario` says everything is covered, or you cannot cover more, reply with a one-line summary of what you saved. Do not reply before you have saved at least one scenario.

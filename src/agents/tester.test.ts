@@ -16,7 +16,7 @@ import { initLog } from "../core/log"
 import { loadMockFixture, MockRunner, type MockFixture } from "../core/runner"
 import { board, initializeRuntime, join } from "../core/runtime"
 import { createInitialState } from "../core/state"
-import { readTests } from "../scenarios"
+import { readFlowTests, readTests } from "../scenarios"
 import { createTester, type TesterDeps } from "./tester"
 
 // All tests that need the runtime live in this file: Mozaik allows one runtime per process.
@@ -60,6 +60,15 @@ const searchAndSave = (unitId: string): Scenario => ({
     { tap: { role: "button", name: "Sačuvaj" } },
     { expectNotVisible: { text: "#1043" } },
   ],
+})
+// A flow from the orders screen to the details screen (D-022): one scenario through both.
+const checkout = (extra: Partial<Scenario> = {}): Scenario => ({
+  id: "flow-checkout",
+  unitId: "f-orders",
+  obligation: "checkout",
+  flowId: "checkout",
+  steps: [{ goto: "/narudzbine" }, { tap: { role: "link", name: "#1043" } }, { expectVisible: { text: "Detalji" } }],
+  ...extra,
 })
 const call = (name: string, args: Record<string, unknown>) => ({ call: { name, args } })
 const saveCall = (scenario: Scenario) => call("save_scenario", { scenario })
@@ -105,6 +114,16 @@ const fixture: MockFixture = {
   "tester:u-own-limit": [saveCall(search("u-own-limit")), call("aria_snapshot", { path: "/narudzbine" }), { text: "Done." }],
   "tester:u-blank": [saveCall(search("u-blank")), { text: "Done." }],
   "tester:u-blank-down": [saveCall(search("u-blank-down")), { text: "Done." }],
+  // A flow task: refused without flowId, refused with "Info" (notPortable on the second screen), then saved.
+  "tester:checkout": [
+    saveCall(checkout({ flowId: undefined })),
+    saveCall(checkout({ id: "flow-info", steps: [{ goto: "/narudzbine" }, { tap: { role: "button", name: "Info" } }, { expectVisible: { text: "Detalji" } }] })),
+    saveCall(checkout()),
+    { text: "Done." },
+  ],
+  "tester:empty-flow": [{ text: "Nothing to test." }],
+  // A screen task that tries to save a flow test.
+  "tester:u-flow-id": [saveCall({ ...search("u-flow-id"), flowId: "checkout" }), saveCall(search("u-flow-id")), { text: "Done." }],
 }
 
 // Keeps every tool output the model saw, so tests can check what came back from a tool.
@@ -118,9 +137,12 @@ class RecordingRunner extends MockRunner {
   }
 }
 
-class TestsReady extends SituationSpecification {
+class EventOfType extends SituationSpecification {
+  constructor(private readonly type: string) {
+    super()
+  }
   isSatisfiedBy({ event }: SituationContext): boolean {
-    return event.type === "tests.ready"
+    return event.type === this.type
   }
 }
 
@@ -128,6 +150,7 @@ class TestsReady extends SituationSpecification {
 const todomvcReplies = loadMockFixture(fileURLToPath(new URL("./mocks/todomvc/tester.json", import.meta.url)))
 const runner = new RecordingRunner({ ...fixture, ...todomvcReplies })
 const ready: string[] = []
+const flowsReady: string[] = []
 // Whether board().coverage already had the unit when its tests.ready arrived (the Gatekeeper reads it then).
 const coverageAtReady = new Map<string, boolean>()
 const validated: string[] = []
@@ -194,11 +217,14 @@ beforeAll(() => {
     "u-blank-down",
     "u-give-up",
     "u-give-up-later",
+    "u-flow-id",
   ]
   const plan: Plan = {
     units: [
       ...ids.map((id) => unit(id)),
       unit("shared-data", { kind: "shared", route: undefined, obligations: [] }),
+      unit("f-orders", { intentionalDifferences: [] }),
+      unit("f-details", { route: "/narudzbine/:id" }),
       // The TodoMVC screen as D's architect mock plans it (src/agents/mocks/todomvc/architect.json).
       unit("todo-list", {
         route: "*",
@@ -212,7 +238,10 @@ beforeAll(() => {
         intentionalDifferences: [],
       }),
     ],
-    flows: [],
+    flows: [
+      { id: "checkout", description: "Opening order #1043 from the list shows its details", unitIds: ["f-orders", "f-details"] },
+      { id: "empty-flow", description: "Nothing gets saved for this flow", unitIds: ["f-orders", "f-details"] },
+    ],
     routeMap: { "/narudzbine": "/narudzbine" },
   }
   const config: RunConfig = { webDir: "examples/recepti", runDir, maxBuilders: 1, maxTesters: 1, budgetUsd: 0, mock: true }
@@ -226,7 +255,7 @@ beforeAll(() => {
       capabilities: [],
       handlers: [
         {
-          specification: new TestsReady(),
+          specification: new EventOfType("tests.ready"),
           processor: {
             apply: ({ event }) => {
               const { unitId } = event.payload as { unitId: string }
@@ -234,6 +263,10 @@ beforeAll(() => {
               coverageAtReady.set(unitId, board().coverage[unitId] !== undefined)
             },
           },
+        },
+        {
+          specification: new EventOfType("flow.tests.ready"),
+          processor: { apply: ({ event }) => void flowsReady.push((event.payload as { flowId: string }).flowId) },
         },
       ],
     }),
@@ -450,5 +483,50 @@ describe("tester agent", () => {
     }
     const failed = logLines().filter((l) => l.event === "tester.failed").map((l) => l.data?.unitId)
     expect(failed).toEqual(expect.arrayContaining(["missing", "shared-data"]))
+  })
+
+  it("tests a flow (D-022): writes tests/flows/<flowId>.json and board().flowTests, sends flow.tests.ready", async () => {
+    const before = extractedRoutes.length
+    const tester = newTester()
+    tester.assign({ flowId: "checkout" })
+    await untilIdle(tester)
+
+    expect(readFlowTests(runDir, "checkout").map((s) => s.id)).toEqual(["flow-checkout"])
+    expect(board().flowTests["checkout"]?.map((s) => s.id)).toEqual(["flow-checkout"])
+    expect(flowsReady).toEqual(["checkout"])
+    // A flow test is not a screen test: nothing in tests/<unitId>.json, no coverage, no tests.ready.
+    expect(readTests(runDir, "f-orders")).toEqual([])
+    expect(board().coverage["f-orders"]).toBeUndefined()
+    expect(ready).not.toContain("f-orders")
+    // A flow has no element list, so the tester does not open the screen for one.
+    expect(extractedRoutes).toHaveLength(before)
+
+    const outputs = runner.toolOutputs.join("\n")
+    expect(outputs).toContain('Not saved: flowId must be "checkout" for this flow test.')
+    // "Info" is notPortable on the second screen of the flow, so it is refused here too.
+    expect(outputs).toContain('button "Info", which does not exist on mobile')
+    const saved = logLines().find((l) => l.event === "tester.saved" && (l.data as { flowId?: string })?.flowId === "checkout")
+    expect(saved).toBeDefined()
+  })
+
+  it("sends nothing for a flow without saved tests, and refuses a flow that is not in the plan", async () => {
+    for (const flowId of ["empty-flow", "missing-flow"]) {
+      const tester = newTester()
+      tester.assign({ flowId })
+      await untilIdle(tester)
+    }
+    expect(flowsReady).not.toContain("empty-flow")
+    expect(flowsReady).not.toContain("missing-flow")
+    const data = logLines().map((l) => ({ event: l.event, ...(l.data as { flowId?: string }) }))
+    expect(data.some((l) => l.event === "tests.none" && l.flowId === "empty-flow")).toBe(true)
+    expect(data.find((l) => l.event === "tester.failed" && l.flowId === "missing-flow")).toBeDefined()
+  })
+
+  it("refuses a flow test in a screen task", async () => {
+    const tester = newTester()
+    tester.assign({ unitId: "u-flow-id" })
+    await untilIdle(tester)
+    expect(runner.toolOutputs.join("\n")).toContain("Not saved: Leave flowId out: this task tests one screen, not a flow.")
+    expect(readTests(runDir, "u-flow-id").map((s) => s.id)).toEqual(["u-flow-id-search"])
   })
 })

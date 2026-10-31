@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { z } from "zod"
-import { ScenarioSchema, type InteractiveElement, type Scenario, type Unit } from "../contracts"
+import { ScenarioSchema, type Flow, type InteractiveElement, type Plan, type Scenario, type Unit } from "../contracts"
 import { actedOn, describeTarget, sameElement, toTarget } from "./compile"
 import { computeCoverage } from "./coverage"
 
@@ -22,7 +22,24 @@ export function readTests(runDir: string, unitId: string): Scenario[] {
 
 /** Writes through a temporary file, so a reader never sees half a file. */
 export function writeTests(runDir: string, unitId: string, scenarios: Scenario[]): void {
-  const file = testsFile(runDir, unitId)
+  writeScenarios(testsFile(runDir, unitId), scenarios)
+}
+
+// Flow tests (D-022) span several units and live in tests/flows/<flowId>.json.
+export function flowTestsFile(runDir: string, flowId: string): string {
+  return path.join(runDir, "tests", "flows", `${flowId}.json`)
+}
+
+export function readFlowTests(runDir: string, flowId: string): Scenario[] {
+  const file = flowTestsFile(runDir, flowId)
+  return existsSync(file) ? TestsFileSchema.parse(JSON.parse(readFileSync(file, "utf8"))) : []
+}
+
+export function writeFlowTests(runDir: string, flowId: string, scenarios: Scenario[]): void {
+  writeScenarios(flowTestsFile(runDir, flowId), scenarios)
+}
+
+function writeScenarios(file: string, scenarios: Scenario[]): void {
   mkdirSync(path.dirname(file), { recursive: true })
   const temporary = `${file}.tmp`
   writeFileSync(temporary, `${JSON.stringify(TestsFileSchema.parse(scenarios), null, 2)}\n`)
@@ -30,11 +47,36 @@ export function writeTests(runDir: string, unitId: string, scenarios: Scenario[]
 }
 
 /**
+ * A flow as one unit for the tester (D-022): its first unit (where the test starts), the flow as the only
+ * obligation, and the intentional differences of every unit in the flow, so a notPortable element of any
+ * screen on the way is refused. The scenario rules then work the same as for a screen.
+ */
+export function flowAsUnit(flow: Flow, plan: Plan): Unit {
+  const units = flow.unitIds.map((unitId) => {
+    const unit = plan.units.find((u) => u.id === unitId)
+    if (!unit) throw new Error(`flow "${flow.id}" names unit "${unitId}", which is not in the plan`)
+    return unit
+  })
+  const first = units[0]
+  if (!first || first.kind !== "screen" || !first.route) {
+    throw new Error(`flow "${flow.id}" must start with a screen that has a route, not "${flow.unitIds[0]}"`)
+  }
+  return {
+    ...first,
+    obligations: [{ id: flow.id, description: flow.description }],
+    intentionalDifferences: units.flatMap((u) => u.intentionalDifferences),
+  }
+}
+
+/**
  * Why this scenario cannot be saved for this unit, or null. Only checks that need no browser:
  * validateScenario does the rest. A step on a notPortable element is refused here, because the
  * original still has that element and the scenario would pass validation, then fail on every phone.
+ * `flowId` is set for a flow test (D-022): the scenario must carry it; a screen test must not have one.
  */
-export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[]): string | null {
+export function scenarioProblem(scenario: Scenario, unit: Unit, saved: Scenario[], flowId?: string): string | null {
+  if (flowId !== undefined && scenario.flowId !== flowId) return `flowId must be "${flowId}" for this flow test.`
+  if (flowId === undefined && scenario.flowId !== undefined) return `Leave flowId out: this task tests one screen, not a flow.`
   if (scenario.unitId !== unit.id) return `unitId must be "${unit.id}", not "${scenario.unitId}".`
   if (!unit.obligations.some((o) => o.id === scenario.obligation)) {
     return `Unknown obligation "${scenario.obligation}". Use one of: ${unit.obligations.map((o) => o.id).join(", ")}.`
@@ -102,6 +144,35 @@ export function testerBrief(unit: Unit, interactive: InteractiveElement[], saved
       : "No scenarios are saved yet.",
   )
   return lines.filter((line) => line !== null).join("\n")
+}
+
+// Saved screen tests shown per unit in a flow task: enough to copy exact names and setup steps.
+const EXAMPLES_PER_UNIT = 2
+
+/** The task message for a flow test (D-022): the flow, its screens in order, and saved tests of those screens. */
+export function flowBrief(flow: Flow, plan: Plan, unitTests: Record<string, Scenario[]>, saved: Scenario[]): string {
+  const unit = flowAsUnit(flow, plan)
+  const lines = [
+    `Flow: ${flow.id}`,
+    flow.description,
+    "",
+    "The flow goes through these screens, in this order:",
+    ...flow.unitIds.map((unitId) => `- ${unitId}: route ${plan.units.find((u) => u.id === unitId)?.route ?? "(shared, no route)"}`),
+    "",
+    `Write ONE scenario that does this flow, with unitId "${unit.id}", obligation "${flow.id}" and flowId "${flow.id}".`,
+    `Start with goto on ${unit.route} and reach the other screens by tapping links or buttons, as a user would; do not goto them.`,
+    "Check at the end what the flow promises, on the last screen.",
+  ]
+  const examples = flow.unitIds.flatMap((unitId) => (unitTests[unitId] ?? []).slice(0, EXAMPLES_PER_UNIT))
+  if (examples.length > 0) {
+    lines.push("", "Saved tests of these screens (use the same names, texts and setup steps):", ...examples.map((s) => `- ${s.id}: ${JSON.stringify(s.steps)}`))
+  }
+  const notPortable = unit.intentionalDifferences.flatMap((d) => (d.kind === "notPortable" ? [d] : []))
+  if (notPortable.length > 0) {
+    lines.push("", "Never use these elements, they do not exist on mobile:", ...notPortable.map((d) => `- ${d.element.role} "${d.element.name}" (${d.reason})`))
+  }
+  lines.push("", saved.length > 0 ? `Already saved for this flow: ${saved.map((s) => s.id).join(", ")}` : "No scenario is saved for this flow yet.")
+  return lines.join("\n")
 }
 
 /** What save_scenario tells the model after a save: what is still missing, or that it may finish. */

@@ -19,14 +19,18 @@ import {
   computeCoverage,
   coverageNote,
   extractInteractive,
+  flowAsUnit,
+  flowBrief,
   openablePath,
+  readFlowTests,
   readTests,
   scenarioProblem,
   testerBrief,
   validateScenario,
+  writeFlowTests,
   writeTests,
 } from "../scenarios"
-import { CancelGuard, defineTool, runTask, type AgentHandle, type TestTask } from "./_shared"
+import { CancelGuard, defineTool, runTask, type AgentHandle } from "./_shared"
 
 // Tester agent (architecture.md §4, step 7): looks only at the original, writes scenarios and keeps the
 // ones that pass validateScenario in tests/<unitId>.json. The checks live in scenarios/; this file only
@@ -53,8 +57,19 @@ export type TesterDeps = {
   unitTimeoutMs?: number
 }
 
+/**
+ * What the tester can be given: a screen `{ unitId }` (TestTask), or a flow `{ flowId }` (D-022), which the
+ * Conductor hands out once A adds flowId to TestTask. Wider than TestTask on purpose.
+ */
+export type TesterTask = { unitId?: string; flowId?: string }
+
+// One task: a flow when flowId is set (unitId then unused), otherwise the screen unitId.
+type Work = { flowId: string | null; unitId: string }
+
 type Task = {
+  /** For a flow task, the flow seen as one unit (flowAsUnit): its first unit, the flow as the only obligation. */
   unit: Unit
+  flowId: string | null
   blankUrl: string
   saved: Scenario[]
   interactive: InteractiveElement[]
@@ -79,9 +94,11 @@ let prompt: string | null = null
 const testerPrompt = () => (prompt ??= readFileSync(PROMPT_FILE, "utf8"))
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+// What a log line is about: the flow for a flow task, the unit otherwise.
+const where = (active: Task) => (active.flowId ? { flowId: active.flowId } : { unitId: active.unit.id })
 const scenarioArgs = z.strictObject({ scenario: ScenarioSchema })
 
-export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask> {
+export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTask> {
   const validate = deps.validateScenario ?? validateScenario
   const extract = deps.extractInteractive ?? extractInteractive
   const snapshot = deps.ariaSnapshot ?? ariaSnapshot
@@ -97,11 +114,11 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
 
   // Runs the browser-free checks first, then validateScenario on the original and the blank screen.
   async function check(scenario: Scenario): Promise<string | null> {
-    const { unit, blankUrl, saved, validated, givenUp } = current()
+    const { unit, flowId, blankUrl, saved, validated, givenUp } = current()
     if (givenUp.has(scenario.obligation)) {
       return `You gave up on obligation "${scenario.obligation}"; do not try it again. Work on what is still missing.`
     }
-    const problem = scenarioProblem(scenario, unit, saved)
+    const problem = scenarioProblem(scenario, unit, saved, flowId ?? undefined)
     if (problem) return problem
     const key = JSON.stringify(scenario)
     if (validated.has(key)) return null
@@ -119,7 +136,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     log({
       agent: id,
       event: tool === "try_scenario" ? "tester.try_failed" : "tester.save_failed",
-      data: { unitId: unit.id, scenarioId: scenario.id, obligation: scenario.obligation, problem: problem.slice(0, MAX_LOGGED_PROBLEM_CHARS) },
+      data: { ...where(active), scenarioId: scenario.id, obligation: scenario.obligation, problem: problem.slice(0, MAX_LOGGED_PROBLEM_CHARS) },
     })
     active.failuresInARow++
     let note = ""
@@ -128,7 +145,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     active.failures.set(scenario.obligation, count)
     if (known && count >= MAX_FAILURES_PER_OBLIGATION && !active.givenUp.has(scenario.obligation)) {
       active.givenUp.add(scenario.obligation)
-      log({ agent: id, event: "tester.obligation_skipped", data: { unitId: unit.id, obligation: scenario.obligation, failures: count } })
+      log({ agent: id, event: "tester.obligation_skipped", data: { ...where(active), obligation: scenario.obligation, failures: count } })
       const next = openObligations(active)
       note = `\nGive up on obligation "${scenario.obligation}" after ${count} failed attempts and move to the next one${next.length > 0 ? `: ${next.join(", ")}` : ""}.`
     }
@@ -181,10 +198,16 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
         const active = current()
         active.saved.push(scenario)
         active.failuresInARow = 0
-        // Only code builds the path: a tester writes nothing but its own unit's tests file.
-        writeTests(board().config.runDir, active.unit.id, active.saved)
-        board().tests[active.unit.id] = [...active.saved]
-        log({ agent: id, event: "tester.saved", data: { unitId: active.unit.id, scenarioId: scenario.id, obligation: scenario.obligation } })
+        // Only code builds the path: a tester writes nothing but its own unit's (or flow's) tests file.
+        const { runDir } = board().config
+        if (active.flowId) {
+          writeFlowTests(runDir, active.flowId, active.saved)
+          board().flowTests[active.flowId] = [...active.saved]
+        } else {
+          writeTests(runDir, active.unit.id, active.saved)
+          board().tests[active.unit.id] = [...active.saved]
+        }
+        log({ agent: id, event: "tester.saved", data: { ...where(active), scenarioId: scenario.id, obligation: scenario.obligation } })
         return `Saved "${scenario.id}". ${coverageNote(active.unit, active.saved, active.interactive)}${finishIfDone(active)}`
       },
     }),
@@ -198,26 +221,39 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     handlers: [],
   })
 
-  async function prepare(unitId: string, cancel: CancelGuard): Promise<Task> {
-    const unit = board().plan?.units.find((u) => u.id === unitId)
-    if (!unit) throw new Error(`unit "${unitId}" is not in the plan`)
-    if (unit.kind !== "screen" || !unit.route) throw new Error(`unit "${unitId}" is not a screen with a route`)
+  // A screen task opens the screen to list its elements; a flow task (D-022) has no elements to cover.
+  async function prepare(work: Work, cancel: CancelGuard): Promise<Task> {
+    const plan = board().plan
+    let unit: Unit
+    let saved: Scenario[]
+    let interactive: InteractiveElement[] = []
+    if (work.flowId) {
+      const flow = plan?.flows.find((f) => f.id === work.flowId)
+      if (!plan || !flow) throw new Error(`flow "${work.flowId}" is not in the plan`)
+      unit = flowAsUnit(flow, plan)
+      saved = [...(board().flowTests[flow.id] ?? readFlowTests(board().config.runDir, flow.id))]
+    } else {
+      const found = plan?.units.find((u) => u.id === work.unitId)
+      if (!found) throw new Error(`unit "${work.unitId}" is not in the plan`)
+      if (found.kind !== "screen" || !found.route) throw new Error(`unit "${work.unitId}" is not a screen with a route`)
+      unit = found
+      // A second tester (after a timeout) continues from what the first one saved.
+      saved = [...(board().tests[unit.id] ?? readTests(board().config.runDir, unit.id))]
+    }
     // Without a blank screen no scenario can be validated, so the task stops before asking the model.
     const blankUrl = typeof deps.blankUrl === "string" ? deps.blankUrl : await deps.blankUrl()
-    // A second tester (after a timeout) continues from what the first one saved.
-    const saved = [...(board().tests[unitId] ?? readTests(board().config.runDir, unitId))]
-    let interactive: InteractiveElement[] = []
     // A route with parameters (/recepti/:id) cannot be opened as written; the brief then lists no elements.
-    const open = openablePath(unit.route)
+    const open = work.flowId || !unit.route ? null : openablePath(unit.route)
     if (open !== null) {
       try {
         interactive = await extract(deps.originalUrl, open)
       } catch (error) {
-        log({ agent: id, event: "tester.interactive_failed", data: { unitId, error: message(error) } })
+        log({ agent: id, event: "tester.interactive_failed", data: { unitId: unit.id, error: message(error) } })
       }
     }
     const prepared: Task = {
       unit,
+      flowId: work.flowId,
       blankUrl,
       saved,
       interactive,
@@ -225,7 +261,7 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
       failures: new Map(),
       givenUp: new Set(),
       failuresInARow: 0,
-      // The own CancelGuard ends the loop at its next step; it is not a cancel from outside, so tests.ready is sent.
+      // The own CancelGuard ends the loop at its next step; it is not a cancel from outside, so the result is sent.
       finish: (reason) => {
         prepared.finishedBecause ??= reason
         cancel.cancel(reason)
@@ -235,58 +271,71 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     return prepared
   }
 
+  function brief(active: Task): string {
+    const plan = board().plan
+    const flow = active.flowId ? plan?.flows.find((f) => f.id === active.flowId) : undefined
+    if (plan && flow) return flowBrief(flow, plan, board().tests, active.saved)
+    return testerBrief(active.unit, active.interactive, active.saved)
+  }
+
   // The Conductor cancels from outside after its own timeout or at the end of the run (D-016).
   let cancelledFromOutside = false
 
-  async function test(unitId: string, cancel: CancelGuard): Promise<void> {
+  async function test(work: Work, cancel: CancelGuard): Promise<void> {
+    const ids = work.flowId ? { flowId: work.flowId } : { unitId: work.unitId }
     let saved = 0
     let coverage: Coverage | null = null
     // The tester's own limit (D-016) comes before the Conductor's, so the task ends with what it saved.
     const ownLimit = setTimeout(() => cancel.cancel("tester time limit"), deps.unitTimeoutMs ?? DEFAULTS.testerUnitTimeoutMs)
     try {
-      task = await prepare(unitId, cancel)
+      task = await prepare(work, cancel)
       const result = await runTask(agent, {
         prompt: testerPrompt(),
-        message: testerBrief(task.unit, task.interactive, task.saved),
-        meta: { agentId: id, kind: "tester", taskId: unitId },
+        message: brief(task),
+        meta: { agentId: id, kind: "tester", taskId: work.flowId ?? work.unitId },
         model: MODELS.default,
         maxOutputTokens: TESTER_MAX_OUTPUT_TOKENS,
         tools,
         guard: cancel,
       })
       const end = result.ok ? {} : task.finishedBecause ? { reason: task.finishedBecause } : { error: result.error }
-      log({ agent: id, event: "tester.finished", data: { unitId, saved: task.saved.length, givenUp: [...task.givenUp], ...end } })
+      log({ agent: id, event: "tester.finished", data: { ...ids, saved: task.saved.length, givenUp: [...task.givenUp], ...end } })
     } catch (error) {
-      log({ agent: id, event: "tester.failed", data: { unitId, error: message(error) } })
+      log({ agent: id, event: "tester.failed", data: { ...ids, error: message(error) } })
     } finally {
       clearTimeout(ownLimit)
       saved = task?.saved.length ?? 0
-      if (task && saved > 0) coverage = computeCoverage(task.unit, task.saved, task.interactive)
+      if (task && saved > 0 && !work.flowId) coverage = computeCoverage(task.unit, task.saved, task.interactive)
       task = null
     }
 
-    // Free before emitting: the Conductor may hand out the next unit from its tests.ready handler.
+    // Free before emitting: the Conductor may hand out the next task from its tests.ready handler.
     const cancelled = cancelledFromOutside
     busyWith = null
     guard = null
     cancelledFromOutside = false
     // A cancelled task sends no result (handle.ts, D-016); what it saved stays for the next tester.
     if (cancelled) {
-      log({ agent: id, event: "tester.cancelled", data: { unitId, saved } })
+      log({ agent: id, event: "tester.cancelled", data: { ...ids, saved } })
       return
     }
     // Partial tests are still sent (docs/tasks/b.md Q10): the Gatekeeper then marks the screen "partial".
-    // With none, nothing is sent and the Conductor's timeout gives the unit to another tester.
-    if (saved === 0 || !coverage) {
-      log({ agent: id, event: "tests.none", data: { unitId } })
+    // With none, nothing is sent: a screen goes to another tester after the Conductor's timeout, and a flow
+    // without tests is not run (the report says it was not checked).
+    if (saved === 0 || (!work.flowId && !coverage)) {
+      log({ agent: id, event: "tests.none", data: ids })
       return
     }
     try {
-      // The Gatekeeper computes the screen status from this coverage, so it goes on the board first.
-      board().coverage[unitId] = coverage
-      emit("tests.ready", { unitId }, agent.getId())
+      if (work.flowId) {
+        emit("flow.tests.ready", { flowId: work.flowId }, agent.getId())
+      } else {
+        // The Gatekeeper computes the screen status from this coverage, so it goes on the board first.
+        board().coverage[work.unitId] = coverage!
+        emit("tests.ready", { unitId: work.unitId }, agent.getId())
+      }
     } catch (error) {
-      log({ agent: id, event: "tests.emit_failed", data: { unitId, error: message(error) } })
+      log({ agent: id, event: "tests.emit_failed", data: { ...ids, error: message(error) } })
     }
   }
 
@@ -295,16 +344,22 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TestTask
     kind: "tester",
     participant: agent,
     isBusy: () => busyWith !== null,
-    assign({ unitId }) {
-      if (busyWith !== null) {
-        log({ agent: id, event: "task.ignored", data: { unitId, reason: `busy with unit "${busyWith}"` } })
+    assign(input: TesterTask) {
+      const work: Work | null = input.flowId ? { flowId: input.flowId, unitId: "" } : input.unitId ? { flowId: null, unitId: input.unitId } : null
+      if (!work) {
+        log({ agent: id, event: "task.ignored", data: { reason: "the task has neither unitId nor flowId" } })
         return
       }
-      busyWith = unitId
+      const label = work.flowId ? `flow ${work.flowId}` : `unit ${work.unitId}`
+      if (busyWith !== null) {
+        log({ agent: id, event: "task.ignored", data: { ...input, reason: `busy with ${busyWith}` } })
+        return
+      }
+      busyWith = label
       guard = new CancelGuard()
-      void test(unitId, guard).catch((error) => {
+      void test(work, guard).catch((error) => {
         busyWith = null
-        log({ agent: id, event: "tester.crashed", data: { unitId, error: message(error) } })
+        log({ agent: id, event: "tester.crashed", data: { ...input, error: message(error) } })
       })
     },
     cancel(reason) {
