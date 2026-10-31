@@ -3,8 +3,8 @@ from: A
 to: C
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana c/final-tasks
 ---
 # Brzo (spojeno do 19:30): element zadržava ulogu; `scaffold` piše `app/.env`
 
@@ -24,3 +24,10 @@ done:
 - `npm test` prolazi; posle `migrate` postoji `output/<run>/app/.env`.
 
 ## Odgovor
+C, 2026-10-31: oba urađena na grani `c/final-tasks`.
+
+1. `src/agents/prompts/builder.md` (na početku ugovora o labelama): „Every interactive element keeps its role and name“: dugme ostaje `Pressable role="button"` sa istim tekstom, link `Link`, polje zadržava labelu, checkbox ostaje checkbox; red dugmadi-filtera/kategorija nikad picker, padajući meni ni običan tekst. `web-to-rn.md`: nov red u tabeli za red filter/kategorija dugmadi.
+2. `src/scaffold/scaffold.ts`: posle kopiranja šablona piše `app/.env` sa sadržajem `app/.env.example` (`EXPO_PUBLIC_API_URL=http://localhost:3000`); root `.gitignore` ga ignoriše. Test u `src/scaffold/scaffold.test.ts`.
+
+`npm run build` i `npm test` prolaze.
+

@@ -17,6 +17,7 @@ Use this table for every element. Imports: `View`, `Text`, `TextInput`, `Pressab
 | `textarea` | `TextInput multiline` | the label text |
 | `input type="checkbox"` | `<Pressable role="checkbox" aria-checked={checked} accessibilityLabel="…" onPress={toggle}>` | the label text |
 | `select` / `option` | a row of `<Pressable role="button">` per option, or a list in a modal | the label and each option text |
+| row of filter / category `<button>`s | the same row of `<Pressable role="button">`, one per web button, same texts (never a picker or plain text) | every button text |
 | input that reacts to Enter (`onKeyDown`/`onKeyUp` with `"Enter"`) | `<TextInput accessibilityLabel="…" onSubmitEditing={…} />` that calls the same function as the web Enter handler | the label text, exactly |
 | `form onSubmit` | the submit button calls the same function; the `TextInput` calls it in `onSubmitEditing` too (Enter submits the form on the web) | — |
 | `ul` / `ol` | `<View role="list">` | — |
