@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Stands in for the web export of the run's app/ in verify.test.ts (the real verify exports app/ with Expo). -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Lista</title>
+  </head>
+  <body>
+    <label for="pretraga">Pretraga</label>
+    <input id="pretraga" />
+    <ul id="items"></ul>
+    <script>
+      const items = ["Jabuka", "Kruška"]
+      const list = document.getElementById("items")
+      const render = (query) => {
+        list.innerHTML = items.filter((i) => i.toLowerCase().includes(query)).map((i) => `<li>${i}</li>`).join("")
+      }
+      document.getElementById("pretraga").addEventListener("input", (e) => render(e.target.value.toLowerCase()))
+      render("")
+    </script>
+  </body>
+</html>

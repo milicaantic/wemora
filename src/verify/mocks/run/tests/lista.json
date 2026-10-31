@@ -1,0 +1,19 @@
+[
+  {
+    "id": "lista-shows-items",
+    "unitId": "lista",
+    "obligation": "shows-items",
+    "steps": [{ "goto": "/" }, { "expectVisible": { "text": "Jabuka" } }, { "expectVisible": { "text": "Kruška" } }]
+  },
+  {
+    "id": "lista-search",
+    "unitId": "lista",
+    "obligation": "search",
+    "steps": [
+      { "goto": "/" },
+      { "fill": { "label": "Pretraga", "value": "kru" } },
+      { "expectVisible": { "text": "Kruška" } },
+      { "expectNotVisible": { "text": "Jabuka" } }
+    ]
+  }
+]

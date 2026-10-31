@@ -1,0 +1,9 @@
+{
+  "unitId": "detalj",
+  "status": "failed",
+  "rounds": 2,
+  "gates": [{ "unitId": "detalj", "round": 2, "gate": "scenarios", "ok": false, "message": "Testovi ne prolaze na telefonu (1 od 1)." }],
+  "scenarios": [],
+  "coverage": null,
+  "reason": "scenarios: Testovi ne prolaze na telefonu (1 od 1)."
+}

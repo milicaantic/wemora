@@ -19,8 +19,14 @@ Poslednja izmena: 2026-10-30
 
 ## B11 (integracija F2): mock prolaz radi do kraja
 - Posle C-ovog `builder:app-entry:1` (PR #52) i A-ovog povezivanja Gatekeeper-a (PR #49), **`npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` prolazi ceo tok** (ishod `finished`, ~30 s): `app-entry` promovisan kao `unproven` (zajednička jedinica nema testove); `todo-list` posle namerno lošeg nacrta u rundi 1 promovisan u rundi 2 (svih 5 kapija, uključujući B-ove testove na telefonu) kao **`partial`**. Tester i builder rade istovremeno; Gatekeeper čeka `tests.ready` pre provere ekrana; u `tests/` je samo validiran scenario; pokrivenost iz testera je u `results/todo-list.json`.
-- `todo-list` je `partial`, ne `proven`: pokrivena je 1 od 5 obaveza (`empty-state`) i nijedan od 2 elementa (`New Todo Input`, link `TodoMVC`). Ostale obaveze traže dodavanje zadatka, a to ide samo Enter-om: **bez koraka `submit` TodoMVC ne može biti dokazan (G2)**.
+- **2026-10-31, posle koraka `submit` (PR #56) i C-ovog usklađenog nacrta: `todo-list` je u mock prolazu `proven`** (5/5 obaveza, 5/5 testova na telefonu, link `TodoMVC` `notPortable`).
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
+
+## Gotovo, čeka PR (grana `b/verify`): B12 `verify`
+- `src/verify/verify.ts`, izvoz kroz `verify/index.ts`: `verify(runDir)` po ugovoru, plus `verifyDetailed(runDir)` i `formatVerifyReport(details)` za A-ov CLI (A18), koji ispisuje matricu i vraća exit kod.
+- **Kako radi (odluke B, 2026-10-31):** učita `plan.json`, `tests/*.json` i `results/*.json` (zod); napravi web export `app/` C-ovim `serveApp` (D-006, Q12) i ako u `app/` nema `node_modules` (run iz `runs/` posle `git clone`), linkuje ga na `templates/expo/node_modules` kao scaffold (treba jednom `npm ci` u `templates/expo`); pusti testove svakog ekrana na telefonu (390×844, iste namerne razlike kao Gatekeeper), ekran po ekran, redom iz plana. **„Prošao“ (Q13):** svi testovi ekrana sa statusom `proven` ili `partial` (oni su prošli kapiju 5) moraju i sada da prođu; ekrani `failed`/`unproven`/bez rezultata se samo ispisuju. Matrica nema vremena trajanja, pa je isti tekst svaki put. Bez Mozaika i API ključa (`check-layers` prolazi). Mock-api za Recepte se za sada pokreće ručno pre `verify`.
+- Testovi: `src/verify/verify.test.ts` (4) nad ručnim prolazom u `src/verify/mocks/run/` (lažni `serveApp` servira statičku stranu umesto Expo exporta): prolaz, pokvaren ekran pada samo on, isti ispis dva puta, jasna greška za folder koji nije prolaz. `scenarios/index.ts` sada izvozi i `createRunScenarios` (kraći limiti u testovima). Ceo repo: 484 testa.
+- **Ručno, sa pravim delovima:** `verify` nad svežim `migrate:mock` izlazom za TodoMVC: OK, 5/5 testova (7 s); nad kopijom bez `node_modules`: sam napravi link, OK (13 s); posle izmene teksta „Clear completed“ u `app/src/screens/todo-list/index.tsx`: FAILED, padaju tačno 2 testa koja koriste to dugme.
 - **Novi zadatak za B (D-014, PD5):** `serveOriginal(webDir)` koja sama pokreće original, da `--original-url` ne bi bio obavezan („radi iz README-a“, F3).
 
 ## Gotovo, čeka PR (grana `b/tester-gives-up`): A-ova poruka `docs/inbox/2026-10-31-a-to-b-tester-gives-up-and-logs.md`
@@ -79,7 +85,8 @@ Poslednja izmena: 2026-10-30
 
 ## Sledeće
 - pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
-- F3: `serveOriginal(webDir)`, B12 `verify`, B13 `sabotage` (ne zavise od drugih)
+- F3: B13 `sabotage` (posle B12), `serveOriginal(webDir)`
+- A (A18): povezati `wemora verify <run-dir>` sa `verifyDetailed` + `formatVerifyReport` (exit 0 kad je `ok`, inače 1)
 
 ## Mockovi koje koristim
 - `src/scenarios/mocks/static/` i `mocks/blank/` umesto pravih aplikacija, samo u testovima
