@@ -50,6 +50,10 @@ export function builderBrief(job: Pick<BuildJob, "unit" | "round" | "allowed">, 
   if (unit.kind === "screen" && unit.route) {
     lines.push(`Web route: ${unit.route}`, `Mobile route: ${plan.routeMap[unit.route] ?? "(not in routeMap)"}`)
   }
+  const routes = [...new Set(Object.values(plan.routeMap))].sort()
+  if (routes.length) {
+    lines.push("", "Mobile routes of the app (link and navigate only to these; you never create routes):", ...routes.map((r) => `- ${r}`))
+  }
   lines.push("", "Sources (read them with read_source):", ...unit.sources.map((s) => `- ${s}`))
   lines.push("", "You may write (paths relative to app/src/):", ...allowed.map((a) => `- ${a}`))
   lines.push("", "Obligations:", ...(unit.obligations.length ? unit.obligations.map((o) => `- ${o.id}: ${o.description}`) : ["- none"]))

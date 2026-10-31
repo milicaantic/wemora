@@ -61,6 +61,7 @@ Everything the user could see on the web must still be reachable on a phone: put
 - `<Link href="/kategorije">` for links; `useRouter()` and `router.push(…)` for navigation in code.
 - Route parameters: `const { id } = useLocalSearchParams<{ id: string }>()`.
 - Use the mobile routes from the task (`/recepti/[id]` → `href={`/recepti/${id}`}`).
+- **You never create routes.** The task lists every route the mobile app has; link and navigate only to those. If the web screen switches views inside one route (filters in the path like `#/active` and `#/completed`, tabs, `?filter=…`), do it inside your screen: keep the choice in `useState`, or in a search parameter on the same route (`router.setParams({ filter: "active" })` and `useLocalSearchParams`). A link to a path that is not in the list opens "Unmatched Route" on the phone.
 
 # Intentional differences
 

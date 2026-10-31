@@ -8,8 +8,9 @@ import { checkDraft as realCheckDraft, computeStatus } from "../gatekeeper"
 
 // Gatekeeper-učesnik (C2.4, architecture.md §10): deterministički, bez modela.
 // - draft.submitted → red čekanja; nacrti se proveravaju jedan po jedan (checkDraft)
-// - ekran bez testova čeka tests.ready ("bez testova nema zelenog"); na tests.missing (Conductor, D-016)
-//   ide na proveru bez testova i ulazi kao unproven
+// - ekran čeka DOGAĐAJ tests.ready ("bez testova nema zelenog"), ne samo testove na tabli: tester ih
+//   upisuje jedan po jedan, pa bi provera pre tests.ready uzela nepotpun skup; na tests.missing
+//   (Conductor, D-016) ide na proveru bez testova i ulazi kao unproven
 // - nacrt iz ranije runde (zakasneli, D-016) se ignoriše
 // - rezultat ide na tablu i u results/<unitId>.json, pa gate.failed { unitId, round } ili unit.promoted { unitId }
 
@@ -36,6 +37,8 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
   const queue: Job[] = []
   // Ekrani čiji je nacrt stigao pre testova: čekaju tests.ready ili tests.missing.
   const waiting = new Map<string, Job>()
+  // Ekrani za koje je stigao tests.ready: tek tada su testovi na tabli potpuni.
+  const ready = new Set<string>()
   // Ekrani za koje testova neće biti (tests.missing): proveravaju se bez testova.
   const missing = new Set<string>()
   let working = false
@@ -50,7 +53,7 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
       },
       {
         specification: new EventOfType(EVENTS.testsReady),
-        processor: { apply: ({ event }) => safely(() => release((event.payload as { unitId: string }).unitId)) },
+        processor: { apply: ({ event }) => safely(() => onTestsReady((event.payload as { unitId: string }).unitId)) },
       },
       {
         specification: new EventOfType(EVENTS.testsMissing),
@@ -73,8 +76,6 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     return unit
   }
 
-  const hasTests = (unitId: string) => (board().tests[unitId]?.length ?? 0) > 0
-
   /** Runda koju Conductor trenutno vodi; nacrt iz ranije runde je zakasneo (D-016). */
   const isStale = (unitId: string, round: number) => {
     const current = board().units[unitId]?.round
@@ -95,7 +96,7 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     } catch (error) {
       return void finish(job, [gate(job, "parse", false, `Gatekeeper: ${message(error)}`)], [])
     }
-    if (unit.kind === "screen" && !hasTests(unitId) && !missing.has(unitId)) {
+    if (unit.kind === "screen" && !ready.has(unitId) && !missing.has(unitId)) {
       waiting.set(unitId, job)
       log({ agent: id, event: "gatekeeper.waiting_for_tests", data: { unitId, round } })
       return
@@ -108,6 +109,11 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     if (!job) return
     waiting.delete(unitId)
     enqueue(job)
+  }
+
+  function onTestsReady(unitId: string): void {
+    ready.add(unitId)
+    release(unitId)
   }
 
   function onTestsMissing(unitId: string): void {

@@ -21,12 +21,11 @@ Faza: F2 (moj deo gotov), čeka kapiju G2
 - **integracija:** `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` završava sa `finished`: `app-entry` promovisan (unproven), `todo-list` runda 1 `gate.failed` („`<div>` ne postoji u React Native, koristi `<View>`“), runda 2 promovisan (partial); u `run.jsonl` nema odbijenih ni zalutalih upisa buildera; `report.html` prikazuje statuse
 
 ## U radu
-- `submit` korak za G2, grana `c/submit-prompt` (napravljena **od B-ove `contracts/submit`**, A ih spaja zajedno):
-  - kapija 4 proverava i labelu iz `submit` koraka (D-017)
-  - **popravka kapije 4:** naziv dugmeta/linka iz izraza (`{f === "all" ? "All" : …}`) sada se prepoznaje; ranije je pogrešno odbijala dobar nacrt
-  - prompt: `builder.md` pravilo 1 i `web-to-rn.md` (polje sa Enter-om → `TextInput onSubmitEditing`); provereno da Playwright Enter pokreće `onSubmitEditing`
-  - `src/agents/mocks/todomvc/builder.json`, runda 2: ceo TodoMVC ekran po imenima dogovorenim sa B
-  - **`migrate:mock` sa B-ovih 5 scenarija: `todo-list` je `proven`** (runda 1 `gate.failed` na `<div>`, runda 2 kapije 1–5 i 5/5 scenarija); `app-entry` promovisan
+- popravke posle pravog prolaza (A-ova analiza), grana `c/popravka`:
+  - **Gatekeeper čeka događaj `tests.ready`** (ili `tests.missing`), a ne „ima li testova na tabli“: tester upisuje testove jedan po jedan, pa je provera kretala sa nepotpunim skupom (3 od 5) i prolaz se završavao pre filtera i „Clear completed“. Proveren redosled u `migrate:mock`: `tests.ready` → `check_started`, `todo-list` proven sa 5/5.
+  - **prompt buildera:** builder ne pravi rute; filteri i podstranice u okviru ekrana (`#/active`, `?filter=`) su `useState` ili search parametar na istoj ruti; linkovi samo na postojeće rute. Zadatak buildera sada sadrži spisak mobilnih ruta iz `routeMap`.
+- C3.1 regresija nad pravom aplikacijom: grana `c/regression-real` (lokalno, čeka push)
+- C3.3 testovi toka: čeka odluku tima
 
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
