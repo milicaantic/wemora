@@ -49,7 +49,10 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/flow-dispatch`)
+## Gotovo, čeka review i spajanje (grana `a/load-control`)
+- A17 (D-026): +1 tester (do `maxTesters`) dok najmanje 3 ekrana čekaju testera, a nacrt čeka testove u Gatekeeperu; kroz A14 `Rescaler`, razlog u `agents.rescaled`. 3 nova testa, 551/551
+
+## Gotovo (spojeno u main), `a/flow-dispatch` (PR #85)
 - D-025 (B-ova poruka): `migrate` bez `--original-url` sam servira original preko B-ovog `serveOriginal` (pre agenata; greška → exit 1 bez foldera; server se gasi na kraju). Ručno: `migrate:mock` nad TodoMVC-om bez `--original-url` → `servedOriginal: true`, `todo-list` `proven`, exit 0, proces izlazi sam
 - D-022 korak 2: `TestTask = { unitId } | { flowId }`; Conductor daje tok slobodnom testeru kad svi ekrani toka imaju testove (ekrani prvi), oslobađa ga na `flow.tests.ready`, timeout kao za ekran (`flow.tests.timeout`), i ne završava prolaz dok tok čeka testiranje ili Gatekeeperovu proveru. Lažni tester i Gatekeeper znaju za tokove. 5 novih testova, 548/548
 

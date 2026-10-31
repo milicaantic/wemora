@@ -419,6 +419,36 @@ describe("Conductor timeouts", () => {
     ])
   })
 
+  it("adds a tester when screens queue up for testers while drafts wait for their tests (A17)", async () => {
+    // Four screens behind one shared unit; the tester never answers, so drafts pile up in the Gatekeeper.
+    const queuePlan: Plan = {
+      units: [unit("api", "shared", 0, []), ...["s1", "s2", "s3", "s4"].map((id) => unit(id, "screen", 1, ["api"]))],
+      flows: [],
+      routeMap: {},
+    }
+    const clock = manualClock()
+    const silent = Object.fromEntries(["s1", "s2", "s3", "s4"].map((id) => [id, Infinity]))
+    const { deps } = fakeWorld({ plan: queuePlan, waitForTests: true, silentTests: silent })
+    board().config.maxTesters = 2
+    try {
+      const conductor = new Conductor(deps, { clock })
+      const running = conductor.run()
+      await vi.waitFor(() => expect(Object.values(board().units).some((u) => u.status === "submitted")).toBe(true))
+
+      clock.advance(DEFAULTS.rescaleIntervalMs)
+
+      await vi.waitFor(() => expect(logEvents().filter((e) => e.event === "agents.rescaled").at(-1)?.data).toMatchObject({ testers: 2 }))
+      const last = logEvents().filter((e) => e.event === "agents.rescaled").at(-1)
+      expect(String(last?.data?.reason)).toMatch(/3 screen\(s\) wait for a tester while \d draft\(s\) wait for tests → \+1 tester$/)
+      expect(Object.keys(board().agents)).toContain("tester-2")
+
+      conductor.notifyBudgetExceeded()
+      expect((await running).outcome).toBe("budget.exceeded")
+    } finally {
+      board().config.maxTesters = config.maxTesters
+    }
+  })
+
   it("ignores a late draft from a round that already timed out", async () => {
     // The cancelled builder still sends draft.submitted for round 1, after round 2 has started.
     const { clock, calls, running } = startRun({ silentRounds: { list: 1 }, lateDraftOnCancel: true })

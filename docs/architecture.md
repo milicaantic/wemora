@@ -126,6 +126,7 @@ Staging folder ima isti raspored kao `app/src/`, pa je promocija kopiranje. Owne
 - builderi = `min(spremne jedinice + zauzeti builderi, maxBuilders)`, najmanje 1 (D-021), podrazumevano `maxBuilders = 4`
 - testeri = `max(1, ceil(builderi / 2))`, najviše `maxTesters`
 - arhitekta = 1
+- Tester više (A17, D-026): dok najmanje `DEFAULTS.testerBacklog` (3) ekrana čeka testera, a bar jedan nacrt čeka svoje testove u Gatekeeperu, testera ima jedan više od formule, do `maxTesters`.
 - Broj se menja najviše jednom u minutu. Gasi se samo agent bez aktivne petlje. Promena odbijena unutar tog minuta računa se ponovo kad minut istekne. Svaka promena ide u `run.jsonl` kao `agents.rescaled` (sa razlogom), a ugašen agent kao `agent.stopped` (D-021).
 
 **Izbor sledeće jedinice za buildera:**
