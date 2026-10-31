@@ -84,6 +84,46 @@ describe.skipIf(!hasTemplateModules)("G1: B-ov scenario preko C-ovog serveApp na
     ])
     expect(readFileSync(join(run, "app/src/screens/shopping-list/index.tsx"), "utf8")).toBe(GOOD)
   }, 240_000)
+
+  // C3.1: regresija i rollback nad pravom aplikacijom i pravim B-ovim testom.
+  it("nacrt koji pokvari već dokazan ekran se vraća, a builder dobija listu pokvarenih testova", async () => {
+    const layoutBefore = readFileSync(join(run, "app/src/app/_layout.tsx"), "utf8")
+    // Realna greška buildera za jedinicu layout: root layout više ne prikazuje ekrane.
+    const layoutDraft = join(run, "staging", "builder-2", "layout")
+    mkdirSync(join(layoutDraft, "app"), { recursive: true })
+    mkdirSync(join(layoutDraft, "shared/layout"), { recursive: true })
+    writeFileSync(
+      join(layoutDraft, "app/_layout.tsx"),
+      'import { Text } from "react-native"\n\nexport default function RootLayout() {\n  return <Text>Recepti</Text>\n}\n',
+    )
+    writeFileSync(join(layoutDraft, "shared/layout/index.ts"), "export const APP_TITLE = \"Recepti\"\n")
+
+    const results = await checkDraft({
+      unit: plan.units.find((u) => u.id === "layout")!,
+      round: 1,
+      draftDir: layoutDraft,
+      tests: [],
+      webDir: root("examples/recepti"),
+    })
+
+    // kod je ispravan (kapije 1–3), ali kvari ekran koji je već radio
+    expect(results.map((r) => [r.gate, r.ok])).toEqual([
+      ["parse", true],
+      ["forbiddenApis", true],
+      ["tsc", true],
+      ["regression", false],
+    ])
+    const regression = results.at(-1)!
+    expect(regression.brokenTests).toEqual([addItem.id])
+    expect(regression.message).toContain(`test "${addItem.id}" (ekran shopping-list)`)
+
+    // izmena je vraćena: stari layout, bez novih fajlova, a lista za kupovinu i dalje radi
+    expect(readFileSync(join(run, "app/src/app/_layout.tsx"), "utf8")).toBe(layoutBefore)
+    expect(existsSync(join(run, "app/src/shared/layout/index.ts"))).toBe(false)
+    const after = await runOnApp()
+    expect(after.error).toBeUndefined()
+    expect(after.ok).toBe(true)
+  }, 240_000)
 })
 
 describe("serveApp bez paketa", () => {
