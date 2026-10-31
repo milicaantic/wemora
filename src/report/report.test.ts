@@ -176,7 +176,7 @@ describe("v2: timeline, speed-up, cost and rounds from run.jsonl", () => {
       ["tester-1", 0.008, 1],
       ["analyzer-1", 0.002, 1],
     ])
-    expect(model.costs.rows.find((r) => r.agent === "analyzer-1")).toMatchObject({ inputTokens: 1200, cachedTokens: 3000, outputTokens: 400, models: ["claude-haiku-5-5"] })
+    expect(model.costs.rows.find((r) => r.agent === "analyzer-1")).toMatchObject({ inputTokens: 1200, cachedTokens: 3000, outputTokens: 400, models: ["claude-haiku-4-5"] })
     expect(usdText(model.costs.totalUsd)).toBe("$0.0910")
     expect(model.costs.calls).toBe(6)
   })
@@ -186,11 +186,11 @@ describe("v2: timeline, speed-up, cost and rounds from run.jsonl", () => {
       {
         unitId: "recipe-list",
         rounds: [
-          { round: 1, model: "claude-haiku-5-5", failed: true },
-          { round: 2, model: "claude-haiku-5-5", failed: false },
+          { round: 1, model: "claude-haiku-4-5", failed: true },
+          { round: 2, model: "claude-haiku-4-5", failed: false },
         ],
       },
-      { unitId: "shopping-list", rounds: [{ round: 1, model: "claude-haiku-5-5", failed: false }] },
+      { unitId: "shopping-list", rounds: [{ round: 1, model: "claude-haiku-4-5", failed: false }] },
     ])
   })
 

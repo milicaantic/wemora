@@ -12,7 +12,7 @@
 TODO(D19), what is still missing in this README (also in docs/status/d.md):
 1. A Recepti run in runs/ (runs/recepti-<time>): needs a real run (A, API key) or tester/builder mock
    replies for Recepti (B, C). Then: screenshot of its report here, and use it in "Quick start".
-2. `npm run verify` and `npm run sabotage` in the CLI (A18; sabotage is B13). Then: remove the
+2. `npm run verify` and `npm run sabotage` in the CLI (A18; B's sabotage function is merged, PR #72, but not wired into the CLI yet). Then: remove the
    "until A18" notes and the npx tsx command, and add the sabotage step to "Quick start".
 3. A real-model run (`npm run migrate`, not --mock) archived in runs/, with its cost and speed-up
    from the report, quoted in "How Wemora uses Mozaik".
@@ -86,10 +86,10 @@ Wemora is built on [`@mozaik-ai/core`](https://www.npmjs.com/package/@mozaik-ai/
 
 | Agent | Default model | Tools | Prompt |
 |---|---|---|---|
-| Analyzer | claude-haiku-5-5 | `list_files`, `read_file` (its part only, read-only) | [`analyzer.md`](src/agents/prompts/analyzer.md) |
-| Architect | claude-sonnet-5-5 | none (structured output) | [`architect.md`](src/agents/prompts/architect.md) |
-| Tester | claude-haiku-5-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | [`tester.md`](src/agents/prompts/tester.md) |
-| Builder | claude-haiku-5-5 (2 rounds per unit; sonnet for rounds 3–4 is in progress, A15) | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | [`builder.md`](src/agents/prompts/builder.md) |
+| Analyzer | claude-haiku-4-5 | `list_files`, `read_file` (its part only, read-only) | [`analyzer.md`](src/agents/prompts/analyzer.md) |
+| Architect | claude-sonnet-4-6 | none (structured output) | [`architect.md`](src/agents/prompts/architect.md) |
+| Tester | claude-haiku-4-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | [`tester.md`](src/agents/prompts/tester.md) |
+| Builder | claude-haiku-4-5 for rounds 1–2, claude-sonnet-4-6 for rounds 3–4; after round 4 the unit fails | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | [`builder.md`](src/agents/prompts/builder.md) |
 
 The models are defaults: `WEMORA_MODEL_DEFAULT` and `WEMORA_MODEL_STRONG` in `.env` replace them (for example with the models a gateway serves).
 
@@ -130,7 +130,7 @@ Then open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-2026
 >
 > Expected: `todo-list [proven]`, five `pass` lines, `OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run`.
 
-<!-- TODO(D19): when B13 and A18 land, add: `npm run sabotage -- runs/<run> <unitId>` breaks one screen on
+<!-- TODO(D19): when A18 wires verify and sabotage into the CLI, add: `npm run sabotage -- runs/<run> <unitId>` breaks one screen on
 purpose, and `npm run verify` must then FAIL on that screen only (paste both outputs). Switch the example
 to runs/recepti-<time> once it exists. -->
 
@@ -166,7 +166,7 @@ only analyzer and architect replies exist in src/agents/mocks/recepti/. -->
 
 ### With a real model
 
-Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` and the two models it serves (`WEMORA_MODEL_DEFAULT`, `WEMORA_MODEL_STRONG`); the comments in [`.env.example`](.env.example) show the values. Never commit `.env`, and do not add `MOZAIK_API_KEY` (it turns on Mozaik Cloud telemetry).
+Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` (see the comments in [`.env.example`](.env.example)); the default models are the ones it serves, so nothing else is needed. Never commit `.env`, and do not add `MOZAIK_API_KEY` (it turns on Mozaik Cloud telemetry).
 
 ```bash
 # terminal 1: mock API (Recepti reads its data from it)
@@ -176,10 +176,10 @@ cd examples/mock-api && npm start                    # http://localhost:3000
 cd examples/recepti && npm ci && npm run dev         # http://localhost:5173
 
 # terminal 3
-npm run migrate -- examples/recepti --original-url http://localhost:5173 --budget 3
+npm run migrate -- examples/recepti --original-url http://localhost:5173
 ```
 
-`--budget` is a hard limit in USD: when the run reaches it, no new work starts, units still waiting end as failed, and the report still gets built. Other options: `--max-builders` (default 4), `--max-testers` (default 2), `--out` (default `output`).
+`--budget` (default 5) is a hard limit in USD: when the run reaches it, no new work starts, units still waiting end as failed, and the report still gets built. Other options: `--max-builders` (default 4), `--max-testers` (default 2), `--out` (default `output`).
 
 <!-- TODO(D19): paste the summary of a real Recepti run here (outcome, statuses, cost, duration),
 and archive it: npx tsx -e "import('./src/report/index.ts').then(async (m) => console.log(await m.archiveRun('output/<run-id>', 'runs', 'recepti-<yyyymmdd-hhmm>')))"
