@@ -29,7 +29,7 @@ Faza: F3
 - C3.1 (PR #65) i popravke posle pravog prolaza (PR #61) su spojeni
 - G3: `verify` (B, PR #67) koristi moj `serveApp`
 
-- sajt projekta (prototip): `site/index.html`, jedna statička stranica bez build alata (grana `c/site`); folder `site/` nije ničiji po vlasništvu, tim treba da odluči ko ga vodi i da li ide na GitHub Pages
+- sajt projekta (PR #77): statička stranica bez build alata, podeljena (grana `c/site-split`): `site/index.html` (sadržaj), `site/css/` (`tokens`, `base`, `hero`, `sections`, `responsive`), `site/js/copy.js`; folder `site/` nije ničiji po vlasništvu, tim treba da odluči ko ga vodi i da li ide na GitHub Pages
 
 - `results/<unitId>.json` sada ima rezultat svakog testa (`scenarios`), status iz pravih rezultata (D → C, grana `c/results-scenarios`)
 

@@ -1,0 +1,24 @@
+/* Narrow screens and reduced motion. Loaded last so these rules win. */
+
+@media (max-width: 980px) {
+  .stage { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); }
+  .stage .test { grid-column: 1 / -1; order: 3; }
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
+  .flow li:nth-child(3)::after { display: none; }
+  .statuses, .team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gates-grid, .two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .webapp { grid-template-columns: minmax(0, 1fr); }
+  .side { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .side strong { margin: 0 6px 0 0; }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .flow li::after { display: none; }
+  .statuses, .team { grid-template-columns: minmax(0, 1fr); }
+  .toplinks { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .steps li { animation: none; }
+}
