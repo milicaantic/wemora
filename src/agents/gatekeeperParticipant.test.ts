@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
 import { beforeAll, describe, expect, it } from "vitest"
-import { FlowResultSchema, PlanSchema, UnitResultSchema, type CheckDraft, type CheckDraftInput, type GateResult, type RunConfig, type Scenario } from "../contracts"
+import { FlowResultSchema, PlanSchema, UnitResultSchema, type CheckDraft, type CheckDraftInput, type GateResult, type RunConfig, type Scenario, type ScenarioResult } from "../contracts"
 import type { CheckFlow } from "../gatekeeper"
 import { initLog } from "../core/log"
 import { MockRunner } from "../core/runner"
@@ -44,6 +44,23 @@ const fakeFlow: CheckFlow = async ({ flow, tests, differences }) => {
 }
 const flowTest = (flowId: string, unitId: string): Scenario => ({ id: `${flowId}-1`, unitId, obligation: flowId, flowId, steps: [{ goto: "/" }] })
 
+// Lažni rezultati kapije 5: po jedan po testu; jedinice iz failFor padaju na koraku 2.
+const lastScenarios = new Map<string, ScenarioResult[]>()
+const fakeScenarios = (unitId: string) => lastScenarios.get(unitId) ?? []
+const checkWithResults: CheckDraft = async (input) => {
+  const gates = await fakeCheck(input)
+  const failing = failFor.has(input.unit.id)
+  lastScenarios.set(
+    input.unit.id,
+    input.tests.map((t) =>
+      failing
+        ? { scenarioId: t.id, unitId: t.unitId, ok: false, durationMs: 5, failedStep: 1, error: 'fill field labelled "Pretraga": not found' }
+        : { scenarioId: t.id, unitId: t.unitId, ok: true, durationMs: 5 },
+    ),
+  )
+  return gates
+}
+
 class AnyOf extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
     return event.type === "gate.failed" || event.type === "unit.promoted"
@@ -79,7 +96,7 @@ beforeAll(() => {
   state.plan = plan
   initializeRuntime({ state, inferenceRunnerConfig: { runner: new MockRunner({}) } })
 
-  join(createGatekeeper("gatekeeper-1", { checkDraft: fakeCheck, checkFlow: fakeFlow }))
+  join(createGatekeeper("gatekeeper-1", { checkDraft: checkWithResults, checkFlow: fakeFlow, scenarioResults: fakeScenarios }))
   builder = createHuman({ name: "builder-7", capabilities: [], handlers: [] })
   join(builder)
   join(
@@ -186,12 +203,19 @@ describe("Gatekeeper-učesnik", () => {
     const result = UnitResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "shopping-list.json"), "utf8")))
     expect(result).toMatchObject({ status: "failed", rounds: 2 })
     expect(result.reason).toBe('labels: nema elementa sa accessibilityLabel "Pretraga"')
+    // rezultat testa koji pada: ok false, korak i greška (za izveštaj)
+    expect(result.scenarios).toEqual([
+      { scenarioId: "shopping-list-t1", unitId: "shopping-list", ok: false, durationMs: 5, failedStep: 1, error: 'fill field labelled "Pretraga": not found' },
+    ])
     // Conductor iz table čita poruku za sledeću rundu
     expect(board().results["shopping-list"]!.gates.find((g) => !g.ok)?.message).toContain("Pretraga")
   })
 
   it("promovisan ekran sa testovima: status iz computeStatus (bez pokrivenosti → partial)", async () => {
     expect(board().results["recipe-list"]!.status).toBe("partial")
+    // results/<unit>.json nosi rezultat svakog testa (D → C, inbox)
+    const onDisk = UnitResultSchema.parse(JSON.parse(readFileSync(path.join(runDir, "results", "recipe-list.json"), "utf8")))
+    expect(onDisk.scenarios).toEqual([{ scenarioId: "recipe-list-t1", unitId: "recipe-list", ok: true, durationMs: 5 }])
   })
 
   it("greška u proveri ne ruši učesnika: gate.failed i red ide dalje", async () => {

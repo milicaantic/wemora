@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { PlanSchema, type CheckDraft, type RunScenarios, type Scenario, type ServeApp, type Unit } from "../contracts"
 import { scaffold } from "../scaffold/index"
-import { createCheckDraft, PHONE } from "./index"
+import { createCheckDraft, PHONE, type CheckDraftWithResults } from "./index"
 
 const root = (p: string) => fileURLToPath(new URL(`../../${p}`, import.meta.url))
 // Kapija 3 (tsc) traži instaliran šablon.
@@ -62,7 +62,7 @@ function draft(unitId: string, files: Record<string, string>): string {
 const screenFile = (unitId: string) => readFileSync(join(app, "src/screens", unitId, "index.tsx"), "utf8")
 const PLACEHOLDER = () => screenFile("recipe-list") // nijedan test ga ne dira
 
-let checkDraft: CheckDraft
+let checkDraft: CheckDraftWithResults
 beforeEach(async () => {
   run = mkdtempSync(join(tmpdir(), "wemora-check-"))
   await scaffold(plan, run)
@@ -156,6 +156,19 @@ describe("checkDraft (lažni runScenarios)", () => {
       expect(results.at(-1)).toMatchObject({ gate: "scenarios", ok: false })
       expect(results.at(-1)!.message).toContain("aplikacija nije mogla da se pokrene")
       expect(screenFile("shopping-list")).toBe(PLACEHOLDER())
+    }, 60_000)
+
+    it("pamti rezultat svakog testa iz kapije 5, i kad prolazi i kad pada (results/<unit>.json, D → C)", async () => {
+      const tests = [test("sl-1", "shopping-list"), test("sl-2", "shopping-list")]
+      // sl-2 pada (nema "// pass:sl-2" u ekranu)
+      await check("shopping-list", { "screens/shopping-list/index.tsx": `${SCREEN}// pass:sl-1\n` }, tests)
+      expect(checkDraft.scenariosOf("shopping-list")).toEqual([
+        { scenarioId: "sl-1", unitId: "shopping-list", ok: true, durationMs: 1 },
+        { scenarioId: "sl-2", unitId: "shopping-list", ok: false, durationMs: 1, failedStep: 0, error: 'text "Lista za kupovinu": not found on screen within 5000 ms' },
+      ])
+      // sledeća provera iste jedinice briše stare rezultate (kapija 1 pada, kapija 5 se ne pušta)
+      await check("shopping-list", { "screens/shopping-list/index.tsx": "export default function S( {" }, tests)
+      expect(checkDraft.scenariosOf("shopping-list")).toEqual([])
     }, 60_000)
 
     it("regresija pušta testove svih već promovisanih ekrana", async () => {
