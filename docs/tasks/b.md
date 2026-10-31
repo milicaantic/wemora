@@ -218,7 +218,7 @@ Moja stavka: povučem `main`, napravim granu za F1 i proverim da `check-layers.s
 ## F2: Jedan ekran ceo put
 
 ### B8 — Agent tester (`agents/tester.ts`, `prompts/tester.md`)
-- **Šta radi:** AI agent (Haiku 5.5) koji za jednu jedinicu gleda samo original, isprobava ga i piše scenarije, a čuva samo one koji prođu `validateScenario`. Kad su sve obaveze iz plana pokrivene, upiše `tests/<unitId>.json` i pošalje `tests.ready { unitId }`. Agent je tanak omotač: posao rade funkcije iz `scenarios/`.
+- **Šta radi:** AI agent (Haiku 4.5) koji za jednu jedinicu gleda samo original, isprobava ga i piše scenarije, a čuva samo one koji prođu `validateScenario`. Kad su sve obaveze iz plana pokrivene, upiše `tests/<unitId>.json` i pošalje `tests.ready { unitId }`. Agent je tanak omotač: posao rade funkcije iz `scenarios/`.
 - **Fajlovi:** `src/agents/tester.ts`, `src/agents/prompts/tester.md`, `src/agents/tester.test.ts`.
 - **Koraci:**
   1. Fabrika testera vraća `AgentHandle<TestTask>` (A-ov P6); svaki tester je zasebna `createAgent` instanca. Spoljne zavisnosti (URL originala, URL praznog ekrana, `validateScenario`, snapshot) fabrika dobija kao parametre, da test ne pokreće browser (Q8, Q16).
