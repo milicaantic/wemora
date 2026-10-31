@@ -71,8 +71,9 @@ export const validateScenario: ValidateScenario = createValidateScenario()
 // The usual causes in real runs (A's inbox message 2026-10-31, `navigate-to-detail`), so the tester does not
 // spend all its attempts on the same mistake.
 const CHANGES_NOTHING_HINT =
-  "After a tap that opens another screen, check a text only that screen has (a heading or label from its aria_snapshot), " +
-  "or expectNotVisible a text only the previous screen has: the name you tapped is usually visible on both. " +
+  "After a tap that leaves this screen, check that this screen is gone: expectNotVisible a text only this screen has " +
+  "(e.g. the search field label on a list): the name you tapped is usually visible on both screens. " +
+  "In a screen test never check a text of the other screen: it may not be in the app yet, so both screens would be blocked. " +
   "After a button that changes state, check what it changes (a new button name, a message, a count). " +
   "If the action only prepares state for a later check, put it in setup."
 
