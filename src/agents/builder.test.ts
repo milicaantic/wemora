@@ -362,7 +362,12 @@ describe("MockRunner primeri za TodoMVC (za A12)", () => {
     expect(results.every((r) => r.ok)).toBe(true)
   }, 120_000)
 
-  it.skipIf(!hasTemplateModules)("nacrt iz runde 2 prolazi kapije 1–4", async () => {
+  it.skipIf(!hasTemplateModules)("nacrt iz runde 2 koristi temu i prolazi kapije 1–4 (tema je već u aplikaciji)", async () => {
+    const screen = written("builder:todo-list:2")[0]!
+    expect(screen).toContain('from "@/shared/theme"')
+    // tema je talas 0: Gatekeeper ju je već ubacio u app/ pre ekrana
+    mkdirSync(path.join(runDir, "app/src/shared/theme"), { recursive: true })
+    writeFileSync(path.join(runDir, "app/src/shared/theme/index.tsx"), written("builder:theme:1")[0]!)
     const draftDir = path.join(runDir, "staging", "mock-check", "todo-list")
     mkdirSync(path.join(draftDir, "screens/todo-list"), { recursive: true })
     writeFileSync(path.join(draftDir, "screens/todo-list/index.tsx"), written("builder:todo-list:2")[0]!)
