@@ -31,12 +31,21 @@ type Promoted = { unit: Unit; tests: Scenario[] }
 const MAX_SHOWN_FAILURES = 5
 const NO_TESTS = "Nema validiranih testova: ekran ulazi u aplikaciju kao nedokazan (unproven)."
 
+/** checkDraft plus rezultati testova iz poslednje kapije 5, za `UnitResult.scenarios` (D → C, inbox). */
+export type CheckDraftWithResults = CheckDraft & {
+  /** Jedan `ScenarioResult` po testu jedinice iz poslednje provere; prazno ako kapija 5 nije puštena. */
+  scenariosOf: (unitId: string) => ScenarioResult[]
+}
+
 /** Pravi checkDraft sa svojim spiskom promovisanih jedinica (za regresiju). */
-export function createCheckDraft(deps: CheckDraftDeps): CheckDraft {
+export function createCheckDraft(deps: CheckDraftDeps): CheckDraftWithResults {
   // Jedinice koje su prošle ceo put, sa testovima i namernim razlikama: regresija ih pušta ponovo.
   const promoted = new Map<string, Promoted>()
+  // Rezultati testova jedinice iz poslednje provere (i kad prolaze i kad padaju).
+  const lastRuns = new Map<string, ScenarioResult[]>()
 
-  return async ({ unit, round, draftDir, tests, webDir }) => {
+  const check: CheckDraft = async ({ unit, round, draftDir, tests, webDir }) => {
+    lastRuns.delete(unit.id)
     const results: GateResult[] = []
     const add = (gate: GateName, ok: boolean, message: string, brokenTests?: string[]) => {
       results.push({ unitId: unit.id, round, gate, ok, message, ...(brokenTests ? { brokenTests } : {}) })
@@ -77,7 +86,9 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraft {
         if (unit.kind === "screen") ok = tests.length > 0 ? await gate5(app.url, unit, tests, add) : add("scenarios", true, NO_TESTS)
         if (ok) ok = await regression(app.url, others, add)
       } catch (error) {
-        ok = add(unit.kind === "screen" ? "scenarios" : "regression", false, `Gatekeeper: aplikacija nije mogla da se pokrene: ${message(error)}`)
+        const why = `Gatekeeper: aplikacija nije mogla da se pokrene: ${message(error)}`
+        if (unit.kind === "screen" && tests.length > 0 && !lastRuns.has(unit.id)) lastRuns.set(unit.id, perTest(tests, [], why))
+        ok = add(unit.kind === "screen" ? "scenarios" : "regression", false, why)
       } finally {
         await app?.close().catch(() => {})
       }
@@ -93,8 +104,11 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraft {
     return results
   }
 
+  return Object.assign(check, { scenariosOf: (unitId: string) => lastRuns.get(unitId) ?? [] })
+
   async function gate5(url: string, unit: Unit, tests: Scenario[], add: AddResult): Promise<boolean> {
     const runs = await deps.runScenarios(url, tests, { viewport: PHONE, differences: unit.intentionalDifferences })
+    lastRuns.set(unit.id, perTest(tests, runs, "nema rezultata"))
     const failed = failures(tests, runs)
     if (failed.length === 0) return add("scenarios", true, `Svi testovi jedinice prolaze (${tests.length}).`)
     return add("scenarios", false, `Testovi ne prolaze na telefonu (${failed.length} od ${tests.length}):\n${describe(failed)}`)
@@ -121,6 +135,12 @@ export function createCheckDraft(deps: CheckDraftDeps): CheckDraft {
 
 type AddResult = (gate: GateName, ok: boolean, message: string, brokenTests?: string[]) => boolean
 type Failure = { id: string; unitId: string; step?: number; error: string }
+
+/** Tačno jedan rezultat po testu, redom kao testovi; test bez rezultata je pao sa porukom `missing`. */
+function perTest(tests: Scenario[], runs: ScenarioResult[], missing: string): ScenarioResult[] {
+  const byId = new Map(runs.map((r) => [r.scenarioId, r]))
+  return tests.map((t) => byId.get(t.id) ?? { scenarioId: t.id, unitId: t.unitId, ok: false, durationMs: 0, error: missing })
+}
 
 /** Test bez rezultata se računa kao pao, isto kao u computeStatus. */
 function failures(tests: Scenario[], runs: ScenarioResult[]): Failure[] {

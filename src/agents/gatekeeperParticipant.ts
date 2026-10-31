@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { createHuman, SituationSpecification, type Participant, type SituationContext } from "@mozaik-ai/core"
-import { EVENTS, type CheckDraft, type Flow, type FlowResult, type GateResult, type Scenario, type ScreenStatus, type Unit, type UnitResult } from "../contracts"
+import { EVENTS, type CheckDraft, type Flow, type FlowResult, type GateResult, type Scenario, type ScenarioResult, type ScreenStatus, type Unit, type UnitResult } from "../contracts"
 import { log } from "../core/log"
 import { board, emit } from "../core/runtime"
-import { checkDraft as realCheckDraft, checkFlow as realCheckFlow, computeStatus, type CheckFlow } from "../gatekeeper"
+import { checkDraft as realCheckDraft, checkFlow as realCheckFlow, computeStatus, scenarioResultsOf, type CheckFlow } from "../gatekeeper"
 
 // Gatekeeper-učesnik (C2.4, architecture.md §10): deterministički, bez modela.
 // - draft.submitted → red čekanja; nacrti se proveravaju jedan po jedan (checkDraft)
@@ -19,6 +19,8 @@ import { checkDraft as realCheckDraft, checkFlow as realCheckFlow, computeStatus
 export type GatekeeperOptions = {
   checkDraft?: CheckDraft
   checkFlow?: CheckFlow
+  /** Rezultati testova iz poslednjeg checkDraft-a (uz zamenjen checkDraft u testovima ide i ovo). */
+  scenarioResults?: (unitId: string) => ScenarioResult[]
 }
 
 type Job = { unitId: string; round: number; builderId: string }
@@ -39,6 +41,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 export function createGatekeeper(id: string, options: GatekeeperOptions = {}): Participant {
   const check = options.checkDraft ?? realCheckDraft
   const checkFlow = options.checkFlow ?? realCheckFlow
+  const scenariosOf = options.scenarioResults ?? (options.checkDraft ? () => [] : scenarioResultsOf)
 
   const queue: Work[] = []
   // Ekrani čiji je nacrt stigao pre testova: čekaju tests.ready ili tests.missing.
@@ -192,7 +195,7 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
     const draftDir = path.join(runDir, "staging", job.builderId, job.unitId)
     log({ agent: id, event: "gatekeeper.check_started", data: { unitId: job.unitId, round: job.round } })
     const gates = await check({ unit, round: job.round, draftDir, tests, webDir })
-    finish(job, gates, tests)
+    finish(job, gates, tests, scenariosOf(job.unitId))
   }
 
   async function runFlow(flowId: string): Promise<void> {
@@ -220,23 +223,21 @@ export function createGatekeeper(id: string, options: GatekeeperOptions = {}): P
   }
 
   /** Prvo tabla i disk, pa događaj: Conductor čita tablu čim događaj stigne. */
-  function finish(job: Job, gates: GateResult[], tests: Scenario[]): void {
+  function finish(job: Job, gates: GateResult[], tests: Scenario[], scenarios: ScenarioResult[] = []): void {
     const passed = gates.length > 0 && gates.every((g) => g.ok)
     const failed = gates.find((g) => !g.ok)
-    // Kapija 5 je prošla, pa je svaki test prošao; nula testova (tests.missing) → unproven.
+    // Status iz pravih rezultata kapije 5; ako ih nema, a kapija je prošla, prošao je svaki test.
+    // Nula testova (tests.missing) → unproven.
+    const results = scenarios.length > 0 ? scenarios : tests.map((t) => ({ scenarioId: t.id, unitId: t.unitId, ok: true, durationMs: 0 }))
     const status: ScreenStatus = passed
-      ? computeStatus({
-          tests,
-          results: tests.map((t) => ({ scenarioId: t.id, unitId: t.unitId, ok: true, durationMs: 0 })),
-          coverage: board().coverage[job.unitId] ?? null,
-        })
+      ? computeStatus({ tests, results, coverage: board().coverage[job.unitId] ?? null })
       : "failed"
     const result: UnitResult = {
       unitId: job.unitId,
       status,
       rounds: job.round,
       gates,
-      scenarios: [],
+      scenarios,
       coverage: board().coverage[job.unitId] ?? null,
       ...(failed ? { reason: `${failed.gate}: ${failed.message.split("\n")[0]}` } : {}),
     }

@@ -31,6 +31,8 @@ Faza: F3
 
 - sajt projekta (prototip): `site/index.html`, jedna statička stranica bez build alata (grana `c/site`); folder `site/` nije ničiji po vlasništvu, tim treba da odluči ko ga vodi i da li ide na GitHub Pages
 
+- `results/<unitId>.json` sada ima rezultat svakog testa (`scenarios`), status iz pravih rezultata (D → C, grana `c/results-scenarios`)
+
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
 - prolaz sa pravim modelom (`--budget 1`): treba `ANTHROPIC_API_KEY` (kod C ga nema)
