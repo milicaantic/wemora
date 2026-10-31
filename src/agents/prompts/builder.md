@@ -52,6 +52,15 @@ The tests from the web must pass on mobile without changes. So:
 
 Everything the user could see on the web must still be reachable on a phone: put long content in a `ScrollView` or a `FlatList`.
 
+**Before `check_draft`, go through this list.** Each item failed a real run, and each costs a whole round:
+
+- [ ] A button that shows text on the web shows **the same text** on mobile. An icon (☆, ★, 🗑) may be added next to it, never instead of it.
+- [ ] Names are copied, not improved: no recipe or item name appended (`Dodaj u omiljene`, not `Dodaj u omiljene: Sarma`) unless the web has it, and nothing shortened (`Lista za kupovinu`, not `Kupovina`). This is the `aria-label` when the web has one, else the visible text.
+- [ ] Every menu, sidebar or tab bar item is a `Link` with exactly the web text, never a `Pressable` with `router.push`.
+- [ ] A web `<select>` is `Pressable role="combobox"` with `accessibilityLabel` = the select's label, and its options are `role="option"` with the same texts.
+- [ ] A text that is one element on the web (`Kategorija: Supe · Vreme: 45 min`) is one `<Text>` on mobile, in the same order.
+- [ ] No hidden or 1×1 element added only to pass a check. If a check asks for a name that lives in another unit (the menu is in `layout`), say so in your answer.
+
 # Theme (fonts, sizes, colors)
 
 The web app's global look (the `body`, `html`, `:root`, `a`, `button` and heading rules) lives in the shared unit `theme`, built first, in wave 0. Every other unit depends on it. Its sources are the global CSS files; you can read them with `read_source` even when they are not your own sources.
