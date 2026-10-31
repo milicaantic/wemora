@@ -1,6 +1,48 @@
 {"t":"2026-10-30T10:00:00.000Z","agent":"conductor","event":"run.started"}
+{"t":"2026-10-30T10:00:01.000Z","agent":"analyzer-1","event":"participant.joined","data":{"id":"u-a1","name":"analyzer-1","role":"agent"}}
+{"t":"2026-10-30T10:00:01.000Z","agent":"conductor","event":"agent.started","data":{"id":"analyzer-1","kind":"analyzer"}}
+{"t":"2026-10-30T10:00:01.000Z","agent":"conductor","event":"agents.rescaled","data":{"analyzers":1,"builders":0,"testers":0,"reason":"2986 tokens → 1 analyzer(s)"}}
+{"t":"2026-10-30T10:00:01.000Z","agent":"conductor","event":"task.assigned","data":{"to":"analyzer-1","task":{"partId":"part-1"}}}
+{"t":"2026-10-30T10:00:01.000Z","agent":"analyzer-1","event":"message_received.started","data":{"loopId":"L1"}}
+{"t":"2026-10-30T10:00:04.000Z","agent":"analyzer-1","event":"model.usage","costUsd":0.002,"data":{"model":"claude-haiku-5-5","inputTokens":1200,"cacheReadTokens":3000,"cacheWriteTokens":0,"outputTokens":400}}
+{"t":"2026-10-30T10:00:05.000Z","agent":"analyzer-1","event":"model.answer","data":{"loopId":"L1","text":"{}"}}
 {"t":"2026-10-30T10:00:05.000Z","agent":"analyzer-1","event":"analysis.done"}
 this line is not json
+{"agent":"analyzer-1","event":"line.without.time"}
+{"t":"2026-10-30T10:00:10.000Z","agent":"architect-1","event":"participant.joined","data":{"id":"u-ar1","name":"architect-1","role":"agent"}}
+{"t":"2026-10-30T10:00:10.000Z","agent":"conductor","event":"agent.started","data":{"id":"architect-1","kind":"architect"}}
+{"t":"2026-10-30T10:00:10.000Z","agent":"conductor","event":"task.assigned","data":{"to":"architect-1","task":{"partIds":["part-1"]}}}
+{"t":"2026-10-30T10:00:10.000Z","agent":"architect-1","event":"message_received.started","data":{"loopId":"L2"}}
+{"t":"2026-10-30T10:01:05.000Z","agent":"architect-1","event":"model.usage","costUsd":0.05,"data":{"model":"claude-sonnet-5-5","inputTokens":9000,"outputTokens":3000}}
+{"t":"2026-10-30T10:01:10.000Z","agent":"architect-1","event":"model.answer","data":{"loopId":"L2","text":"{}"}}
 {"t":"2026-10-30T10:01:10.000Z","agent":"architect","event":"plan.ready"}
+{"t":"2026-10-30T10:01:20.000Z","agent":"conductor","event":"agents.rescaled","data":{"analyzers":1,"builders":2,"testers":1,"from":{"builders":0,"testers":0},"reason":"5 ready + 0 busy → 2 builder(s) (max 4), 1 tester(s) (max 2)"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"tester-1","event":"participant.joined","data":{"id":"u-t1","name":"tester-1","role":"agent"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"conductor","event":"agent.started","data":{"id":"tester-1","kind":"tester"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"conductor","event":"task.assigned","data":{"to":"tester-1","task":{"unitId":"recipe-list"}}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"tester-1","event":"message_received.started","data":{"loopId":"L3"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"builder-1","event":"participant.joined","data":{"id":"u-b1","name":"builder-1","role":"agent"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"conductor","event":"agent.started","data":{"id":"builder-1","kind":"builder"}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"conductor","event":"task.assigned","data":{"to":"builder-1","task":{"unitId":"recipe-list","round":1,"model":"claude-haiku-5-5","lastError":null}}}
+{"t":"2026-10-30T10:01:20.000Z","agent":"builder-1","event":"message_received.started","data":{"loopId":"L4"}}
+{"t":"2026-10-30T10:01:25.000Z","agent":"builder-2","event":"participant.joined","data":{"id":"u-b2","name":"builder-2","role":"agent"}}
+{"t":"2026-10-30T10:01:25.000Z","agent":"conductor","event":"agent.started","data":{"id":"builder-2","kind":"builder"}}
+{"t":"2026-10-30T10:01:25.000Z","agent":"conductor","event":"task.assigned","data":{"to":"builder-2","task":{"unitId":"shopping-list","round":1,"model":"claude-haiku-5-5","lastError":null}}}
+{"t":"2026-10-30T10:01:25.000Z","agent":"builder-2","event":"message_received.started","data":{"loopId":"L6"}}
+{"t":"2026-10-30T10:02:10.000Z","agent":"builder-1","event":"model.usage","costUsd":0.01,"data":{"model":"claude-haiku-5-5","inputTokens":4000,"outputTokens":2000}}
+{"t":"2026-10-30T10:02:20.000Z","agent":"builder-1","event":"model.answer","data":{"loopId":"L4","text":"done"}}
+{"t":"2026-10-30T10:02:30.000Z","agent":"gatekeeper-1","event":"gate.failed","data":{"unitId":"recipe-list","round":1,"producerId":"u-g1"}}
+{"t":"2026-10-30T10:02:30.000Z","agent":"conductor","event":"task.assigned","data":{"to":"builder-1","task":{"unitId":"recipe-list","round":2,"model":"claude-haiku-5-5","lastError":"<div> ne postoji u React Native"}}}
+{"t":"2026-10-30T10:02:30.000Z","agent":"builder-1","event":"message_received.started","data":{"loopId":"L5"}}
+{"t":"2026-10-30T10:03:00.000Z","agent":"tester-1","event":"model.usage","costUsd":0.008,"data":{"model":"claude-haiku-5-5","inputTokens":5000,"outputTokens":800}}
+{"t":"2026-10-30T10:03:20.000Z","agent":"tester-1","event":"model.answer","data":{"loopId":"L3","text":"done"}}
+{"t":"2026-10-30T10:03:25.000Z","agent":"builder-1","event":"model.usage","costUsd":0.012,"data":{"model":"claude-haiku-5-5","inputTokens":4500,"outputTokens":2100}}
+{"t":"2026-10-30T10:03:30.000Z","agent":"builder-1","event":"model.answer","data":{"loopId":"L5","text":"done"}}
+{"t":"2026-10-30T10:03:50.000Z","agent":"builder-2","event":"model.usage","costUsd":0.009,"data":{"model":"claude-haiku-5-5","inputTokens":3800,"outputTokens":1700}}
+{"t":"2026-10-30T10:03:55.000Z","agent":"builder-2","event":"model.answer","data":{"loopId":"L6","text":"done"}}
 {"t":"2026-10-30T10:04:00.000Z","agent":"gatekeeper","event":"unit.promoted"}
+{"t":"2026-10-30T10:05:00.000Z","agent":"tester-1","event":"participant.left","data":{"id":"u-t1","name":"tester-1","role":"agent"}}
+{"t":"2026-10-30T10:05:50.000Z","agent":"conductor","event":"agents.rescaled","data":{"analyzers":1,"builders":1,"testers":1,"from":{"builders":2,"testers":1},"reason":"0 ready + 0 busy → 1 builder(s) (max 4), 1 tester(s) (max 2)"}}
+{"t":"2026-10-30T10:06:00.000Z","agent":"conductor","event":"agent.stopped","data":{"id":"builder-2","kind":"builder"}}
+{"t":"2026-10-30T10:06:00.000Z","agent":"builder-2","event":"participant.left","data":{"id":"u-b2","name":"builder-2","role":"agent"}}
 {"t":"2026-10-30T10:07:30.000Z","agent":"conductor","event":"run.finished"}

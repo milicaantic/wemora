@@ -6,7 +6,9 @@ import { afterAll, describe, expect, it } from "vitest"
 import { buildReport } from "./index"
 import { escapeHtml } from "./html"
 import { loadRun } from "./load"
+import { usdText } from "./costs"
 import { describeDifference, toReportModel } from "./model"
+import { buildTimeline, peakTeam, speedupText } from "./timeline"
 
 const fixture = fileURLToPath(new URL("./mocks/run", import.meta.url))
 const temps: string[] = []
@@ -66,7 +68,8 @@ describe("buildReport over the fixture run", async () => {
 
   it("reports bad files as warnings instead of failing", () => {
     expect(html).toContain("results/broken.json nije ispravan JSON")
-    expect(html).toContain("run.jsonl: 1 neispravna linija je preskočena")
+    // "this line is not json" and a line without t
+    expect(html).toContain("run.jsonl: 2 neispravne linije su preskočene")
   })
 
   it("is byte-for-byte the same on a second build", async () => {
@@ -118,6 +121,128 @@ describe("how the run ended (run.finished from the Conductor)", () => {
     expect(toReportModel(loadRun(fixture)).stop).toBeNull()
     const html = readFileSync(await buildReport(runWith([line("run.finished", { outcome: "finished" })])), "utf8")
     expect(html).not.toContain("Ishod prolaza")
+  })
+})
+
+describe("v2: timeline, speed-up, cost and rounds from run.jsonl", () => {
+  const at = (s: number) => new Date(Date.UTC(2026, 9, 30, 10, 0, s)).toISOString()
+  const line = (s: number, agent: string, event: string, data?: unknown, costUsd?: number) => ({ t: at(s), agent, event, data, costUsd })
+  const loop = (agent: string, id: string, from: number, to: number) => [
+    line(from, agent, "message_received.started", { loopId: id }),
+    line(to, agent, "model.answer", { loopId: id, text: "ok" }),
+  ]
+  const model = toReportModel(loadRun(fixture))
+
+  it("speed-up is the sum of all bars over the run window: 2 bars of 60 s in 80 s → 1,5×", () => {
+    const log = [line(0, "conductor", "run.started"), ...loop("builder-1", "a", 10, 70), ...loop("tester-1", "b", 20, 80)]
+    const timeline = buildTimeline(log)!
+    expect(timeline.windowMs).toBe(80_000)
+    expect(timeline.busyMs).toBe(120_000)
+    expect(timeline.speedup).toBe(1.5)
+    expect(speedupText(timeline.speedup!)).toBe("1,5×")
+  })
+
+  it("draws one row per agent, with bars from message_received.started to model.answer and the task as label", () => {
+    const rows = model.timeline!.rows
+    expect(rows.map((r) => [r.agent, r.kind])).toEqual([
+      ["analyzer-1", "analyzer"],
+      ["architect-1", "architect"],
+      ["tester-1", "tester"],
+      ["builder-1", "builder"],
+      ["builder-2", "builder"],
+    ])
+    const builder = rows.find((r) => r.agent === "builder-1")!
+    expect(builder.bars.map((b) => [b.label, b.durationMs])).toEqual([
+      ["recipe-list · runda 1", 60_000],
+      ["recipe-list · runda 2", 60_000],
+    ])
+    expect(rows.find((r) => r.agent === "architect-1")!.bars[0]!.label).toBe("plan")
+    expect(rows.find((r) => r.agent === "tester-1")!.left).toEqual(["2026-10-30T10:05:00.000Z"])
+    // 4 + 60 + 120 + 60 + 60 + 150 = 454 s of work in 450 s
+    expect(speedupText(model.timeline!.speedup!)).toBe("1,0×")
+  })
+
+  it("keeps a loop with no model.answer as an open bar up to the end, and ignores answers it cannot pair", () => {
+    const log = [line(0, "conductor", "run.started"), line(5, "builder-1", "message_received.started", { loopId: "x" }), line(9, "builder-1", "model.answer", { loopId: "other" }), line(30, "conductor", "run.finished")]
+    const bar = buildTimeline(log)!.rows[0]!.bars[0]!
+    expect(bar).toMatchObject({ open: true, durationMs: 25_000, end: at(30) })
+  })
+
+  it("sums cost per agent, sorted by cost, with calls, tokens and models", () => {
+    expect(model.costs.rows.map((r) => [r.agent, Number(r.usd.toFixed(4)), r.calls])).toEqual([
+      ["architect-1", 0.05, 1],
+      ["builder-1", 0.022, 2],
+      ["builder-2", 0.009, 1],
+      ["tester-1", 0.008, 1],
+      ["analyzer-1", 0.002, 1],
+    ])
+    expect(model.costs.rows.find((r) => r.agent === "analyzer-1")).toMatchObject({ inputTokens: 1200, cachedTokens: 3000, outputTokens: 400, models: ["claude-haiku-5-5"] })
+    expect(usdText(model.costs.totalUsd)).toBe("$0.0910")
+    expect(model.costs.calls).toBe(6)
+  })
+
+  it("lists builder rounds per unit with the model and the rounds the Gatekeeper rejected", () => {
+    expect(model.rounds).toEqual([
+      {
+        unitId: "recipe-list",
+        rounds: [
+          { round: 1, model: "claude-haiku-5-5", failed: true },
+          { round: 2, model: "claude-haiku-5-5", failed: false },
+        ],
+      },
+      { unitId: "shopping-list", rounds: [{ round: 1, model: "claude-haiku-5-5", failed: false }] },
+    ])
+  })
+
+  it("lists team changes (agents.rescaled, A14) with the counts before and after, by time", () => {
+    expect(model.rescales.map((r) => [r.t.slice(11, 19), r.team, r.from])).toEqual([
+      ["10:00:01", { analyzers: 1, builders: 0, testers: 0 }, null],
+      ["10:01:20", { analyzers: 1, builders: 2, testers: 1 }, { builders: 0, testers: 0 }],
+      ["10:05:50", { analyzers: 1, builders: 1, testers: 1 }, { builders: 2, testers: 1 }],
+    ])
+    expect(model.rescales[0]!.text).toBe("2986 tokens → 1 analyzer(s)")
+  })
+
+  it("finds the most agents of each kind running at once (agent.started / agent.stopped)", () => {
+    expect(model.peak).toEqual({ analyzer: 1, architect: 1, tester: 1, builder: 2 })
+    const at = (s: number) => new Date(Date.UTC(2026, 9, 30, 10, 0, s)).toISOString()
+    const ev = (s: number, event: string, id: string) => ({ t: at(s), agent: "conductor", event, data: { id, kind: "builder" } })
+    // builder-1 stops before builder-3 starts, so at most 2 run at once
+    const log = [ev(0, "agent.started", "builder-1"), ev(1, "agent.started", "builder-2"), ev(2, "agent.stopped", "builder-1"), ev(3, "agent.started", "builder-3")]
+    expect(peakTeam(log)).toEqual({ builder: 2 })
+  })
+
+  it("renders the Agents section: peak, counts as 'before → after' and the reason", async () => {
+    const html = readFileSync(await buildReport(tempDir(true)), "utf8")
+    expect(html).toContain("<h2>Agenti</h2>")
+    expect(html).toContain("Najviše istovremeno: builderi <strong>2</strong>, testeri <strong>1</strong>, analizatori <strong>1</strong>, arhitekte <strong>1</strong>.")
+    expect(html).toContain("0 → <strong>2</strong>")
+    expect(html).toContain("2 → <strong>1</strong>")
+    expect(html).toContain("5 ready + 0 busy → 2 builder(s) (max 4), 1 tester(s) (max 2)")
+    // 10:01:20 is 1 min 20 s after the run started at 10:00:00
+    expect(html).toContain(`<td class="num">1 min 20 s</td>`)
+  })
+
+  it("has no Agents section when the log has neither rescales nor started agents", async () => {
+    const html = readFileSync(await buildReport(tempDir(false)), "utf8")
+    expect(html).not.toContain("<h2>Agenti</h2>")
+  })
+
+  it("renders the timeline as inline SVG and the new sections", async () => {
+    const html = readFileSync(await buildReport(tempDir(true)), "utf8")
+    expect(html).toContain("<svg")
+    expect(html).toContain("Ubrzanje <strong>1,0×</strong>")
+    expect(html).toContain("<title>builder-1 · recipe-list · runda 2 · 1 min 0 s</title>")
+    expect(html).toContain("2986 tokens → 1 analyzer(s)")
+    expect(html).toContain("$0.0910")
+    expect(html).toContain("Runde i modeli")
+  })
+
+  it("says so when there is no agent work or no cost", async () => {
+    const html = readFileSync(await buildReport(tempDir(false)), "utf8")
+    expect(html).toContain("nema vremenske ose")
+    expect(html).toContain("Nema zapisa o trošku")
+    expect(html).not.toContain("Runde i modeli")
   })
 })
 

@@ -1,5 +1,5 @@
 # Status: osoba D
-Faza: F2
+Faza: F3
 Poslednja izmena: 2026-10-31
 
 ## Gotovo (spojeno u main)
@@ -89,13 +89,30 @@ Na čistom klonu `main`-a `6289b3c` (posle toga su u `main` stigle samo izmene d
 
 Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala „No routes found“ zbog zajedničkog Metro keša. C je popravio (D-009, PR #22).
 
+## Posle F2 (spojeno u main)
+- PR #55 (`d/todomvc-coverage`): link „TodoMVC“ je `notPortable`, obaveze preko „❯ Toggle All Input“, prompt-ovi traže da svaki imenovani element bude u obavezi ili u razlikama.
+- `d/g2-wording`: izveštaj piše „obaveze bez testa“; filteri u adresi (`#/active`) su na telefonu stanje ekrana (opis obaveze i prompt-ovi).
+- PR #63 (`d/web-obligations`, inbox poruka A → D): obaveze moraju da se izvedu na originalnom webu DSL koracima; `validatePlan` odbija long-press, hover, dupli klik, prevlačenje, desni klik, prečice i obaveze o `notPortable` elementima.
+
+## Gotovo, čeka spajanje (grana `d/report-v2`)
+- D17: izveštaj v2, sve izračunato iz `run.jsonl`, bez modela:
+  - `src/report/timeline.ts`: jedan red po agentu; traka je petlja od `message_received.started` do `model.answer` istog agenta sa istim `data.loopId` (Mozaik događaji kroz A-ov `eventLogger`); oznaka trake je zadatak iz poslednjeg `task.assigned` za tog agenta (`part-1`, `plan`, `todo-list · runda 2`); vrsta agenta iz `agent.started`; petlja bez `model.answer` je „otvorena“ traka do kraja loga. `participant.joined`/`left` (samo `role: agent`) su tačke ispod trake.
+  - **Ubrzanje** = zbir trajanja svih traka ÷ (poslednji − prvi zapis), jedna decimala: „1,5×“.
+  - **Agenti** (A14, D-021, inbox poruka A → D): najveći broj agenata svake vrste koji su radili istovremeno (iz `agent.started`/`agent.stopped`) i tabela svih `agents.rescaled` promena: vreme od početka prolaza, analizatori, builderi i testeri kao „pre → posle“ (`from`), razlog. Provereno i nad pravim `migrate:mock` prolazom posle A14.
+  - **Runde i modeli:** po jedinici, svaka builderova runda (`task.assigned` sa `round` i `model`) i da li je odbijena (`gate.failed`).
+  - `src/report/costs.ts`: trošak po agentu (zbir `costUsd`, broj poziva, ulazni/keširani/izlazni tokeni i modeli iz `model.usage`, D-020), sortirano po trošku, plus ukupno.
+  - `render.ts`: sekcije „Tok prolaza“ (inline SVG bez biblioteka, boja po vrsti agenta, legenda, `<title>` na traci), „Trošak“, „Runde i modeli“; v1 sekcije ostaju. Na telefonu se osa i tabele skroluju u svom okviru.
+  - `load.ts`: linija bez `t` ili koja nije JSON se preskače uz upozorenje (sa pravilnom množinom: „2 neispravne linije su preskočene“).
+  - Fixture `src/report/mocks/run/run.jsonl`: 6 traka koje se preklapaju, trošak, odbijena runda, `agents.rescaled`, loše linije. 11 novih testova (29 ukupno), među njima 2 trake po 60 s u 80 s → 1,5×.
+  - Ručno: snimci u Chromium-u (desktop, tamna tema, telefon) nad fixture-om i nad pravim mock prolazom TodoMVC-a.
+
 ## U radu
 - ništa
 
 ## Sledeće
-- ponoviti `migrate:mock` nad TodoMVC-om kroz ceo tok (sada sa Gatekeeper-om) i javiti šta pada
-- D16: pravi prolazi kad stigne API ključ (vidi gore)
-- izveštaj: zameniti lokalnu šemu linije `run.jsonl` A-ovim `LogEntry` iz `core/log.ts`
+- PR `d/report-v2` (D17)
+- D18: `runs/` i arhiviranje prolaza
+- pravi prolaz nad Receptima kad A pusti sa ključem: pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
 
 ## Odgovori D (2026-10-31)
 - **C: ID ekrana za TodoMVC je `todo-list`** (zajednička jedinica je `app-entry`). To vraća moj `src/agents/mocks/todomvc/architect.json` (PR #38). Tvoj `builder.json` (`builder:todo-list:1`, `builder:todo-list:2`, `screens/todo-list/index.tsx`) i B-ov `tester.json` (`tester:todo-list`, obaveza `empty-state`) već odgovaraju, pa ne treba ništa menjati.
@@ -104,6 +121,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 ## Za A (D12, D14)
 - **ID agenta:** Mozaik daje agentu nasumičan UUID (`agent.getId()`), pa je `producerId` u `analysis.done` taj UUID, a `handle.id` je ime koje daje Conductor (npr. `analyzer-1`) i ide u `TaskMeta.agentId` (log, trošak, mock ključevi). Conductor povezuje događaj sa agentom preko `handle.participant.getId()`.
 - `board().agents` (`busyWith`) agent ne dira; pretpostavljam da ga vodi Conductor.
+- **Izveštaj v2 (D17, PD6):** čita `message_received.started`/`model.answer` (`data.loopId`), `agent.started` (`data.kind`), `task.assigned` (`data.to`, `data.task`), `gate.failed`, `participant.joined`/`left` (`data.name`, `data.role`) i `model.usage`/`costUsd`, sve kako ih danas piše `eventLogger` i Conductor, plus A14 `agents.rescaled { analyzers, builders, testers, from?, reason }` i `agent.stopped { id, kind }` (D-021); format je dobar, ništa ne treba menjati.
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
@@ -113,7 +131,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - **Q1 (`apiFixture`):** `runScenarios` pre scenarija zove `POST /__fixture` sa `scenario.apiFixture ?? "default"`, a posle prolaza `POST /__reset`. Podaci su samo za čitanje, pa je izbor fixture-a jedino stanje servera i dva puštanja zaredom vide iste podatke. Adresa mock-api-ja treba B-u kao parametar; to je deo B-ovog Q8 (URL-ovi u `RunConfig`).
 
 ## Mockovi koje koristim
-- `src/report/load.ts`: lokalna blaga šema za liniju `run.jsonl` (`t`, `agent`, `event`, `costUsd`) dok A ne doda `LogEntry` u `core/log.ts` (A6); tada je menjam uvozom.
+- `src/report/load.ts`: lokalna blaga zod šema za liniju `run.jsonl` (`t`, `agent`, `event`, `costUsd`). `core/log.ts` ima samo TypeScript tip `LogEntry`, a podatke sa diska proveravam zod-om; kad A doda `LogEntrySchema` u `src/contracts/`, menjam je uvozom.
 - Format `tests/<unitId>.json` je niz `Scenario[]` po B-ovom predlogu Q9.
 
 ## Čeka odluku tima

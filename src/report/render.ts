@@ -1,6 +1,8 @@
+import { usdText } from "./costs"
 import { escapeHtml as e } from "./html"
-import type { ReportModel, RowStatus, ScreenRow, SharedRow } from "./model"
+import { formatDuration, type ReportModel, type RowStatus, type ScreenRow, type SharedRow } from "./model"
 import { STYLES } from "./styles"
+import { speedupText, type AgentKindName, type Rescale, type Timeline } from "./timeline"
 
 // Pure: ReportModel → one self-contained HTML page (no scripts, no external files).
 
@@ -75,6 +77,134 @@ function renderStop(stop: ReportModel["stop"]): string {
   return `<section class="warnings run-stop" aria-label="Ishod prolaza"><p><strong>${e(stop.text)}</strong></p>${errors}</section>`
 }
 
+// v2 (D17): timeline, speed-up, team changes, cost and rounds, all from run.jsonl.
+
+const KIND_LABEL: Record<AgentKindName, string> = {
+  analyzer: "analizator",
+  architect: "arhitekta",
+  tester: "tester",
+  builder: "builder",
+  other: "ostalo",
+}
+
+// SVG geometry in viewBox units; the image scales to the page width.
+const SVG = { width: 1000, labelWidth: 130, right: 16, axis: 26, rowHeight: 28, barHeight: 16 }
+const fixed = (n: number) => Number(n.toFixed(1))
+
+function timelineSvg(timeline: Timeline): string {
+  const plot = SVG.width - SVG.labelWidth - SVG.right
+  const t0 = Date.parse(timeline.startedAt)
+  const span = Math.max(timeline.windowMs, 1)
+  const x = (iso: string) => fixed(SVG.labelWidth + ((Date.parse(iso) - t0) / span) * plot)
+  const height = SVG.axis + timeline.rows.length * SVG.rowHeight + 6
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const tx = fixed(SVG.labelWidth + f * plot)
+    const anchor = f === 0 ? "start" : f === 1 ? "end" : "middle"
+    return `<line class="grid" x1="${tx}" y1="${SVG.axis - 6}" x2="${tx}" y2="${height}"/><text class="tick" x="${tx}" y="${SVG.axis - 10}" text-anchor="${anchor}">${e(formatDuration(f * timeline.windowMs))}</text>`
+  })
+
+  const rows = timeline.rows.map((row, i) => {
+    const top = SVG.axis + i * SVG.rowHeight
+    const mid = top + SVG.rowHeight / 2
+    const bars = row.bars.map((b) => {
+      const bx = x(b.start)
+      const width = Math.max(fixed(x(b.end) - bx), 2)
+      const title = `${row.agent}${b.label ? ` · ${b.label}` : ""} · ${formatDuration(b.durationMs)}${b.open ? " (nije završeno)" : ""}`
+      const text = b.label && width > 70 ? `<text class="bar-text" x="${fixed(bx + 5)}" y="${fixed(mid + 4)}">${e(b.label)}</text>` : ""
+      return `<g><title>${e(title)}</title><rect class="bar kind-${row.kind}${b.open ? " open" : ""}" x="${bx}" y="${fixed(mid - SVG.barHeight / 2)}" width="${width}" height="${SVG.barHeight}" rx="3"/>${text}</g>`
+    })
+    const dot = (t: string, cls: string, what: string) =>
+      `<circle class="${cls}" cx="${x(t)}" cy="${fixed(top + SVG.rowHeight - 3)}" r="3"><title>${e(`${row.agent} ${what} posle ${formatDuration(Date.parse(t) - t0)}`)}</title></circle>`
+    return [
+      `<line class="lane" x1="${SVG.labelWidth}" y1="${fixed(mid)}" x2="${SVG.width - SVG.right}" y2="${fixed(mid)}"/>`,
+      `<text class="lane-label" x="${SVG.labelWidth - 8}" y="${fixed(mid + 4)}" text-anchor="end">${e(row.agent)}</text>`,
+      ...bars,
+      ...row.joined.map((t) => dot(t, "joined", "ulazi")),
+      ...row.left.map((t) => dot(t, "left", "izlazi")),
+    ].join("")
+  })
+
+  const label = `Vremenska osa: ${timeline.rows.length} agenata tokom ${formatDuration(timeline.windowMs)}`
+  return `<svg class="timeline" viewBox="0 0 ${SVG.width} ${height}" role="img" aria-label="${e(label)}">${ticks.join("")}${rows.join("")}</svg>`
+}
+
+function renderFlow(model: ReportModel): string {
+  const t = model.timeline
+  if (!t || t.rows.length === 0) return `<h2>Tok prolaza</h2><p class="muted">U run.jsonl nema rada agenata, pa nema vremenske ose.</p>`
+  const kinds = [...new Set(t.rows.map((r) => r.kind))]
+  const legend = [
+    ...kinds.map((k) => `<span><i class="swatch kind-${k}"></i>${e(KIND_LABEL[k])}</span>`),
+    `<span><i class="dot joined"></i>ulazi</span>`,
+    `<span><i class="dot left"></i>izlazi</span>`,
+  ].join("")
+  const speedup =
+    t.speedup === null
+      ? `<p class="muted">Ubrzanje nije moguće izračunati.</p>`
+      : `<p>Ubrzanje <strong>${e(speedupText(t.speedup))}</strong>: agenti su zajedno radili ${e(formatDuration(t.busyMs))}, a prolaz je trajao ${e(formatDuration(t.windowMs))} (zbir trajanja svih traka ÷ trajanje prolaza).</p>`
+  return `<h2>Tok prolaza</h2>
+${speedup}
+<div class="timeline-box">${timelineSvg(t)}</div>
+<p class="legend">${legend}</p>`
+}
+
+const PEAK_LABEL: [AgentKindName, string][] = [
+  ["builder", "builderi"],
+  ["tester", "testeri"],
+  ["analyzer", "analizatori"],
+  ["architect", "arhitekte"],
+]
+
+// Team size over time (A14, D-021): agents.rescaled lines and the peak from agent.started / agent.stopped.
+function renderAgents(model: ReportModel): string {
+  const peak = PEAK_LABEL.filter(([k]) => (model.peak[k] ?? 0) > 0).map(([k, label]) => `${label} <strong>${model.peak[k]}</strong>`)
+  if (model.rescales.length === 0 && peak.length === 0) return ""
+  const peakLine = peak.length > 0 ? `<p>Najviše istovremeno: ${peak.join(", ")}.</p>` : ""
+  if (model.rescales.length === 0) return `<h2>Agenti</h2>${peakLine}<p class="muted">Broj agenata se nije menjao tokom prolaza (nema linija <code>agents.rescaled</code>).</p>`
+
+  const start = model.startedAt ? Date.parse(model.startedAt) : Date.parse(model.rescales[0]!.t)
+  const cell = (r: Rescale, key: "analyzers" | "builders" | "testers") => {
+    const to = r.team[key]
+    if (to === undefined) return "—"
+    const from = r.from?.[key]
+    return from !== undefined && from !== to ? `${from} → <strong>${to}</strong>` : `${to}`
+  }
+  const rows = model.rescales.map(
+    (r) =>
+      `<tr><td class="num">${e(formatDuration(Date.parse(r.t) - start))}</td><td class="num">${cell(r, "analyzers")}</td><td class="num">${cell(r, "builders")}</td><td class="num">${cell(r, "testers")}</td><td>${e(r.text)}</td></tr>`,
+  )
+  return `<h2>Agenti</h2>
+${peakLine}
+<p class="muted">Conductor menja broj agenata po formulama iz arhitekture, najviše jednom u minuti. Svaka promena i njen razlog:</p>
+<div class="table-scroll"><table class="agents"><thead><tr><th class="num">Posle</th><th class="num">Analizatori</th><th class="num">Builderi</th><th class="num">Testeri</th><th>Razlog</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+}
+
+function renderCosts(costs: ReportModel["costs"]): string {
+  if (costs.rows.length === 0) return `<h2>Trošak</h2><p class="muted">Nema zapisa o trošku (prolaz bez modela, npr. <code>--mock</code>, ne troši ništa).</p>`
+  const rows = costs.rows.map(
+    (r) =>
+      `<tr><td><code>${e(r.agent)}</code></td><td>${e(r.models.join(", ") || "—")}</td><td class="num">${r.calls}</td><td class="num">${r.inputTokens}${r.cachedTokens > 0 ? ` <span class="muted">(+${r.cachedTokens} keš)</span>` : ""}</td><td class="num">${r.outputTokens}</td><td class="num">${e(usdText(r.usd))}</td></tr>`,
+  )
+  return `<h2>Trošak</h2>
+<div class="table-scroll"><table class="costs"><thead><tr><th>Agent</th><th>Model</th><th class="num">Poziva</th><th class="num">Ulaznih tokena</th><th class="num">Izlaznih tokena</th><th class="num">Trošak</th></tr></thead>
+<tbody>${rows.join("")}</tbody>
+<tfoot><tr><td colspan="2">Ukupno</td><td class="num">${costs.calls}</td><td></td><td></td><td class="num">${e(usdText(costs.totalUsd))}</td></tr></tfoot></table></div>`
+}
+
+function renderRounds(rounds: ReportModel["rounds"]): string {
+  if (rounds.length === 0) return ""
+  const rows = rounds.map((u) => {
+    const list = u.rounds
+      .map((r) => `<span class="${r.failed ? "fail" : "pass"}">${r.round}: ${e(r.model ?? "?")} ${r.failed ? "✗" : "✓"}</span>`)
+      .join(" · ")
+    const rejected = u.rounds.filter((r) => r.failed).length
+    return `<tr><td><code>${e(u.unitId)}</code></td><td>${list}</td><td class="num">${rejected}</td></tr>`
+  })
+  return `<h2>Runde i modeli</h2>
+<p class="muted">✗ znači da je Gatekeeper odbio nacrt te runde (<code>gate.failed</code>), pa je builder dobio sledeću.</p>
+<div class="table-scroll"><table class="rounds"><thead><tr><th>Jedinica</th><th>Runda: model</th><th class="num">Odbijeno</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+}
+
 function renderWarnings(warnings: string[]): string {
   if (warnings.length === 0) return ""
   return `<h2>Upozorenja</h2><div class="warnings"><ul class="plain">${warnings.map((w) => `<li>${e(w)}</li>`).join("")}</ul></div>`
@@ -113,6 +243,10 @@ ${renderStop(model.stop)}
 <h2>Ekrani</h2>
 ${screens}
 ${renderShared(model.shared)}
+${renderFlow(model)}
+${renderAgents(model)}
+${renderCosts(model.costs)}
+${renderRounds(model.rounds)}
 ${renderWarnings(model.warnings)}
 </main>
 </body>
