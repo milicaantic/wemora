@@ -1,128 +1,64 @@
 # Wemora
 
-**Web → mobile migration that proves it works.** Wemora takes a React web app (an SPA with React Router) and builds an Expo (React Native) app, screen by screen. For every screen it **proves with executable tests** that the mobile version behaves like the original, and says so in a report.
+**Turn a React web app into an Expo mobile app, and prove every screen still works.**
 
-![Wemora report: one TodoMVC screen proven with 5 of 5 obligations and 5 passing tests](docs/img/report-summary.png)
+![Node 22](https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-React%20Native-000020?logo=expo&logoColor=white)
+![Mozaik](https://img.shields.io/badge/built%20on-Mozaik-7b4fb0)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-*The report of a committed run, [`runs/todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html): the TodoMVC screen is **proven**: all 5 obligations are covered by tests that passed on the original web app and on the new mobile app. The report itself is in Serbian, the language of the team.*
+Wemora reads a React single-page app, plans the migration, and lets a team of AI agents rewrite it for Expo (React Native) screen by screen. Other agents write UI tests against the **running original**, and plain code (not AI) decides whether each mobile screen passes them. The result is a mobile app plus a report that says, for every screen, whether its behavior is **proven**.
 
-Built for the JigJoy × NTP Novi Sad Hackathon (Freestyle category) on the [Mozaik](https://www.npmjs.com/package/@mozaik-ai/core) multi-agent framework.
+![Wemora report: the TodoMVC screen is proven, 5 of 5 obligations, 5 passing tests](docs/img/report-summary.png)
 
-<!--
-TODO(D19), what is still missing in this README (also in docs/status/d.md):
-1. A Recepti run in runs/ (runs/recepti-<time>): needs a real run (A, API key) or tester/builder mock
-   replies for Recepti (B, C). Then: screenshot of its report here, and use it in "Quick start".
-2. `npm run verify` and `npm run sabotage` in the CLI (A18; both functions are merged, the CLI still
-   prints "not implemented yet"). Then: replace the `npx tsx -e …` commands in "Quick start" with
-   `npm run verify -- <run>` and `npm run sabotage -- <run> <unitId>` and paste their output.
-3. A real-model run (`npm run migrate`, not --mock) archived in runs/, with its cost and speed-up
-   from the report, quoted in "How Wemora uses Mozaik".
-4. A license: the team has not chosen one (there is no LICENSE file; package.json says ISC, the npm default).
-5. Last pass: follow this README on a clean clone (someone who did not write it), and paste every
-   command and its output from the terminal.
--->
+<sub>The report of the run in [`runs/todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html). The report is in Serbian, the team's language.</sub>
 
-## The problem and how Wemora solves it
+Built for the **JigJoy × NTP Novi Sad Hackathon** (Freestyle) on the [Mozaik](https://www.npmjs.com/package/@mozaik-ai/core) multi-agent framework.
 
-A team has a web app, and the client wants a mobile app. Today they pick one of two:
+---
 
-- **A wrapper** (Capacitor, a PWA): fast, but it is the website in a frame, not a native app, and desktop layouts (sidebars, wide tables, hover) stay broken on a phone.
-- **An AI code generator:** it writes plausible React Native code, but nobody knows whether each screen still does what the original did. Someone has to click through everything by hand, every time.
+## Why
+
+A team has a web app and a client who wants a mobile app. Today the choice is:
+
+- **a wrapper** (Capacitor, PWA): fast, but it is the website in a frame, and desktop layouts stay broken on a phone;
+- **an AI code generator**: it writes plausible code, but nobody knows if each screen still does what it did, so someone clicks through everything by hand.
 
 Wemora's product is **the proof, not the code**:
 
-- **Tests come from the original.** Tester agents write UI tests against the *running* web app. A test is kept only if it passes on the original, fails on an empty screen, and each check fails when run before its action, so it really tests something.
-- **The code under test cannot touch its tests.** Builder agents write mobile screens and never read or write tests. They can only write inside their own staging folder; a Mozaik interception rejects anything else before it happens.
-- **Plain code gives the verdict, not AI.** The Gatekeeper runs type checks, label checks and the tests on the Expo web build, and only then copies a screen into the app. Every screen ends as *proven*, *partially proven*, *unproven* or *failed*, with the reason.
-- **Anyone can check it later, with no AI and no API key:** `verify` runs all the tests of a committed run again.
-- **Desktop-only UI is handled openly.** When something cannot look the same on a phone (a filter row moves behind a button, a hover tooltip has no touch equivalent), the plan records it as an *intentional difference*, and the report lists it in plain words, instead of hiding it.
+- **Tests come from the original.** A test is kept only if it passes on the running web app, fails on an empty screen, and each check fails when run before its action.
+- **The code under test never sees its tests.** Builder agents cannot read or write tests and can only write in their own folder; a Mozaik interception blocks anything else before it happens.
+- **Code gives the verdict, not AI.** Type checks, label checks and the tests run on the mobile app's web build; only a screen that passes them goes into the app.
+- **Anyone can check it again, with no AI and no API key** (`npm run verify`).
 
-## How it works
+---
 
-```mermaid
-flowchart LR
-  web["React web app"] --> parse["Parser<br/>(code)"]
-  parse --> analyzers["Analyzer agents<br/>1–4 in parallel"]
-  analyzers --> architect["Architect agent<br/>plan + obligations"]
-  architect --> validate{"validatePlan<br/>(code)"}
-  validate -- errors --> architect
-  validate -- plan.ready --> testers["Tester agents<br/>tests on the original"]
-  validate -- plan.ready --> builders["Builder agents<br/>mobile screens"]
-  testers -- tests.ready --> gate["Gatekeeper<br/>(code): gates 1–5"]
-  builders -- draft.submitted --> gate
-  gate -- gate.failed --> builders
-  gate -- unit.promoted --> app["Expo app"]
-  gate --> report["report.html"]
-  app --> verify["verify<br/>(no AI)"]
-```
+## Try it (about 10 minutes, no API key)
 
-1. **Analysis.** A parser (TypeScript compiler API, no AI) finds routes, files and web-only APIs. 1–4 analyzer agents read their part of the app and describe each screen: what it shows, what the user can do, what will not fit a phone. An architect agent turns that into a plan: units of work, the **obligations** each screen must keep (with the exact texts from the original), and intentional differences. Plain code checks the plan and sends the errors back to the architect.
-2. **Building and testing at the same time.** Testers write tests for every screen while builders rewrite screens in waves (shared code first). Each builder round starts from a fresh context with the last error.
-3. **Gatekeeper.** For each draft: parse → no web-only APIs (`div`, `window`, `localStorage`…) → `tsc` → labels from the original are still there → all tests of the screen pass on the Expo web build. A promoted screen is followed by a regression run of every screen already in the app; if one breaks, the change is rolled back.
-4. **Report and proof.** Every screen gets a status:
+You need **Node 22 or newer** and **npm**. The commands work in Git Bash and PowerShell on Windows, and in any shell on macOS and Linux.
 
-| Status | When |
-|---|---|
-| **proven** | all tests pass, every obligation is covered, and every interactive element of the original is used by a test or marked not portable |
-| **partially proven** | all its tests pass, but coverage is not complete (the report lists what has no test) |
-| **unproven** | no validated tests; **a screen with zero tests is never proven** |
-| **failed** | tests exist and the screen still fails them after the last round |
-
-**Looks vs. proof.** The layout may change on a phone (columns, a table becomes cards, a sidebar becomes tabs), but fonts, sizes and colors are carried over from the web: the architect puts the app's global stylesheets into a shared `theme` unit, built first, and every screen uses it. The proof is about behavior: *proven* means the screen does what the original does, not that it looks the same.
-
-The report (Serbian) also shows a timeline of all agents, the speed-up from running them in parallel, the agent count over time, the cost per agent, and the rounds and models per unit. Full architecture (Serbian): [`docs/architecture.md`](docs/architecture.md).
-
-![Timeline in the report: one row per agent, the tester writes tests while the builder's rounds run](docs/img/report-timeline.png)
-
-## How Wemora uses Mozaik
-
-Wemora is built on [`@mozaik-ai/core`](https://www.npmjs.com/package/@mozaik-ai/core) 4.1.0. The agents are Mozaik participants on one shared runtime; the deterministic parts (Conductor, Gatekeeper) are participants too, so everything talks through the same events.
-
-- **Many agents in parallel.** Analyzers, testers and builders are separate Mozaik agents, each with one active loop and a fresh `ModelContext` per task ([`agents/_shared/context.ts`](src/agents/_shared/context.ts), [`agents/_shared/run.ts`](src/agents/_shared/run.ts)). Testers and builders work at the same time on different screens, so the work of many agents fits into one run window; the report measures this as the speed-up.
-- **Agent count changes during the run.** The Conductor computes how many agents are needed (analyzers from the code size, builders from the ready units, testers from the builders) and adds or removes them with Mozaik's `join` / `leave`, at most once a minute, never stopping a busy agent ([`orchestration/scaling.ts`](src/orchestration/scaling.ts), [`orchestration/conductor.ts`](src/orchestration/conductor.ts)). Every change and its reason go to the log and to the report.
-- **A shared board.** `MigrationState` extends Mozaik's `RuntimeState` and holds the parsed app, analyzer reports, plan, tests, results and costs ([`core/state.ts`](src/core/state.ts)). The one runtime is defined once ([`core/runtime.ts`](src/core/runtime.ts)).
-- **Events carry only IDs.** `analysis.done { partId }`, `tests.ready { unitId }`, `draft.submitted { unitId, round }`… ([`contracts/events.ts`](src/contracts/events.ts)); the data stays on the board and on disk. The Conductor and the Gatekeeper are deterministic participants (`createHuman`) that react to these events ([`agents/gatekeeperParticipant.ts`](src/agents/gatekeeperParticipant.ts)).
-- **Interception enforces file ownership.** `OwnershipGuard` checks every `write_file` call of a builder before it runs and rejects any path outside the builder's own staging folder; `CancelGuard` ends a loop on a timeout ([`agents/_shared/guards.ts`](src/agents/_shared/guards.ts)).
-- **Structured output, checked twice.** Analyzer and architect answer with JSON schemas from zod (cleaned for the Anthropic strict mode, [`agents/_shared/schema.ts`](src/agents/_shared/schema.ts)); every answer is checked with zod again and errors go back to the model.
-- **Our own inference runner.** `BudgetedRunner` retries rate limits and network errors, never throws (a throw inside Mozaik's `runLoop` would end the process), counts tokens and cost per agent and stops at the budget. `MockRunner` replays scripted answers, so the whole flow runs for $0 ([`core/runner.ts`](src/core/runner.ts)).
-- **Every event is logged.** A participant writes all runtime events (except token streams) to `run.jsonl` ([`orchestration/eventLogger.ts`](src/orchestration/eventLogger.ts)); the report's timeline, cost and agent sections are computed from it.
-
-| Agent | Default model | Tools | Prompt |
-|---|---|---|---|
-| Analyzer | claude-haiku-4-5 | `list_files`, `read_file` (its part only, read-only) | [`analyzer.md`](src/agents/prompts/analyzer.md) |
-| Architect | claude-sonnet-4-6 | none (structured output) | [`architect.md`](src/agents/prompts/architect.md) |
-| Tester | claude-haiku-4-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | [`tester.md`](src/agents/prompts/tester.md) |
-| Builder | claude-haiku-4-5 for rounds 1–2, claude-sonnet-4-6 for rounds 3–4; after round 4 the unit fails | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | [`builder.md`](src/agents/prompts/builder.md) |
-
-The models are defaults: `WEMORA_MODEL_DEFAULT` and `WEMORA_MODEL_STRONG` in `.env` replace them (for example with the models a gateway serves).
-
-## Quick start (no API key)
-
-Requirements: **Node 22.12+** and npm. On Windows, use Git Bash or PowerShell.
+### 1. Install
 
 ```bash
 git clone https://github.com/milicaantic/wemora.git
 cd wemora
 npm ci
-npx playwright install chromium            # browser for the UI tests
-cd templates/expo && npm ci && cd ../..    # Expo, used to export apps for the web
-npm run build                              # type check + layer rules
-npm test                                   # unit tests, no network, no API key
+npx playwright install chromium
+cd templates/expo && npm ci && cd ../..
 ```
 
-### Check a committed run again
+The last line installs Expo, which Wemora uses to build the mobile app for the web.
 
-[`runs/`](runs/) holds finished runs; [`runs/README.md`](runs/README.md) says what each folder holds. `verify` re-runs every test of a run on a web export of its app, with no AI and no API key.
+### 2. Check a finished migration
 
-> The commands `npm run verify -- <run>` and `npm run sabotage -- <run> <unitId>` are being wired into the CLI and still print "not implemented yet". Until then, the commands below call the same functions directly; they work in Git Bash and PowerShell.
+[`runs/`](runs/) holds a finished migration of the [TodoMVC](https://github.com/tastejs/todomvc) app, made with recorded model answers (`--mock`, as in step 4). `verify` builds its mobile app and runs every test again:
 
 ```bash
-npx tsx -e "import('./src/verify/index.ts').then(async (m) => { const d = await m.verifyDetailed('runs/todomvc-mock-20261031-1454'); console.log(m.formatVerifyReport(d)); process.exit(d.ok ? 0 : 1) })"
+npm run verify -- runs/todomvc-mock-20261031-1454
 ```
 
 ```
-verify /path/to/wemora/runs/todomvc-mock-20261031-1454
-
 todo-list  [proven]
   pass  todo-list-empty-state
   pass  todo-list-add-todo
@@ -133,28 +69,18 @@ todo-list  [proven]
 OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
-Then open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser.
+Open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser to see the full report. The first `verify` can take up to a minute (Expo's first build); later ones take seconds.
 
-- **Output:** a screen × test matrix (`pass` / `FAIL`) and a last line `OK: …` or `FAILED: …`; exit code 0 for `OK`, 1 for `FAILED`. Only screens that were `proven` or `partial` in the run count; `failed` and `unproven` screens are listed but do not fail `verify`.
-- A committed run has no `node_modules`; `verify` links `templates/expo/node_modules`. Without the `npm ci` in `templates/expo` above it stops with `templates/expo/node_modules not found: run "npm ci" in templates/expo once`.
-- **Recepti runs only:** start the mock API first (`cd examples/mock-api && npm start`), because the app reads its data from it. TodoMVC needs nothing else.
-- The first export after a fresh clone takes about a minute (cold Metro cache); later ones take 7–13 s.
+### 3. Break a screen and watch `verify` catch it
 
-### Break a screen on purpose: `verify` must catch it
-
-`sabotage` changes one promoted screen of a run (it replaces a label or text the tests look for with `[sabotaged]`), so `verify` must then fail on that screen. It edits the run folder in place, so work on a copy in `output/` (ignored by git):
+`sabotage` changes the mobile screen on purpose (it renames a field the tests look for):
 
 ```bash
-node -e "require('fs').cpSync('runs/todomvc-mock-20261031-1454', 'output/sabotage-demo', { recursive: true })"
-npx tsx -e "import('./src/verify/index.ts').then(async (m) => console.log(await m.sabotageDetailed('output/sabotage-demo', 'todo-list')))"
-npx tsx -e "import('./src/verify/index.ts').then(async (m) => { const d = await m.verifyDetailed('output/sabotage-demo'); console.log(m.formatVerifyReport(d)); process.exit(d.ok ? 0 : 1) })"
+npm run sabotage -- runs/todomvc-mock-20261031-1454 todo-list
+npm run verify -- runs/todomvc-mock-20261031-1454
 ```
 
-`sabotage` reports what it changed (`target: 'New Todo Input', kind: 'label'` in `app/src/screens/todo-list/index.tsx`), and `verify` fails with exit code 1:
-
 ```
-verify /path/to/wemora/output/sabotage-demo
-
 todo-list  [proven]
   pass  todo-list-empty-state
   FAIL  todo-list-add-todo at step 2: submit field labelled "New Todo Input": not found on screen within 5000 ms
@@ -165,95 +91,152 @@ todo-list  [proven]
 FAILED: 1/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
-<!-- TODO(D19): when A18 lands, use `npm run verify -- runs/<run>` and `npm run sabotage -- <copy> <unitId>` here
-and paste their output; switch the example to runs/recepti-<time> once it exists. -->
+`verify` exits with code 1. Undo the change with:
 
-## Run a full migration
+```bash
+git checkout -- runs/
+```
 
-### The example apps
+### 4. Run a whole migration
 
-Wemora ships two input apps in [`examples/`](examples/):
+This runs the full pipeline on TodoMVC: analysis, plan, building and testing in parallel, the gates, and the report. `--mock` replaces only the AI model with recorded answers, so it costs nothing; the mobile app, the gates and the tests are real.
 
-| App | What it is | Run the original |
+```bash
+cd examples/todomvc && npm ci && cd ../..
+npm run migrate:mock -- examples/todomvc
+```
+
+It takes about 3 minutes and ends with a summary:
+
+```
+outcome: finished
+  app-entry: promoted
+  theme: promoted
+  todo-list: promoted
+report:  …/output/<run-id>/report.html
+```
+
+---
+
+## Run it with a real model
+
+1. Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` (see the comments in [`.env.example`](.env.example)).
+2. Install and start the example's data server, then run Wemora:
+
+```bash
+cd examples/recepti && npm ci && cd ../..
+cd examples/mock-api && npm start          # keep this running (http://localhost:3000)
+```
+
+```bash
+npm run migrate -- examples/recepti        # in a second terminal
+```
+
+Wemora builds and serves the original app by itself, runs the agents, and writes everything to `output/<run-id>/`. `--budget` (default **$5**) is a hard limit: when it is reached, no new work starts and the report is still written. Keep a finished run with `npm run archive -- output/<run-id>`, which copies it into `runs/` without dependencies.
+
+The two example apps:
+
+| App | What it tests |
+|---|---|
+| [**Recepti**](examples/recepti/) | 5 screens built for desktop only on purpose: sidebar, wide table, side-by-side views, hover details |
+| [**TodoMVC**](examples/todomvc/) | the React TodoMVC from [tastejs/todomvc](https://github.com/tastejs/todomvc), unchanged, so Wemora is not tuned to our own example |
+
+---
+
+## How it works
+
+```mermaid
+flowchart LR
+  web["React web app"] --> parse["Parser<br/>(code)"]
+  parse --> analyzers["Analyzer agents<br/>in parallel"]
+  analyzers --> architect["Architect agent<br/>plan + obligations"]
+  architect --> check{"Plan check<br/>(code)"}
+  check -- errors --> architect
+  check --> testers["Tester agents<br/>tests on the original"]
+  check --> builders["Builder agents<br/>mobile screens"]
+  testers --> gate["Gatekeeper<br/>(code)"]
+  builders --> gate
+  gate -- fails --> builders
+  gate -- passes --> app["Expo app"]
+  gate --> report["report.html"]
+```
+
+1. **Analyze.** A parser finds the routes, files and web-only APIs. Analyzer agents describe each screen: what it shows, what the user can do, what will not fit a phone. An architect agent turns this into a plan: units of work, the **obligations** each screen must keep (with the exact texts of the original), and the **intentional differences** (for example, filters that move behind a button on a phone). Code checks the plan and sends errors back to the architect.
+2. **Build and test at the same time.** Tester agents write tests for every screen while builder agents rewrite screens, shared code first. A builder gets up to four rounds per screen, each with the last error; rounds 3 and 4 use a stronger model.
+3. **Gatekeeper.** For each draft: it parses, has no web-only APIs (`div`, `window`, `localStorage`…), passes `tsc`, keeps the labels of the original, and passes all tests of the screen on the mobile web build. After each new screen, the tests of all earlier screens run again; if one breaks, the change is undone.
+4. **Report.** Every screen ends with a status:
+
+| Status | Meaning |
+|---|---|
+| **proven** | all tests pass, every obligation is tested, and every button, link and field of the original is tested or marked as not portable |
+| **partially proven** | all its tests pass, but some obligations or elements have no test (the report lists them) |
+| **unproven** | no validated tests; a screen with zero tests is never proven |
+| **failed** | the screen still fails its tests after the last round |
+
+**Looks vs. proof.** The layout may change on a phone (a table becomes cards, a sidebar becomes tabs), but fonts, sizes and colors are carried over from the web through a shared `theme` unit. The proof is about behavior: *proven* means the screen does what the original does, not that it looks the same.
+
+The report also shows a timeline of all agents, how much faster the parallel run was, how many agents worked over time and why, the cost per agent, and the rounds per screen.
+
+![Timeline in the report: one row per agent](docs/img/report-timeline.png)
+
+---
+
+## Built on Mozaik
+
+Wemora is built on [`@mozaik-ai/core`](https://www.npmjs.com/package/@mozaik-ai/core) 4.1.0. Every agent, and the deterministic parts too, is a participant in one Mozaik runtime:
+
+- **Parallel agents.** Analyzers, testers and builders are separate agents, each with one active loop and a fresh context per task ([`src/agents/_shared/`](src/agents/_shared/)).
+- **The team size changes during the run.** The Conductor adds and removes agents with `join` / `leave` from the amount of ready work, at most once a minute, and never stops a busy agent ([`src/orchestration/`](src/orchestration/)).
+- **A shared board.** `MigrationState` extends Mozaik's `RuntimeState` and holds the plan, tests, results and costs ([`src/core/state.ts`](src/core/state.ts)); events carry only IDs ([`src/contracts/events.ts`](src/contracts/events.ts)).
+- **Interception enforces ownership.** `OwnershipGuard` rejects any file a builder tries to write outside its own folder, before the write happens ([`src/agents/_shared/guards.ts`](src/agents/_shared/guards.ts)).
+- **Deterministic participants.** The Conductor and the Gatekeeper are plain-code participants that react to the same events as the agents ([`src/agents/gatekeeperParticipant.ts`](src/agents/gatekeeperParticipant.ts)).
+- **A safe inference runner.** Retries, a hard budget, cost per agent, and a recorded-answer runner for `--mock` ([`src/core/runner.ts`](src/core/runner.ts)).
+
+| Agent | Model | Writes |
 |---|---|---|
-| [Recepti](examples/recepti/) | 5 screens, built **for desktop only** on purpose (sidebar, wide table, side-by-side views, hover) | mock API + `npm run dev`, see below |
-| [TodoMVC](examples/todomvc/) | the React TodoMVC from [tastejs/todomvc](https://github.com/tastejs/todomvc), unchanged, so Wemora is not tuned to our own example | `cd examples/todomvc && npm ci && npm run build && npm run serve` → http://localhost:7002 |
+| Analyzer | claude-haiku-4-5 | a report per screen |
+| Architect | claude-sonnet-4-6 | the plan |
+| Tester | claude-haiku-4-5 | validated UI tests |
+| Builder | claude-haiku-4-5, then claude-sonnet-4-6 for rounds 3–4 | mobile screens, only in its own folder |
 
-The tester agent opens the **running** original in a browser, so start it before a run and pass its address with `--original-url`.
+---
 
-### For $0, with scripted model answers (`--mock`)
-
-`--mock` replaces only the model: the agents get recorded answers from [`src/agents/mocks/`](src/agents/mocks/), and everything else is real (Expo export, gates, tests on both apps, regression, report).
-
-```bash
-# terminal 1: the original
-cd examples/todomvc && npm ci && npm run build && npm run serve
-
-# terminal 2
-npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002
-```
-
-It ends with a summary (outcome `finished`, `todo-list: promoted`) and the path of `output/<run-id>/report.html`. It takes about 3 minutes, most of it the first Expo export.
-
-<!-- TODO(D19): Recepti with --mock needs tester and builder mock replies for Recepti (B, C);
-only analyzer and architect replies exist in src/agents/mocks/recepti/. -->
-
-### With a real model
-
-Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. For the hackathon gateway, also set `ANTHROPIC_BASE_URL` (see the comments in [`.env.example`](.env.example)); the default models are the ones it serves, so nothing else is needed. Never commit `.env`, and do not add `MOZAIK_API_KEY` (it turns on Mozaik Cloud telemetry).
-
-```bash
-# terminal 1: mock API (Recepti reads its data from it)
-cd examples/mock-api && npm start                    # http://localhost:3000
-
-# terminal 2: the original
-cd examples/recepti && npm ci && npm run dev         # http://localhost:5173
-
-# terminal 3
-npm run migrate -- examples/recepti --original-url http://localhost:5173
-```
-
-`--budget` (default 5) is a hard limit in USD: when the run reaches it, no new work starts, units still waiting end as failed, and the report still gets built. Other options: `--max-builders` (default 4), `--max-testers` (default 2), `--out` (default `output`).
-
-<!-- TODO(D19): paste the summary of a real Recepti run here (outcome, statuses, cost, duration),
-and archive it: npx tsx -e "import('./src/report/index.ts').then(async (m) => console.log(await m.archiveRun('output/<run-id>', 'runs', 'recepti-<yyyymmdd-hhmm>')))"
-(or `npm run archive` if A adds it, see docs/inbox). -->
-
-## Output of a run
+## What a run writes
 
 ```
 output/<run-id>/
-  plan.json              migration plan: units, obligations, intentional differences, route map
-  analysis/              one report per part of the app, from the analyzers
-  tests/<screen>.json    validated tests; only testers write here
-  staging/<builder>/     drafts; builders write only here
-  app/                   the Expo app; only the Gatekeeper (and scaffold) write here
-  results/<screen>.json  gate results, status and coverage
-  run.jsonl              every event, with time and cost
   report.html            the report
+  plan.json              units, obligations, intentional differences
+  analysis/              one report per part of the web app
+  tests/                 validated tests (only testers write here)
+  app/                   the Expo app (only the Gatekeeper writes here)
+  staging/               builder drafts
+  results/               gate results, status and coverage per unit
+  run.jsonl              every event, with time and cost
 ```
 
-To keep a run, copy it into `runs/` without dependencies and drafts (see [`runs/README.md`](runs/README.md#add-a-run)).
+---
 
-## Limitations and out of scope
+## Limitations
 
-- **Input:** React 18/19 single-page apps with React Router 6/7 routes, plain CSS or CSS modules, hooks and Context, `fetch` and `localStorage`. Apps outside this profile are refused with a clear error (for example Next.js, or React Router 5).
-- **Out of scope:** Next.js / SSR / RSC, Tailwind and shadcn, CSS-in-JS, auth and cookies, native APIs (camera, push), iOS, store publishing, pixel comparison, web-only libraries (maps, charts).
-- **Tests run on the Expo web build** (390×844) with Playwright, not on a phone or emulator. An Android export check is planned as an optional extra gate and is not in the gates yet.
-- Tests use names (labels, button and link texts). Elements with no name, and gestures with no web equivalent (hover, double click, long press), are recorded as intentional differences instead of tested.
-- A `--mock` run proves that the pipeline works; it does not show what a model writes. Runs from a real model are added to `runs/` with names without `mock`.
+- **Input:** React 18/19 single-page apps with React Router 6/7, plain CSS or CSS modules, hooks and Context, `fetch` and `localStorage`. Next.js, React Router 5 and other profiles are refused with a clear message.
+- **Not covered:** server rendering, Tailwind, CSS-in-JS, auth, native APIs (camera, push), iOS, store publishing, pixel comparison.
+- **Tests run on the mobile app's web build** (390×844) in Chromium, not on a device.
+- Elements without a name and gestures with no web equivalent (hover, double click) are recorded as intentional differences instead of tested.
+
+---
 
 ## Team
 
-Built by a team of four for the JigJoy × NTP Novi Sad Hackathon (Freestyle category). Each person owns one part of the code:
+| | Part |
+|---|---|
+| **JavorFaks** | contracts, runtime, inference runner, Conductor and agent scaling, CLI |
+| **Vujic04** | test language and runners, tester agent, `verify` and `sabotage` |
+| **Milica Antić** | Expo template, Gatekeeper and its gates, builder agent |
+| **Kuzma04** | parser and plan checks, analyzer and architect agents, report, example apps |
 
-| | Owns | Folders |
-|---|---|---|
-| **JavorFaks** | contracts, runtime and board, inference runner, Conductor and agent scaling, CLI | [`src/contracts/`](src/contracts/), [`src/core/`](src/core/), [`src/orchestration/`](src/orchestration/), [`src/agents/_shared/`](src/agents/_shared/), [`src/cli.ts`](src/cli.ts) |
-| **Vujic04** | test DSL and runners, tester agent, `verify` and `sabotage` | [`src/scenarios/`](src/scenarios/), [`src/verify/`](src/verify/), [`src/agents/tester.ts`](src/agents/tester.ts) |
-| **Milica Antić** | Expo template, scaffold, Gatekeeper and its gates, builder agent | [`src/gatekeeper/`](src/gatekeeper/), [`src/scaffold/`](src/scaffold/), [`templates/expo/`](templates/expo/), [`src/agents/builder.ts`](src/agents/builder.ts) |
-| **Kuzma04** | parser and plan checks, analyzer and architect agents, report, example apps, `runs/`, this README | [`src/analysis/`](src/analysis/), [`src/report/`](src/report/), [`examples/`](examples/), [`src/agents/analyzer.ts`](src/agents/analyzer.ts), [`src/agents/architect.ts`](src/agents/architect.ts) |
+Design documents (in Serbian): [`docs/architecture.md`](docs/architecture.md).
 
-The plan, the decisions and the messages between us are in [`docs/`](docs/) (in Serbian): [`architecture.md`](docs/architecture.md), [`decisions.md`](docs/decisions.md), [`tim-plan.md`](docs/tim-plan.md), [`inbox/`](docs/inbox/).
+## License
 
-<!-- TODO(D19): full names if the team wants them instead of GitHub handles; a license (no LICENSE file yet, package.json says ISC, the npm default). -->
+[MIT](LICENSE)
