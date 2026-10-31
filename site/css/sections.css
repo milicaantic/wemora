@@ -62,11 +62,15 @@
 .member p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
 
 /* ---------- real run (videos) ---------- */
-.run-grid { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, .62fr); gap: 28px; align-items: end; margin-top: 40px; }
+/* Always side by side: on narrow screens both frames shrink together instead of stacking. */
+.run-grid { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(0, .7fr); gap: clamp(10px, 2.4vw, 28px); align-items: end; margin-top: 40px; }
 .run-grid figure { margin: 0; min-width: 0; }
 .run-video { display: block; width: 100%; height: auto; background: var(--sunk); }
 .run-web .run-video { aspect-ratio: 960 / 640; }
-.run-phone .phone { max-width: 260px; }
+.run-phone .phone { max-width: 260px; border-radius: clamp(14px, 3vw, 34px); padding: clamp(4px, 1vw, 9px); }
+.run-phone .screen { border-radius: clamp(10px, 2.4vw, 26px); }
+.run-grid .frame-label { font-size: clamp(8px, 1.6vw, 11px); }
+.run-grid .browser-bar { padding: clamp(5px, 1vw, 10px) clamp(6px, 1.2vw, 12px); }
 .run-phone .screen { position: relative; }
 .run-phone .run-video { height: 100%; object-fit: cover; }
 .run-foot { display: flex; gap: 18px; align-items: flex-start; margin-top: 22px; flex-wrap: wrap; }
