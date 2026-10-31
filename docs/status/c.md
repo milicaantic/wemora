@@ -39,6 +39,8 @@ Faza: F3
 - **G3 popravka (A → C, high):** mobilna aplikacija nije znala adresu mock-api-ja pri web exportu, pa su 4 od 5 ekrana Recepata pala. `serveApp` sada postavlja `EXPO_PUBLIC_API_URL` (okruženje → `VITE_API_URL` → `app/.env.example`), a šablon ima podrazumevani `http://localhost:3000` kao original (grana `c/api-url`)
 - kapija 6 (`androidExport`): ne radimo, odluka tima
 
+- sajt na GitHub Pages: `.github/workflows/pages.yml` objavljuje `site/` pri push-u na `main` (grana `c/pages`); treba uključiti Settings → Pages → Source: GitHub Actions; za privatan repo Pages traži plaćeni nalog, za javan je besplatan
+
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
 - prolaz sa pravim modelom (`--budget 1`): treba `ANTHROPIC_API_KEY` (kod C ga nema)
