@@ -1,7 +1,6 @@
 /* Narrow screens and reduced motion. Loaded last so these rules win. */
 
 @media (max-width: 980px) {
-  .run-grid { grid-template-columns: minmax(0, 1fr); }
   .stage { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); }
   .stage .test { grid-column: 1 / -1; order: 3; }
   .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }

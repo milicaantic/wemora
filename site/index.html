@@ -12,9 +12,11 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/hero.css">
 <link rel="stylesheet" href="css/sections.css">
+<link rel="stylesheet" href="css/motion.css">
 <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
+<canvas class="ambient" aria-hidden="true"></canvas>
 <div class="wrap">
   <header class="top">
     <a class="brand" href="#top" aria-label="Wemora home">
@@ -35,7 +37,7 @@
 
 <main id="top">
   <div class="wrap hero">
-    <p class="eyebrow">React web app → Expo mobile app</p>
+    <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>React web app → Expo mobile app</p>
     <h1>Port the app. <em>Prove</em> every screen.</h1>
     <p class="lede">Wemora rewrites a React single-page app as an Expo app, one screen at a time. A screen gets into the app only after the tests written against the web original pass on the phone build, unchanged.</p>
     <div class="cta">
@@ -104,19 +106,19 @@
 
   <section id="run">
     <div class="wrap">
-      <p class="eyebrow">A real run</p>
+      <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>A real run</p>
       <h2>The same steps on the original and on the app Wemora built.</h2>
       <p class="lede">TodoMVC, recorded in a browser. Three todos are added with Enter, one is completed, the filters switch and completed todos are cleared, using the same field label, link names and button text on both.</p>
       <div class="run-grid">
         <figure class="run-web">
-          <div class="frame-label"><span>Original · React · web</span></div>
+          <div class="frame-label"><span>Original · web</span></div>
           <div class="browser">
             <div class="browser-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="url">localhost:7002/#/</span></div>
             <video class="run-video" src="media/todomvc-web.webm" poster="media/todomvc-web.png" muted loop playsinline autoplay preload="metadata" aria-label="TodoMVC web original: adding, completing, filtering and clearing todos"></video>
           </div>
         </figure>
         <figure class="run-phone">
-          <div class="frame-label"><span>Wemora · Expo · 390×844</span><b>proven</b></div>
+          <div class="frame-label"><span>Wemora app</span><b>proven</b></div>
           <div class="phone">
             <div class="screen"><video class="run-video" src="media/todomvc-phone.webm" poster="media/todomvc-phone.png" muted loop playsinline autoplay preload="metadata" aria-label="The Expo app built by Wemora doing the same steps"></video></div>
           </div>
@@ -160,7 +162,7 @@
         </ol>
         <div>
           <div class="terminal">
-            <div class="bar"><span>output/…-todomvc/run.jsonl</span><span>TodoMVC · todo-list</span></div>
+            <div class="bar"><span><span class="live-dot" aria-hidden="true"></span>output/…-todomvc/run.jsonl</span><span>TodoMVC · todo-list</span></div>
 <pre><span class="t-dim">builder-1   </span>draft.submitted   todo-list  <span class="t-dim">round 1</span>
 <span class="t-dim">gatekeeper  </span><span class="t-bad">gate.failed</span>       todo-list  <span class="t-dim">round 1</span>
 <span class="t-msg">forbiddenApis
@@ -168,7 +170,8 @@ screens/todo-list/index.tsx:19: &lt;div&gt; ne postoji u React Native, koristi &
 <span class="t-dim">builder-1   </span>draft.submitted   todo-list  <span class="t-dim">round 2</span>
 <span class="t-dim">gatekeeper  </span><span class="t-ok">parse ✓ forbiddenApis ✓ tsc ✓ labels ✓</span>
 <span class="t-dim">gatekeeper  </span><span class="t-ok">scenarios ✓</span>  5/5 at 390×844
-<span class="t-dim">gatekeeper  </span><span class="t-ok">unit.promoted</span>     todo-list  status <span class="t-ok">proven</span></pre>
+<span class="t-dim">gatekeeper  </span><span class="t-ok">unit.promoted</span>     todo-list  status <span class="t-ok">proven</span>
+<span class="cursor" aria-hidden="true"></span></pre>
           </div>
           <p class="note">From a TodoMVC run. Gate messages are written for the builder; the team wrote them in Serbian.</p>
         </div>
@@ -235,5 +238,6 @@ screens/todo-list/index.tsx:19: &lt;div&gt; ne postoji u React Native, koristi &
 
 <script src="js/copy.js"></script>
 <script src="js/run.js"></script>
+<script src="js/ambient.js"></script>
 </body>
 </html>
