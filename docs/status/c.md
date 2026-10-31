@@ -1,5 +1,5 @@
 # Status: osoba C
-Faza: F2 (moj deo gotov), čeka kapiju G2
+Faza: F3
 
 ## Gotovo (spojeno u main)
 ### F0–F1
@@ -21,11 +21,18 @@ Faza: F2 (moj deo gotov), čeka kapiju G2
 - **integracija:** `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` završava sa `finished`: `app-entry` promovisan (unproven), `todo-list` runda 1 `gate.failed` („`<div>` ne postoji u React Native, koristi `<View>`“), runda 2 promovisan (partial); u `run.jsonl` nema odbijenih ni zalutalih upisa buildera; `report.html` prikazuje statuse
 
 ## U radu
+<<<<<<< HEAD
 - popravke posle pravog prolaza (A-ova analiza), grana `c/popravka`:
   - **Gatekeeper čeka događaj `tests.ready`** (ili `tests.missing`), a ne „ima li testova na tabli“: tester upisuje testove jedan po jedan, pa je provera kretala sa nepotpunim skupom (3 od 5) i prolaz se završavao pre filtera i „Clear completed“. Proveren redosled u `migrate:mock`: `tests.ready` → `check_started`, `todo-list` proven sa 5/5.
   - **prompt buildera:** builder ne pravi rute; filteri i podstranice u okviru ekrana (`#/active`, `?filter=`) su `useState` ili search parametar na istoj ruti; linkovi samo na postojeće rute. Zadatak buildera sada sadrži spisak mobilnih ruta iz `routeMap`.
 - C3.1 regresija nad pravom aplikacijom: grana `c/regression-real` (lokalno, čeka push)
 - C3.3 testovi toka: čeka odluku tima
+=======
+- C3.1 regresija i rollback nad pravom aplikacijom: gotovo na grani `c/regression-real`, čeka PR
+  - `src/gatekeeper/g1.test.ts`: lista za kupovinu dokazana kroz pravi `checkDraft`, pa nacrt `layout` čiji `_layout.tsx` više ne prikazuje ekrane → kapije 1–3 prolaze, regresija pada sa `brokenTests: ["shopping-list-add-item"]`, rollback vraća stari `_layout.tsx`, B-ov test posle toga opet prolazi
+  - **nađen i popravljen bug u šablonu:** `src/shared/config.ts` je dobijao tip za `process` samo preko fajlova koji uvoze `expo-router`; kad `layout` zameni `_layout.tsx`, kapija 3 je pogrešno padala. Sada `config.ts` ima `/// <reference types="expo/types" />`
+- C3.3 testovi toka: čeka odluku tima (ko piše scenarije toka i gde se čuvaju; predlog u poruci timu)
+>>>>>>> d381373 (gatekeeper: regresija i rollback nad pravom aplikacijom (C3.1); templates: config.ts sam uvozi expo tipove)
 
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)

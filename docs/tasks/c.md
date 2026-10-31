@@ -184,7 +184,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 ## F3 — Recepti i dokaz
 
 ### C3.1 Regresija i rollback nad pravim prolazom
-- [ ] provereno nad prolazom sa više jedinica: kad nova promocija pokvari stari ekran, izmena se vraća i builder dobija listu pokvarenih testova
+- [x] provereno nad prolazom sa više jedinica: kad nova promocija pokvari stari ekran, izmena se vraća i builder dobija listu pokvarenih testova (`g1.test.ts`: prava Recepti aplikacija, B-ov `add-item`, nacrt `layout` → regresija, `brokenTests`, rollback)
 
 ### C3.2 Statusi u `results/`
 - [x] svaka jedinica dobija `proven / partial / unproven / failed` u `results/<unitId>.json`
