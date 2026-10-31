@@ -116,21 +116,21 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - Inbox D → A (nova): skripta `npm run archive` / `wemora archive` (A-ov `package.json` i `cli.ts`).
 
 ## Delimično gotovo, čeka spajanje (grana `d/readme`)
-- D19, sve što može danas (README na engleskom, rezime na srpskom, PD7):
+- D19, sve što može danas (README ceo na engleskom, bez srpskog rezimea, po želji tima; izveštaj ostaje na srpskom):
   1. jedna rečenica + snimak izveštaja (`docs/img/report-summary.png`, iz `runs/todomvc-mock-…`); u „How it works“ i snimak vremenske ose (`docs/img/report-timeline.png`);
   2. problem i rešenje (wrapper vs. AI generator; „proizvod je dokaz, ne kod“);
   3. mermaid dijagram toka + tabela statusa;
   4. Mozaik: paralelni agenti, `join`/`leave` po formulama (A14), tabla `MigrationState`, događaji sa ID-jevima, `OwnershipGuard`/`CancelGuard`, structured output, `BudgetedRunner`/`MockRunner`, `eventLogger`; svaka tvrdnja sa linkom na fajl; tabela agenata, modela i alata;
-  5. brzi start bez ključa: `npm ci`, Playwright, `npm ci` u `templates/expo`, build, test, `verify` nad `runs/todomvc-mock-…` (sa `npx tsx` komandom dok A18 ne stigne, i očekivanim izlazom);
-  6. pun prolaz: `--mock` nad TodoMVC-om sa `--original-url` (pušteno, ~3 min, `finished`) i pravi prolaz nad Receptima (`.env`, gateway, mock-api, original, `--budget 3`);
-  7. stablo `output/<run-id>/`; 8. ograničenja i van obima (arch §15, ulazni profil, testovi na Expo webu, Android još nije kapija); 9. tim.
-  - Svaka tvrdnja proverena u kodu (npr. eskalacija na Sonnet je A15 i još ne postoji, Android kapija ne postoji, budžet gasi jedinice koje čekaju); svi linkovi vode na postojeće fajlove.
+  5. brzi start bez ključa: `npm ci`, Playwright, `npm ci` u `templates/expo`, build, test, `verify` nad `runs/todomvc-mock-…`, pa `sabotage` nad kopijom u `output/` i `verify` koji pada (1/5, exit 1); dok A18 ne stigne, preko `npx tsx -e`; izlaz obe komande je prekopiran iz terminala (čist klon);
+  6. pun prolaz: `--mock` nad TodoMVC-om sa `--original-url` (pušteno, ~3 min, `finished`) i pravi prolaz nad Receptima (`.env`, gateway, mock-api, original, podrazumevani budžet $5);
+  7. stablo `output/<run-id>/`; 8. ograničenja i van obima (arch §15, ulazni profil, testovi na Expo webu, Android još nije kapija); 9. tim: tabela ko je vlasnik čega (JavorFaks = A, Vujic04 = B, Milica Antić = C, Kuzma04 = D, po autorima commit-a u tim folderima) i linkovi na `docs/`.
+  - Svaka tvrdnja proverena u kodu (modeli po D-023, runde 3–4 na jačem modelu po A15, Android kapija ne postoji, budžet gasi jedinice koje čekaju); svi linkovi vode na postojeće fajlove.
 - Usput: izveštaj je prikazivao „— nije pušten“ za sve testove dokazanog ekrana, jer Gatekeeper upisuje `results/<unit>.json` sa praznim `scenarios`. Izveštaj sada, kad nema pojedinačnih rezultata, a kapija `scenarios` poslednje runde je prošla, prikazuje testove kao prolazne (2 testa). Inbox D → C: da Gatekeeper popunjava `scenarios`.
 - **Šta fali u README-u** (isto je u HTML komentarima `TODO(D19)` u samom README-u, nevidljivo na GitHub-u):
   1. prolaz za Recepte u `runs/recepti-<vreme>`: treba pravi prolaz (A, ključ) ili mock odgovori testera i buildera za Recepte (B, C); onda snimak njegovog izveštaja i primer u brzom startu;
-  2. `npm run verify` i `npm run sabotage` u CLI-ju (A18, B13): obrisati napomene „until A18“ i `npx tsx` komandu, dodati korak `sabotage` + `verify` mora da padne;
+  2. `npm run verify` i `npm run sabotage` u CLI-ju (A18): zameniti `npx tsx -e …` komande u brzom startu tim komandama i prekopirati izlaz;
   3. pravi prolaz (ne `--mock`) arhiviran u `runs/`, sa troškom i ubrzanjem iz izveštaja;
-  4. imena i uloge tima i licenca (nema `LICENSE`, `package.json` kaže ISC);
+  4. licenca (nema `LICENSE`, `package.json` kaže ISC, što je npm podrazumevano), i puna imena tima ako ih tim želi umesto GitHub imena;
   5. završni prolaz: neko ko nije pisao README ga prati na čistom klonu; komande i izlaz prekopirati iz terminala.
 
 ## U radu
