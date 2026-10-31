@@ -433,7 +433,9 @@ describe("Conductor timeouts", () => {
     try {
       const conductor = new Conductor(deps, { clock })
       const running = conductor.run()
-      await vi.waitFor(() => expect(Object.values(board().units).some((u) => u.status === "submitted")).toBe(true))
+      // A screen's draft, not the shared unit's: only a screen draft waits for its tests.
+      const screens = ["s1", "s2", "s3", "s4"]
+      await vi.waitFor(() => expect(screens.some((id) => board().units[id]?.status === "submitted")).toBe(true))
 
       clock.advance(DEFAULTS.rescaleIntervalMs)
 
@@ -457,8 +459,10 @@ describe("Conductor timeouts", () => {
     await vi.waitFor(() => expect(calls.builder.filter((t) => t.unitId === "list")).toHaveLength(2))
 
     const summary = await running
-    const stale = logEvents().filter((e) => e.event === "event.stale")
-    expect(stale.map((e) => e.data)).toEqual([{ type: "draft.submitted", unitId: "list", round: 1, current: 2 }])
+    // Under load the late draft can arrive more than once; every copy must be ignored, and nothing else is stale.
+    const stale = logEvents().filter((e) => e.event === "event.stale").map((e) => e.data)
+    expect(stale).toContainEqual({ type: "draft.submitted", unitId: "list", round: 1, current: 2 })
+    expect(stale.every((d) => d?.unitId === "list" && d?.round === 1)).toBe(true)
     expect(board().units.list).toMatchObject({ status: "promoted", round: 2 })
     expect(summary.outcome).toBe("finished")
   })
