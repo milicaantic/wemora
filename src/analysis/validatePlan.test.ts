@@ -192,6 +192,16 @@ describe("validatePlan catches broken plans", () => {
     expectError(errors, `obligation "sorted" of unit "favorites" checks an order of items`)
   })
 
+  it("obligations that look at another screen (A: recipe-list and recipe-detail blocked each other)", () => {
+    const errors = check((p) => {
+      unit(p, "recipe-detail").obligations.push({ id: "back-to-list", description: "Tapping 'Nazad na recepte' navigates back to the recipe list screen (the '/' route)." })
+      unit(p, "categories").obligations.push({ id: "open-it", description: "Tapping 'Pileća supa' opens the recipe detail screen." })
+    })
+    expectError(errors, `obligation "back-to-list" of unit "recipe-detail" checks what another screen shows`, "put what the other screen shows into a flow")
+    expectError(errors, `obligation "open-it" of unit "categories" checks what another screen shows`)
+    expect(check((p) => void unit(p, "recipe-detail").obligations.push({ id: "leave", description: "Tapping 'Nazad na recepte' leaves the detail ('Nazad na recepte' is no longer shown)." }))).toEqual([])
+  })
+
   it("does not take data words or quoted texts as an order or a count", () => {
     const errors = check((p) => {
       unit(p, "favorites").obligations.push({ id: "orders-link", description: "Tapping 'Orders' shows 'Order #12' and 'Sort by price'." })
