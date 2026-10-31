@@ -216,6 +216,10 @@ const readableTime = (iso: string) => {
   return Number.isNaN(date.getTime()) ? iso : `${date.toISOString().slice(0, 19).replace("T", " ")} UTC`
 }
 
+// D-027: the theme carries fonts, sizes and colors; the proof is still about behavior, not looks.
+const themeNote = (model: ReportModel) =>
+  model.shared.some((s) => s.unitId === "theme") ? " Izgled (font, veličine, boje) se prenosi sa weba preko teme; dokaz je za ponašanje, ne za izgled." : ""
+
 export function renderReport(model: ReportModel): string {
   const when =
     model.startedAt && model.finishedAt
@@ -239,7 +243,7 @@ export function renderReport(model: ReportModel): string {
 ${when}
 ${renderSummary(model)}
 ${renderStop(model.stop)}
-<p class="muted">Ekran je dokazan samo kad svi testovi prolaze i pokrivene su sve obaveze i svi interaktivni elementi originala. Ekran bez testova nikad nije dokazan.</p>
+<p class="muted">Ekran je dokazan samo kad svi testovi prolaze i pokrivene su sve obaveze i svi interaktivni elementi originala. Ekran bez testova nikad nije dokazan.${themeNote(model)}</p>
 <h2>Ekrani</h2>
 ${screens}
 ${renderShared(model.shared)}

@@ -4,12 +4,30 @@
       "json": {
         "units": [
           {
+            "id": "theme",
+            "kind": "shared",
+            "wave": 0,
+            "sources": [
+              "node_modules/todomvc-app-css/index.css",
+              "node_modules/todomvc-common/base.css"
+            ],
+            "writes": [],
+            "dependsOn": [],
+            "obligations": [],
+            "intentionalDifferences": [],
+            "size": 0
+          },
+          {
             "id": "app-entry",
             "kind": "shared",
             "wave": 0,
-            "sources": ["src/index.js"],
+            "sources": [
+              "src/index.js"
+            ],
             "writes": [],
-            "dependsOn": [],
+            "dependsOn": [
+              "theme"
+            ],
             "obligations": [],
             "intentionalDifferences": [],
             "size": 0
@@ -31,7 +49,10 @@
               "src/todo/reducer.js"
             ],
             "writes": [],
-            "dependsOn": ["app-entry"],
+            "dependsOn": [
+              "app-entry",
+              "theme"
+            ],
             "obligations": [
               {
                 "id": "empty-state",
@@ -57,17 +78,26 @@
             "intentionalDifferences": [
               {
                 "kind": "notPortable",
-                "element": { "role": "link", "name": "TodoMVC" },
+                "element": {
+                  "role": "link",
+                  "name": "TodoMVC"
+                },
                 "reason": "The credits footer links to the external site http://todomvc.com; it leaves the app, so a test of this screen cannot check it."
               },
               {
                 "kind": "notPortable",
-                "element": { "role": "button", "name": "Delete todo" },
+                "element": {
+                  "role": "button",
+                  "name": "Delete todo"
+                },
                 "reason": "The delete button appears only on mouse hover over a todo; touch screens have no hover."
               },
               {
                 "kind": "notPortable",
-                "element": { "role": "textbox", "name": "Edit todo" },
+                "element": {
+                  "role": "textbox",
+                  "name": "Edit todo"
+                },
                 "reason": "Editing starts on double click on a todo; phones have no double click."
               }
             ],

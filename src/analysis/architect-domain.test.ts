@@ -9,7 +9,10 @@ import {
   architectRetryMessage,
   expoRouteFor,
   fallbackReports,
+  globalStylesheets,
+  hasGlobalRules,
   normalizePlan,
+  packageStylesheets,
   parseApp,
   validatePlan,
   type ArchitectOutput,
@@ -51,7 +54,7 @@ describe("normalizePlan", () => {
       expect(normalized.wave).toBe(unit.wave)
       expect(normalized.sources).toEqual([...unit.sources].sort())
     }
-    expect(plan.units.map((u) => u.id)).toEqual(["data", "layout", "categories", "favorites", "recipe-detail", "recipe-list", "shopping-list"])
+    expect(plan.units.map((u) => u.id)).toEqual(["data", "layout", "theme", "categories", "favorites", "recipe-detail", "recipe-list", "shopping-list"])
   })
 
   it("is idempotent", () => {
@@ -155,5 +158,69 @@ describe("architect messages", () => {
     expect(message).toContain('1. route "/kupovina" is not covered')
     expect(message).toContain('"units": []')
     expect(message).toContain("Return the full corrected plan")
+  })
+})
+
+describe("theme unit (D-027)", async () => {
+  const todomvc = await parseApp(repo("examples/todomvc"))
+
+  it("finds global stylesheets: shared CSS with element rules, and package CSS the entry imports", () => {
+    expect(globalStylesheets(recepti)).toEqual(["src/components/Layout.css"])
+    // From the import statements in src/index.js, so the result does not depend on `npm ci` in the example.
+    expect(packageStylesheets(todomvc)).toEqual(["node_modules/todomvc-app-css/index.css", "node_modules/todomvc-common/base.css"])
+    expect(globalStylesheets(todomvc)).toEqual(packageStylesheets(todomvc))
+  })
+
+  it("tells element rules from rules of one part", () => {
+    expect(hasGlobalRules("body { margin: 0 }")).toBe(true)
+    expect(hasGlobalRules(".a, h1:hover { color: red }")).toBe(true)
+    expect(hasGlobalRules("@media (max-width: 600px) { :root { --x: 1 } }")).toBe(true)
+    expect(hasGlobalRules("/* body { } */ .sidebar a { color: red } .toolbar button { x: 1 }")).toBe(false)
+  })
+
+  it("accepts package stylesheets as sources, and makes every other unit depend on the theme", () => {
+    const output: ArchitectOutput = {
+      units: [
+        { id: "theme", kind: "shared", wave: 0, sources: packageStylesheets(todomvc), writes: [], dependsOn: [], obligations: [], intentionalDifferences: [], size: 0 },
+        { id: "app-entry", kind: "shared", wave: 0, sources: ["src/index.js"], writes: [], dependsOn: [], obligations: [], intentionalDifferences: [], size: 0 },
+        {
+          id: "todos",
+          kind: "screen",
+          wave: 1,
+          route: "*",
+          sources: todomvc.routes[0]!.files,
+          writes: [],
+          dependsOn: ["app-entry"],
+          obligations: [{ id: "add-todo", description: "Typing 'Buy milk' in 'New Todo Input' and pressing Enter adds it." }],
+          intentionalDifferences: [],
+          size: 0,
+        },
+      ],
+      flows: [],
+    }
+    const plan = normalizePlan(output, todomvc)
+    expect(byId(plan, "theme").sources).toEqual(packageStylesheets(todomvc))
+    expect(byId(plan, "theme").writes).toEqual(["src/shared/theme/"])
+    expect(byId(plan, "theme").dependsOn).toEqual([])
+    expect(byId(plan, "app-entry").dependsOn).toEqual(["theme"])
+    expect(byId(plan, "todos").dependsOn).toEqual(["app-entry", "theme"])
+    expect(byId(plan, "app-entry").wave).toBe(0)
+    expect(validatePlan(plan, todomvc)).toEqual([])
+    // Running it again changes nothing.
+    expect(normalizePlan(plan, todomvc)).toEqual(plan)
+  })
+
+  it("adds no theme dependency when the plan has no theme unit", () => {
+    const { units, flows } = modelOutput()
+    const plan = normalizePlan({ units: units.filter((u) => u.id !== "theme").map((u) => ({ ...u, dependsOn: u.dependsOn.filter((d) => d !== "theme") })), flows }, recepti)
+    expect(plan.units.every((u) => !u.dependsOn.includes("theme"))).toBe(true)
+  })
+
+  it("the brief lists the global stylesheets for the theme only when there are some", () => {
+    const brief = architectBrief(todomvc, fallbackReports(todomvc, "part-1", "test"))
+    expect(brief).toContain('Global stylesheets (fonts, sizes and colors for the whole app): "node_modules/todomvc-app-css/index.css", "node_modules/todomvc-common/base.css"')
+    expect(brief).toContain('one shared unit with id "theme"')
+    const noGlobal = { ...recepti, sharedFiles: recepti.sharedFiles.filter((f) => f !== "src/components/Layout.css") }
+    expect(architectBrief(noGlobal, [])).not.toContain("Global stylesheets")
   })
 })
