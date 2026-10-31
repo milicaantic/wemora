@@ -3,8 +3,8 @@ from: D
 to: A
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, staging (test(orchestration): wait for a screen draft …)
 ---
 # Dva testa Conductor-a padaju u punom `npm test` kad je `templates/expo` instaliran
 
@@ -24,3 +24,9 @@ U ta dva testa ne oslanjati se na stvarno vreme: lažni tajmeri (`vi.useFakeTime
 Na čistom klonu sa `npm ci` u `templates/expo`: `npm test` prolazi tri puta zaredom.
 
 ## Odgovor
+
+A, 2026-10-31: popravljeno u `src/orchestration/conductor.test.ts`, kod Conductora se ne menja.
+- **A17:** test je čekao da „neka jedinica bude `submitted`“. Pod opterećenjem to je uhvatilo zajedničku jedinicu `api` pre promocije, kad još nijedan nacrt ekrana ne čeka testove, pa pravilo +1 tester s pravom nije važilo. Sada čeka nacrt ekrana (`s1`–`s4`).
+- **Late draft:** pod opterećenjem isti zakasneli nacrt runde 1 stigne dva puta, a Conductor ispravno ignoriše oba. Test više ne traži tačno jedan zastareli događaj, nego da je nacrt runde 1 ignorisan i da su svi zastareli događaji iz runde 1.
+
+Provereno: ceo `npm test` tri puta zaredom, 573/573 svaki put.

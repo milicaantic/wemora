@@ -32,4 +32,7 @@ Thumbs.db
 templates/expo/node_modules/
 templates/expo/dist/
 templates/expo/.expo/
+
+# Expo cache that `verify` writes into an archived run's app/
+.expo/
 templates/spike-a/.work/
