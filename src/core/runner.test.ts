@@ -151,10 +151,10 @@ describe("BudgetedRunner", () => {
     const runner = new BudgetedRunner({ budgetUsd: 3, onBudgetExceeded: vi.fn() })
 
     const unknown = await runner.run({ ...task(), model: "claude-made-up" })
-    const unpriced = await runner.run({ ...task(), model: "claude-haiku-4-5" })
+    const unpriced = await runner.run({ ...task(), model: "claude-opus-4-7" })
 
     expect(textOf(unknown)[0]).toContain('unsupported model "claude-made-up"')
-    expect(textOf(unpriced)[0]).toContain('no pricing for model "claude-haiku-4-5"')
+    expect(textOf(unpriced)[0]).toContain('no pricing for model "claude-opus-4-7"')
   })
 
   it("keeps working when a callback throws", async () => {

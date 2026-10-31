@@ -209,3 +209,14 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 - Odluka: `StepSchema` u `src/contracts/scenario.ts` dobija korak `{ submit: { label, value } }`: upiši `value` u polje sa labelom `label`, pa pritisni Enter u tom polju. Na telefonu je to `TextInput` sa `onSubmitEditing`. Za pokrivenost, `notPortable` i `reveal` `submit` se računa kao korišćenje tog polja (kao `fill`); za pravilo 3 (`architecture.md` §11) je radnja, kao `tap` i `fill`.
 - Zašto: u TodoMVC-u se zadatak dodaje samo Enter-om, a dugme ne postoji. Bez ovog koraka nijedan test ne može da doda zadatak, pa četiri od pet obaveza ekrana `todo-list` ne mogu da se pokriju i TodoMVC ne može biti `proven` (G2). Provereno: Enter u RN `TextInput` na Expo web exportu okida `onSubmitEditing` (telefonski ekran 390×844), a svih 5 scenarija za `todo-list` iz `src/agents/mocks/todomvc/tester.json` prolazi `validateScenario` nad pravim TodoMVC-om i placeholderom iz scaffolda.
 - Posledice: `src/contracts/scenario.ts` i test ugovora; B: `scenarios/compile.ts`, `run.ts`, `validate.ts`, `prompts/tester.md`, `mocks/todomvc/tester.json`; `architecture.md` §11 (tabela koraka) treba dopuniti (A); C: kapija 4 `labels` treba da proverava i `submit.label` (C je to najavio), a TodoMVC nacrt buildera mora da prođe nove testove.
+
+## D-018: Modeli se biraju kroz `.env`; cene za modele hakaton gateway-a
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A; pravi prolaz nad TodoMVC-om je stao na `plan.failed`, jer gateway ne nudi `claude-haiku-5-5` ni `claude-sonnet-5-5`)
+- Odluka:
+  1. `MODELS.default` i `MODELS.strong` (`src/core/config.ts`) čitaju `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` iz okruženja, pri svakom pristupu (CLI učitava `.env` posle `config.ts`). Bez njih važe modeli iz `architecture.md` §12 (`DEFAULT_MODELS`: `claude-haiku-5-5`, `claude-sonnet-5-5`).
+  2. `PRICING` ima i `claude-haiku-4-5` ($1 / $5) i `claude-sonnet-4-6` ($3 / $15 po milionu tokena), po Anthropic cenovniku. Budžet i dalje odbija model bez cene.
+  3. Registracija `claude-haiku-5-5` u `src/core/runner.ts` koristi stalno ime (`DEFAULT_MODELS.default`), ne `MODELS.default`.
+- Zašto: gateway hakatona (`ANTHROPIC_BASE_URL` = `api.app.jigjoy.ai`) nudi samo `claude-haiku-4-5` i `claude-sonnet-4-6` (provereno po jednim malim zahtevom po modelu, 2026-10-31); `haiku-5-5` vraća 404, a `sonnet-5-5` 503 „not available on Mozaik Cloud yet“. Izbor kroz `.env` ne traži izmenu koda kad se gateway promeni.
+- Posledice: `.env.example` (zakomentarisani primer), `architecture.md` §12 (napomena). Haiku 4.5 je ~10× skuplji od cene uzete za 5.5, pa pravi prolazi trebaju veći `--budget` (podrazumevano je $3). Brojač troška računa po Anthropic ceni; gateway možda naplaćuje drugačije. Svi zahtevi modelu sa ovim `ANTHROPIC_BASE_URL` idu preko JigJoy servera; to nije telemetrija (`MOZAIK_API_KEY` i dalje nije postavljen).

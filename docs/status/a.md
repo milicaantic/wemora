@@ -40,21 +40,22 @@ Poslednja izmena: 2026-10-30
 
 - D-015, za C: `checkDraft({ unit, round, draftDir, tests, webDir })`, `roundsExhausted` opciono, `OwnershipGuard` prima listu putanja (PR #40)
 
+- A13 (D-016): timeouti testera i buildera, događaj `tests.missing`, ignorisanje zakasnelih događaja (PR #45)
+- C-ov Gatekeeper-učesnik povezan u `agents.ts`; svi agenti su pravi; C je ispravio Gatekeeper po D-016 (PR #48)
+- korak `submit` (D-017): ugovor uradio B, kapija 4 i prompt C, plan D (PR #55–#58)
+- G2 mock prolaz (`output/20261031-020235-todomvc`): `todo-list` `proven` (5/5 obaveza), runda 1 `gate.failed`, runda 2 promovisan; `main` 467/467 testova
+
 ## U radu
-- ništa
+- G2 pravi prolaz nad TodoMVC-om (`--budget 3`, modeli gateway-a)
 
-## Gotovo, čeka review i spajanje (grana `a/wire-gatekeeper`)
-- C-ov Gatekeeper-učesnik (C2.4, PR #47) povezan u `src/orchestration/agents.ts` (`createGatekeeper`); zamena „agent još ne postoji“ uklonjena, jer su sada svi agenti pravi; test u `agents.test.ts`
-- čeka C (D-016, njegov fajl): handler za `tests.missing` umesto sopstvenog tajmera od 10 min, i ignorisanje nacrta iz ranije runde
-
-## Gotovo, A13 (grana `a/timeouts`, PR #45)
-- A13 (D-016): Conductor prekida testera bez `tests.ready` posle 10 min i daje ekran ponovo (iza neprobanih); posle 2. isteka šalje nov događaj `tests.missing { unitId }` (Gatekeeper promoviše `unproven`); builder bez nacrta posle 10 min = neuspela runda; zakasneli događaji iz ranije runde se ignorišu (`event.stale`); nov zadatak prekinutom agentu tek kad stane. Fajlovi: `orchestration/timeouts.ts`, `conductor.ts`, `queue.ts`, `mocks/manualClock.ts`, `mocks/fakeAgents.ts`; `config.ts` (`maxTestAttempts`, `idleCheckMs`); `contracts/events.ts`; pravilo o `cancel` u `agents/_shared/handle.ts`; 9 novih testova; `architecture.md` §5 i §9
+## Gotovo, čeka review i spajanje (grana `a/gateway-models`)
+- D-018: modeli kroz `.env` (`WEMORA_MODEL_DEFAULT`, `WEMORA_MODEL_STRONG`; podrazumevano 5-5), cene za `claude-haiku-4-5` i `claude-sonnet-4-6`, registracija `haiku-5-5` sa stalnim imenom; `.env.example`; `architecture.md` §12; 4 nova testa. Razlog: gateway hakatona nudi samo 4-5 i 4-6 (prvi pravi prolaz je stao na `plan.failed`, $0)
 
 ## Sledeće
-- PR `a/timeouts` → `main`
-- `contracts/f1`: Enter korak (`submit`) za TodoMVC (čeka B-ovo „da“, blokira G2), šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, uklanjanje `roundsExhausted` (kad ga C izbaci iz testova)
+- D-017 prihvatiti (A) i dopisati `submit` u `architecture.md` §11
+- G2: provera stavki iz pravog prolaza, rezultat u `runs/todomvc-<vreme>/`
+- `contracts/f1`: šema `tests/<unitId>.json`, `failedStep`, `LogEntrySchema`, uklanjanje `roundsExhausted`
 - B (F3, PD5): `serveOriginal(webDir)`; CLI je koristi kad `--original-url` nije dat
-- C (C2.4): Gatekeeper-učesnik; kad bude spojen, zamena u `src/orchestration/agents.ts` postaje `import`
 
 ## Za kraj F1 (dogovoreno da se tim obavesti tada)
 - dopuna `.claude/rules/mozaik.md` §6: pošiljalac mora da uradi `join` pre `emit`/`sendEvent`
@@ -65,6 +66,7 @@ Poslednja izmena: 2026-10-30
 
 ## Važno za tim
 - `emit()` / `sendEvent` rade samo ako je pošiljalac prethodno uradio `join` (Mozaik baca `Participant <id> not found`). Važi za Conductor, Gatekeeper-učesnika (C) i sve agente.
+- **ne pokreći `npm ci` / `npm install` u `output/<run>/app/`**: `app/node_modules` je junction na `templates/expo/node_modules` (C-ov `scaffold`), pa npm isprazni šablon i svaki sledeći prolaz pada na `tsc` kapiji („nema TypeScripta“). Popravka: `npm ci` u `templates/expo`. Desilo se 2026-10-31 u G2 (runda 2 `todo-list`). Predlog za C: zaštita u `scaffold` ili napomena u `app/`
 - format linije u `run.jsonl` je `LogEntry` iz `src/core/log.ts`: `{ t, agent, event, costUsd?, data? }`; D ga čita za vremensku osu i trošak u izveštaju. Domen sme da koristi `log()`.
 
 ## Mockovi koje koristim

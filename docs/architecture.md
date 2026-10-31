@@ -190,6 +190,7 @@ Testeri uzimaju jedinice istim redom.
 | Tester | haiku-5-5 | `aria_snapshot`, `try_scenario`, `save_scenario` | validirani testovi preko `save_scenario` | `prompts/tester.md` |
 | Builder | haiku-5-5 → sonnet-5-5 | `read_source`, `read_app`, `write_file`, `check_draft`, `submit_draft` | fajlovi u staging-u | `prompts/builder.md` + `prompts/web-to-rn.md` |
 
+- Modeli u tabeli su podrazumevani; `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` u `.env` ih menjaju (D-018), npr. `claude-haiku-4-5` i `claude-sonnet-4-6` za gateway hakatona.
 - Svaki agent je zasebna instanca. Svaki zadatak ima svež kontekst. Jedna aktivna petlja po agentu.
 - `save_scenario` prihvata samo scenarije koji prolaze `validateScenario`.
 - `check_draft` pušta kapije 1–4 (brza provera), a `submit_draft` objavljuje `draft.submitted`.
