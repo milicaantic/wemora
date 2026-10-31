@@ -305,10 +305,10 @@ Primer u izveštaju: "Lista narudžbina: 4/4 obaveze, 6/7 elemenata (nedostaje '
 
 | Učesnik | Vrsta | Broj | Šta radi | Šta predaje i kome |
 |---|---|---|---|---|
-| Analizator | AI (Haiku 5.5) | 1–4, po veličini koda | Čita svoj deo aplikacije | Izveštaj u istom formatu → arhitekti |
-| Arhitekta | AI (Sonnet 5.5) | uvek 1 | Spaja izveštaje u plan: zajedničko, adrese, zavisnosti, obaveze, namerne razlike, talasi | Plan na tablu → Conductoru (`plan.ready`) |
-| Tester | AI (Haiku 5.5) | oko pola broja buildera | Za ekrane iz reda isproba original i piše testove, pa ih odmah proveri | Validirani testovi → Gatekeeperu (`tests.ready`) |
-| Builder | AI (Haiku 5.5 → Sonnet 5.5) | 1–6, po broju ekrana u talasu | Piše mobilnu verziju u svom staging folderu i popravlja greške | Kod → Gatekeeperu (`draft.submitted`) |
+| Analizator | AI (Haiku 4.5) | 1–4, po veličini koda | Čita svoj deo aplikacije | Izveštaj u istom formatu → arhitekti |
+| Arhitekta | AI (Sonnet 4.6) | uvek 1 | Spaja izveštaje u plan: zajedničko, adrese, zavisnosti, obaveze, namerne razlike, talasi | Plan na tablu → Conductoru (`plan.ready`) |
+| Tester | AI (Haiku 4.5) | oko pola broja buildera | Za ekrane iz reda isproba original i piše testove, pa ih odmah proveri | Validirani testovi → Gatekeeperu (`tests.ready`) |
+| Builder | AI (Haiku 4.5 → Sonnet 4.6) | 1–6, po broju ekrana u talasu | Piše mobilnu verziju u svom staging folderu i popravlja greške | Kod → Gatekeeperu (`draft.submitted`) |
 | Conductor | Običan kod | 1 | Računa broj agenata, pokreće i gasi ih, vodi red zadataka, eskalira model, vodi timeoute | Zadatke → testerima i builderima |
 | Gatekeeper | Običan kod | 1 | Kapije, pokrivenost, statusi, promocija jedan po jedan, regresija, rollback, testovi toka | Grešku → builderu, ili ekran → u `app/` |
 
@@ -432,7 +432,7 @@ Objavljeni paketi 4.1.0 i 4.2.0 su bajt za bajt isti. Izvor istine je `node_modu
 - **Memorija agenta raste na mestu.** Dve istovremene petlje na istom agentu bi pomešale kontekst. Pravilo: jedan agent, jedna aktivna petlja, svež `ModelContext` za svaki zadatak, svaki builder je zasebna instanca `createAgent`.
 - **Svaki događaj ide svim učesnicima,** uključujući `inference.stream`. Handleri filtriraju po `type` i `producerId`. Kraj petlje je `model.answer` od tog agenta.
 - **Interception može da zameni poziv alata** sintetičkim odgovorom (obrazac iz primera `human-in-the-loop`). Koristi se za OwnershipGuard.
-- **Modeli:** ugrađena lista ima `claude-sonnet-5-5` i `claude-haiku-4-5`, ali **nema `claude-haiku-5-5`**. Dodaje se ručno, uz `AnthropicMessages` endpoint.
+- **Modeli:** koristimo `claude-haiku-4-5` i `claude-sonnet-4-6`, jedine koje nudi gateway hakatona. Oba su na ugrađenoj listi, pa se ništa ne dodaje ručno (D-023).
 - **Anthropic mapper ne postavlja `cache_control`.** `max_tokens` se uzima iz `maxOutputTokens`, pa ga uvek postavi.
 - **Mozaik Cloud telemetrija** se uključuje sa `MOZAIK_API_KEY` i šalje događaje petlje, uključujući memoriju agenta, na JigJoy-ev server. Ne postavljati bez odluke tima.
 - **Deterministički učesnik** može biti podklasa `Participant` ili `createHuman` sa handlerima.
@@ -441,11 +441,9 @@ Objavljeni paketi 4.1.0 i 4.2.0 su bajt za bajt isti. Izvor istine je `node_modu
 
 ```ts
 // src/core/runner.ts
-import { supportedModels, AnthropicMessages, type InferenceRunner } from "@mozaik-ai/core"
+import { supportedModels, type InferenceRunner } from "@mozaik-ai/core"
 
-const h45 = supportedModels.find(m => m.specification.name === "claude-haiku-4-5")!
-export const models = [...supportedModels,
-  { endpoint: new AnthropicMessages(), specification: { ...h45.specification, name: "claude-haiku-5-5" } }]
+export const models = [...supportedModels]   // claude-haiku-4-5 i claude-sonnet-4-6 su ugrađeni
 
 export class BudgetedRunner implements InferenceRunner {
   async run(input) {               // retry + obračun tokenUsage → $ + tvrdi limit
@@ -477,7 +475,7 @@ import { ModelContext, DeveloperMessageItem } from "@mozaik-ai/core"
 import { runLoop } from "../core/runtime"
 
 const ctx = ModelContext.create().addContextItem(DeveloperMessageItem.create(BUILDER_PROMPT))
-runLoop(builder.getId(), task, { model: "claude-haiku-5-5", maxOutputTokens: 8000,
+runLoop(builder.getId(), task, { model: MODELS.default, maxOutputTokens: 8000,
   context: ctx, tools: builder.getTools() }, new OwnershipGuard(`staging/${builderId}/`))
 ```
 
@@ -496,7 +494,7 @@ Ovo je skica, ne kod za kopiranje. Tipove proveri u editoru.
 | ts-morph ili Babel parser | Lista ruta i fajlova za podelu analize, i statička kapija za zabranjene web API-je |
 | zod | Šeme za ugovore, scenarije i sve što dolazi od modela |
 | vitest | Testovi domena, bez mreže |
-| Claude Haiku 5.5 po defaultu, Sonnet 5.5 za arhitektu i eskalaciju | Haiku 5.5: $0.10 ulaz / $0.50 izlaz po milion tokena (za promptove do 100k). Sonnet 5.5: $2 / $10. |
+| Claude Haiku 4.5 po defaultu, Sonnet 4.6 za arhitektu i eskalaciju (D-023) | Jedini modeli koje nudi gateway hakatona. Haiku 4.5: $1 ulaz / $5 izlaz po milion tokena. Sonnet 4.6: $3 / $15. |
 | Maestro + Android emulator (opciono) | Maestro podržava API nivoe 29, 30, 31, 33 i 34, pa se koristi slika API 34 |
 | Lokalni model na GPU-u | **Ne.** Na 12 GB VRAM-a lokalni modeli su nepouzdani za višefajlno pisanje koda i alate. Za besplatan razvoj služi MockRunner. |
 
@@ -506,18 +504,17 @@ Demo aplikacija Recepti: 5 ekrana i 2 zajednička modula. Ovo je procena, a prvi
 
 | Agent | Model | Pretpostavka (zbirno) | Trošak |
 |---|---|---|---|
-| Analizator ×1 | Haiku 5.5 | ~80k ulaz / 8k izlaz | ~$0.01 |
-| Arhitekta | Sonnet 5.5 | ~60k / 10k | ~$0.22 |
-| Tester ×2 (5 ekrana + tokovi) | Haiku 5.5 | ~100k / 5k po ekranu | ~$0.08 |
-| Builder ×4 (7 jedinica) | Haiku 5.5 | ~150k / 20k po jedinici | ~$0.18 |
-| Eskalacija na Sonnet 5.5 | Sonnet 5.5 | ~150k / 20k | ~$0.50 po ekranu |
+| Analizator ×1 | Haiku 4.5 | ~80k ulaz / 8k izlaz | ~$0.12 |
+| Arhitekta | Sonnet 4.6 | ~60k / 10k | ~$0.33 |
+| Tester ×2 (5 ekrana + tokovi) | Haiku 4.5 | ~100k / 5k po ekranu | ~$0.63 |
+| Builder ×4 (7 jedinica) | Haiku 4.5 | ~150k / 20k po jedinici | ~$1.75 |
+| Eskalacija na Sonnet 4.6 | Sonnet 4.6 | ~150k / 20k | ~$0.75 po ekranu |
 
-- Prolaz bez eskalacija košta oko **$0.50**, a sa tri eskalacije oko **$2.00**. U razvoju i arhitekta može da radi na Haiku 5.5.
+- Prolaz bez eskalacija košta oko **$2.80**, a sa tri eskalacije oko **$5**, bez uštede od keša. Gateway sam kešira kontekst (D-020), a čitanje iz keša košta 0,1× cene ulaza, pa je stvarni trošak niži. U razvoju i arhitekta može da radi na Haiku 4.5.
 - Broj agenata malo utiče na trošak, jer se plaća posao (tokeni), a ne broj agenata.
-- Plan budžeta: razvoj na mock-u ($0), ~25 jeftinih prolaza (~$7.50) i 4 puna prolaza (~$8). Ostaje rezerva do €20.
-- Za veliku aplikaciju od 40 ekrana gruba procena je ~$6–7 po prolazu.
-- Runner sprovodi tvrde limite: $3 po prolazu i ukupni limit zapisan u lokalni fajl.
-- Svaki zahtev ostaje ispod 100k tokena, jer preko toga Haiku 5.5 košta 5× više.
+- Plan budžeta: razvoj na mock-u ($0), jeftini prolazi nad TodoMVC-om i nekoliko punih prolaza nad Receptima (~$3–5 po prolazu).
+- Za veliku aplikaciju od 40 ekrana gruba procena je ~$20–30 po prolazu, pre uštede od keša.
+- Runner sprovodi tvrd limit po prolazu (`--budget`, podrazumevano $5).
 
 ---
 

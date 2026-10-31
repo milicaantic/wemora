@@ -47,18 +47,10 @@ describe("modelForRound", () => {
 })
 
 describe("costUsd", () => {
-  it("prices haiku-5-5 per million tokens", () => {
-    // 100k input × $0.10/M + 1M output × $0.50/M, below the long-context threshold.
-    expect(costUsd("claude-haiku-5-5", 100_000, 1_000_000)).toBeCloseTo(0.51)
-  })
-
-  it("charges haiku-5-5 five times more above 100k input tokens", () => {
-    expect(costUsd("claude-haiku-5-5", 100_000, 0)).toBeCloseTo(0.01)
-    expect(costUsd("claude-haiku-5-5", 100_001, 0)).toBeCloseTo(0.0500005)
-  })
-
-  it("prices sonnet-5-5 without a long-context multiplier", () => {
-    expect(costUsd("claude-sonnet-5-5", 200_000, 10_000)).toBeCloseTo(0.5)
+  it("prices the default models per million tokens (D-023)", () => {
+    // haiku-4-5: 100k × $1/M + 1M × $5/M; sonnet-4-6: 200k × $3/M + 10k × $15/M.
+    expect(costUsd("claude-haiku-4-5", 100_000, 1_000_000)).toBeCloseTo(5.1)
+    expect(costUsd("claude-sonnet-4-6", 200_000, 10_000)).toBeCloseTo(0.75)
   })
 
   it("throws for a model without pricing", () => {
@@ -71,14 +63,9 @@ describe("costUsd", () => {
     expect(costUsd("claude-haiku-4-5", 0, 0, { readTokens: 0, writeTokens: 1_000_000 })).toBeCloseTo(1.25)
   })
 
-  it("applies the long-context multiplier to all input, cached included", () => {
-    // 1 uncached + 100k cached is above the 100k threshold: (1 + 10 000) × $0.10/M × 5.
-    expect(costUsd("claude-haiku-5-5", 1, 0, { readTokens: 100_000, writeTokens: 0 })).toBeCloseTo(0.0050005)
-  })
-
-  it("prices the two models the hackathon gateway serves (D-018)", () => {
-    expect(costUsd("claude-haiku-4-5", 1_000_000, 1_000_000)).toBeCloseTo(6)
-    expect(costUsd("claude-sonnet-4-6", 1_000_000, 1_000_000)).toBeCloseTo(18)
+  it("has no price for the 5.5 models, which the gateway does not serve (D-023)", () => {
+    expect(() => costUsd("claude-haiku-5-5", 1, 1)).toThrow(/no pricing/)
+    expect(() => costUsd("claude-sonnet-5-5", 1, 1)).toThrow(/no pricing/)
   })
 })
 

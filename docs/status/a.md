@@ -49,10 +49,12 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `contracts/flow-tests`)
-- D-022 (na C-ov zahtev, C3.3): ugovor za testove toka. `Scenario.flowId?`, `FlowResultSchema`, tabla `flowTests` i `flowResults`, događaj `flow.tests.ready { flowId }`, `tests/flows/` i `results/flows/`; `architecture.md` §5, §6, §7, §11. 4 nova testa, 493/493. Korak 2 (`a/flow-dispatch`: `TestTask.flowId`, Conductor dodeljuje test toka) posle A15 i A16
+## Gotovo, čeka review i spajanje (grana `a/scaling`)
+- D-023: podrazumevani modeli su `claude-haiku-4-5` i `claude-sonnet-4-6` (oni koje gateway nudi), izbačene cene i registracija modela 5-5, `--budget` podrazumevano $5. Kod, testovi (506/506) i dokumentacija (`CLAUDE.md`, `mozaik.md`, `architecture.md`, `tasks/a.md`, `tim-plan.md`, `wemora-plan.md`)
+- A15: eskalacija modela. Jedinica ima `DEFAULTS.maxRounds` (4) runde umesto 2; runde 3–4 idu na `MODELS.strong` (`modelForRound`), isti builder, posle 4. neuspele runde `failed` (`unit.failed` „failed after 4 round(s)“). `FIXED_TEAM` obrisan (fiksni tim samo kroz `ConductorOptions.team`). Nov test eskalacije, 4 testa prešla na 4 runde, 509/509; `migrate:mock` nad TodoMVC-om prolazi
 
 ## Gotovo (spojeno u main)
+- D-022 (PR #68) (na C-ov zahtev, C3.3): ugovor za testove toka. `Scenario.flowId?`, `FlowResultSchema`, tabla `flowTests` i `flowResults`, događaj `flow.tests.ready { flowId }`, `tests/flows/` i `results/flows/`; `architecture.md` §5, §6, §7, §11. 4 nova testa, 493/493. Korak 2 (`a/flow-dispatch`: `TestTask.flowId`, Conductor dodeljuje test toka) posle A15 i A16
 - A14 (D-021, PR #66): broj agenata po formulama iz §9 umesto fiksnog tima. `src/orchestration/scaling.ts` (`planAgentCounts`, `Rescaler`: jedna promena u minutu, odbijena se ponovi kad minut istekne), Conductor računa pre svakog `dispatch()`, gasi samo slobodne agente, najmanje 1 builder. Log `agents.rescaled` i `agent.stopped`. 9 novih testova, 489/489. `migrate:mock` nad TodoMVC-om: 1/1/1, `todo-list` `proven`
 
 ## Gotovo (spojeno u main), F2 kraj

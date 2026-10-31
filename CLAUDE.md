@@ -58,7 +58,7 @@ Promptovi agenata su u `src/agents/prompts/<agent>.md`, i svako je vlasnik promp
 - Svaki događaj ide **svim** učesnicima, uključujući `inference.stream`. Handleri moraju da filtriraju po `event.type` i `event.producerId`. Kraj petlje je `model.answer` od tog agenta.
 - **Događaji nose samo ID-jeve** (npr. `{ unitId }`), a podaci stoje na tabli (`MigrationState`) i na disku.
 - U jednom koraku petlje izvršava se samo prvi function call. Paralelizam dolazi od više agenata, ne od više alata.
-- `claude-haiku-5-5` nije na ugrađenoj listi modela. Registruje se u `core/runner.ts`, ne drugde.
+- Modeli su `claude-haiku-4-5` (osnovni) i `claude-sonnet-4-6` (arhitekta, runde 3–4), oba ugrađena u Mozaik, pa se ništa ne registruje (D-023). Imena su samo u `core/config.ts` (`MODELS`).
 - Uvek postavi `maxOutputTokens`. Anthropic mapper ne radi prompt caching, ali gateway hakatona kešira sam: trošak se računa iz `rowResponse.usage` (D-020).
 - **Ne postavljaj `MOZAIK_API_KEY`** osim ako tim nije tako odlučio: uključuje slanje događaja i memorije agenata na Mozaik Cloud.
 

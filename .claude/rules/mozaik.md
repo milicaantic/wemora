@@ -64,14 +64,8 @@ async run(input: InferenceInput): Promise<InferenceOutput> {
 
 ## 3. Modeli
 
-- `claude-haiku-5-5` **nije** u `supportedModels`. Registruje se samo u `src/core/runner.ts`:
-  ```ts
-  import { supportedModels, AnthropicMessages } from "@mozaik-ai/core"
-  const h45 = supportedModels.find(m => m.specification.name === "claude-haiku-4-5")!
-  export const models = [...supportedModels,
-    { endpoint: new AnthropicMessages(), specification: { ...h45.specification, name: "claude-haiku-5-5" } }]
-  ```
-- Koristimo `claude-haiku-5-5` (osnovni) i `claude-sonnet-5-5` (arhitekta, eskalacija). Imena modela su konstante u `src/core/config.ts`, ne stringovi rasuti po kodu.
+- Koristimo `claude-haiku-4-5` (osnovni) i `claude-sonnet-4-6` (arhitekta, runde 3–4), modele koje nudi gateway hakatona (D-023). **Oba su u `supportedModels`**, pa se ništa ne registruje: `src/core/runner.ts` koristi `supportedModels` kakav jeste.
+- Imena modela su samo u `src/core/config.ts` (`MODELS.default`, `MODELS.strong`), ne stringovi rasuti po kodu. `WEMORA_MODEL_DEFAULT` i `WEMORA_MODEL_STRONG` u `.env` ih menjaju za drugi gateway (D-018); model mora biti u `supportedModels` i u `PRICING`.
 - `AnthropicMessages` bez konfiguracije čita `ANTHROPIC_API_KEY` iz okruženja.
 - **Uvek postavi `maxOutputTokens`** (mapira se na `max_tokens`).
 - Anthropic mapper **ne radi prompt caching**. Ne računaj na njega. Gateway hakatona (`ANTHROPIC_BASE_URL`) kešira sam, pa `input_tokens` sadrži samo nekeširani deo. `BudgetedRunner` čita keš iz `rowResponse.usage` (D-020).

@@ -118,7 +118,7 @@ describe("BudgetedRunner", () => {
   })
 
   it("stops calling the model once the budget is spent and reports it once", async () => {
-    // 100k input + 1M output on haiku-5-5 = $0.51, far above the $0.001 budget.
+    // 100k input + 1M output on haiku-4-5 = $5.10, far above the $0.001 budget.
     const model = fakeModel(async () => answer("expensive", usage(100_000, 1_000_000)))
     const onBudgetExceeded = vi.fn()
     const runner = runnerWith(model, { budgetUsd: 0.001, onBudgetExceeded })
@@ -130,7 +130,7 @@ describe("BudgetedRunner", () => {
     expect(model.endpoint.infer).toHaveBeenCalledTimes(1)
     expect(textOf(second)[0]).toMatch(new RegExp(`^${WEMORA_ERROR} budget exceeded`))
     expect(onBudgetExceeded).toHaveBeenCalledTimes(1)
-    expect(runner.spentUsd()).toBeCloseTo(0.51)
+    expect(runner.spentUsd()).toBeCloseTo(5.1)
   })
 
   it("reports usage with the agent from the registered context", async () => {
@@ -145,7 +145,7 @@ describe("BudgetedRunner", () => {
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
       outputTokens: 1_000_000,
-      usd: expect.closeTo(0.51),
+      usd: expect.closeTo(5.1),
     })
   })
 
@@ -160,8 +160,8 @@ describe("BudgetedRunner", () => {
     expect(onUsage).toHaveBeenCalledWith(
       expect.objectContaining({ inputTokens: 30_010, cacheReadTokens: 20_000, cacheWriteTokens: 10_000 }),
     )
-    // haiku-5-5 at $0.10/M: 10 + 20k × 0.1 + 10k × 1.25 = 14 510 input tokens' worth.
-    expect(onUsage.mock.calls[0]![0].usd).toBeCloseTo(0.001451)
+    // haiku-4-5 at $1/M: 10 + 20k × 0.1 + 10k × 1.25 = 14 510 input tokens' worth.
+    expect(onUsage.mock.calls[0]![0].usd).toBeCloseTo(0.01451)
   })
 
   it("prices every cached token as a write when the raw usage is missing", async () => {
@@ -201,7 +201,7 @@ describe("BudgetedRunner", () => {
     expect(events[0].type).toBe("inference.output")
   })
 
-  it("registers claude-haiku-5-5 next to the built-in sonnet-5-5", () => {
+  it("has both default models built into Mozaik, with nothing registered by us (D-023)", () => {
     const names = models.map((m) => m.specification.name)
     expect(names).toContain(MODELS.default)
     expect(names).toContain(MODELS.strong)

@@ -12,7 +12,7 @@ import {
   type UnitState,
   type UnitStatus,
 } from "../contracts"
-import { analyzerCount, DEFAULTS, FIXED_TEAM, modelForRound } from "../core/config"
+import { analyzerCount, DEFAULTS, modelForRound } from "../core/config"
 import { log } from "../core/log"
 import { board, emit, join, leave } from "../core/runtime"
 import { createEventLogger } from "./eventLogger"
@@ -41,8 +41,9 @@ export type ConductorDeps = {
 }
 
 /**
- * The team follows the §9 formulas (A14) unless `team` fixes it (tests, comparisons). Rounds stay at
- * FIXED_TEAM.maxRounds until A15. The clock drives timeouts and the one-change-per-minute limit.
+ * The team follows the §9 formulas (A14) unless `team` fixes it (tests, comparisons). A unit gets
+ * DEFAULTS.maxRounds rounds, the later ones on the strong model (A15). The clock drives timeouts and the
+ * one-change-per-minute limit.
  */
 export type ConductorOptions = {
   team?: { analyzers: number; builders: number; testers: number }
@@ -102,7 +103,7 @@ export class Conductor {
     options: ConductorOptions = {},
   ) {
     this.fixedTeam = options.team
-    this.maxRounds = options.maxRounds ?? FIXED_TEAM.maxRounds
+    this.maxRounds = options.maxRounds ?? DEFAULTS.maxRounds
     this.timers = new Timers(options.clock ?? realClock)
     // A change refused inside the interval is counted again when it ends.
     this.rescaler = new Rescaler(options.clock ?? realClock, DEFAULTS.rescaleIntervalMs, () => this.enqueue(() => this.dispatch()))
@@ -235,7 +236,8 @@ export class Conductor {
     this.setUnit(unitId, { status: "submitted" })
   }
 
-  // Same builder, next round, fresh context; after the last round the unit and everything that needs it fail.
+  // Same builder, next round, fresh context; from DEFAULTS.escalationRound on with MODELS.strong (A15).
+  // After the last round the unit and everything that needs it fail.
   private async roundFailed(unitId: string, round: number, lastError: string): Promise<void> {
     this.timers.clear(`build:${unitId}`)
     const builder = this.builders.find((b) => b.task === unitId)
