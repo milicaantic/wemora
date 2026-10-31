@@ -47,7 +47,7 @@
               },
               {
                 "id": "filter-todos",
-                "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog', 'Completed' only 'Buy milk', and 'All' both."
+                "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog', 'Completed' only 'Buy milk', and 'All' both. On the web the filter is in the address (#/active, #/completed); on the phone it is state of this screen, so tests tap 'Active', 'Completed' and 'All' instead of opening those addresses."
               },
               {
                 "id": "clear-completed",

@@ -98,6 +98,13 @@ describe("mock plan for TodoMVC can be proven", () => {
       expect(screen.obligations.find((o) => o.id === id)?.description).toContain("'❯ Toggle All Input'")
     }
   })
+
+  it("says that the filters in the address (#/active) are state of the screen on the phone", () => {
+    const output = ArchitectOutputSchema.parse(jsonOf(loadMockFixture(fixtureFile("todomvc", "architect"))["architect"]!))
+    const filter = output.units.find((u) => u.id === "todo-list")!.obligations.find((o) => o.id === "filter-todos")!
+    expect(filter.description).toContain("#/active")
+    expect(filter.description).toContain("state of this screen")
+  })
 })
 
 describe("mock plan for Recepti", () => {

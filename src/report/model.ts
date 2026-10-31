@@ -100,7 +100,7 @@ function screenReason(status: RowStatus, result: UnitResult | undefined, row: Om
     }
     case "partial": {
       const parts: string[] = []
-      if (row.obligations.missing.length > 0) parts.push(`nedostaju obaveze: ${row.obligations.missing.join(", ")}`)
+      if (row.obligations.missing.length > 0) parts.push(`obaveze bez testa: ${row.obligations.missing.join(", ")}`)
       if (row.elements && row.elements.missing.length > 0) parts.push(`nedostaju elementi: ${row.elements.missing.map(quote).join(", ")}`)
       return parts.length > 0 ? parts.join("; ") : "pokrivenost nije potpuna"
     }
