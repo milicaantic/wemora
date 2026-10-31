@@ -22,6 +22,12 @@ Poslednja izmena: 2026-10-30
 - **2026-10-31, posle koraka `submit` (PR #56) i C-ovog usklađenog nacrta: `todo-list` je u mock prolazu `proven`** (5/5 obaveza, 5/5 testova na telefonu, link `TodoMVC` `notPortable`).
 - Ostaje: pravi prolaz sa modelom `--budget 1` (G2).
 
+## Gotovo, čeka PR (grana `b/serve-original`): `serveOriginal(webDir)` (D-014, PD5)
+- `src/scenarios/original.ts`, izvoz kroz `scenarios/index.ts`: `serveOriginal(webDir, { build?, outDir? })` pokrene `npm run build` u web folderu i servira izlaz (`dist/`) preko `serveStatic` (slobodan port, SPA fallback) → `{ url, close }`. Jasne greške: nema `package.json`, nema `build` skripte, ima zavisnosti a nema `node_modules` („run npm ci“), build pao (poslednjih 15 redova izlaza), nema `index.html` u izlazu. Mock-api (Recepti) ne pokreće: aplikacija čita adresu iz `VITE_API_URL` pri build-u, a mock-api se pokreće ručno (README).
+- Testovi: `src/scenarios/original.test.ts` (4), nad lažnim web projektom bez zavisnosti (`mocks/webapp/`, kopira se u privremeni folder).
+- **Ručno:** `serveOriginal("examples/todomvc")` (26 s) → svih 5 TodoMVC scenarija prolazi; `serveOriginal("examples/recepti")` (4 s, mock-api pokrenut) → scenario pretrage prolazi.
+- **Za A (CLI):** kad `--original-url` nije dat, `migrate` može da pozove `serveOriginal(webDir)` i na kraju `close()`.
+
 ## Gotovo, čeka PR (grana `b/sabotage`): B13 `sabotage`
 - `src/verify/sabotage.ts`, izvoz kroz `verify/index.ts`: `sabotage(runDir, unitId)` po ugovoru, plus `sabotageDetailed` (vraća šta je promenjeno: fajl, ime, vrsta) za A-ov CLI (A18). `scripts/sabotage.ts` nije potreban: `npm run sabotage` ide kroz `src/cli.ts` (b.md Q14).
 - **Kako radi:** samo ekran sa testovima i statusom `proven`/`partial` (inače `verify` ne bi pokazao štetu). Iz testova bira ime koje se traži (labela polja, pa ime sa ulogom, pa vidljiv tekst) i u kodu ekrana `app/src/screens/<unitId>/` ga zameni sa `[sabotaged]`, samo unutar stringa ili JSX teksta (identifikatori ostaju). Menja zadati folder na mestu: pušta se nad kopijom prolaza. Odbija drugu sabotažu istog ekrana i ekran čiji kod ne sadrži nijedno testirano ime.
@@ -91,7 +97,7 @@ Poslednja izmena: 2026-10-30
 
 ## Sledeće
 - pravi prolaz `npm run migrate -- examples/todomvc --original-url http://localhost:7002 --budget 1` (G2), uz API ključ
-- F3: `serveOriginal(webDir)`; testovi toka kad A spoji `a/flow-dispatch` (inbox `2026-10-31-b-to-c-flow-tests.md`)
+- F3: tester za tokove (priprema, grana `b/tester-flows`); povezivanje kad A spoji `a/flow-dispatch`
 - A (A18): povezati `wemora verify <run-dir>` (`verifyDetailed` + `formatVerifyReport`, exit 0 kad je `ok`) i `wemora sabotage <run-dir> <unitId>` (`sabotageDetailed`, ispisati šta je promenjeno)
 
 ## Mockovi koje koristim
