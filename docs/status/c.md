@@ -21,13 +21,15 @@ Faza: F2 (moj deo gotov), čeka kapiju G2
 - **integracija:** `npm run migrate:mock -- examples/todomvc --original-url http://localhost:7002` završava sa `finished`: `app-entry` promovisan (unproven), `todo-list` runda 1 `gate.failed` („`<div>` ne postoji u React Native, koristi `<View>`“), runda 2 promovisan (partial); u `run.jsonl` nema odbijenih ni zalutalih upisa buildera; `report.html` prikazuje statuse
 
 ## U radu
-- `submit` korak (Enter u polju) za G2, grana `c/submit-prompt`:
-  - prompt: `builder.md` pravilo 1 i `web-to-rn.md` (polje sa Enter-om → `TextInput onSubmitEditing`); provereno da Playwright Enter pokreće `onSubmitEditing` na Expo webu
-  - `src/agents/mocks/todomvc/builder.json`, runda 2: ceo TodoMVC ekran po imenima dogovorenim sa B („New Todo Input“, „❯ Toggle All Input“ kao `role="checkbox"`, filteri „All“/„Active“/„Completed“ kao `role="link"`, „Clear completed“, „N item(s) left!“; „Delete todo“ izostavljen, `notPortable`); svih 5 obaveza iz D-ovog plana ručno provereno u browseru, kapije 1–4 prolaze
-  - čeka A: `submit` u ugovoru (`scenario.ts`), pa kapija 4 proverava i labelu iz `submit`
+- `submit` korak za G2, grana `c/submit-prompt` (napravljena **od B-ove `contracts/submit`**, A ih spaja zajedno):
+  - kapija 4 proverava i labelu iz `submit` koraka (D-017)
+  - **popravka kapije 4:** naziv dugmeta/linka iz izraza (`{f === "all" ? "All" : …}`) sada se prepoznaje; ranije je pogrešno odbijala dobar nacrt
+  - prompt: `builder.md` pravilo 1 i `web-to-rn.md` (polje sa Enter-om → `TextInput onSubmitEditing`); provereno da Playwright Enter pokreće `onSubmitEditing`
+  - `src/agents/mocks/todomvc/builder.json`, runda 2: ceo TodoMVC ekran po imenima dogovorenim sa B
+  - **`migrate:mock` sa B-ovih 5 scenarija: `todo-list` je `proven`** (runda 1 `gate.failed` na `<div>`, runda 2 kapije 1–5 i 5/5 scenarija); `app-entry` promovisan
 
 ## Čeka druge (za G2)
-- „bar 1 ekran TodoMVC dokazan“: DSL nema korak za Enter (`submit`), pa TodoMVC ostaje `partial` (A i B, `contracts/f1`)
+- A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
 - prolaz sa pravim modelom (`--budget 1`): treba `ANTHROPIC_API_KEY` (kod C ga nema)
 
 ## Sledeće (F3)

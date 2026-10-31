@@ -118,6 +118,37 @@ describe.skipIf(!hasTemplateModules)("kapije 3 i 4 (traže instaliran templates/
     expect(last(results).message).toContain('postoji tekst "Dodaj", ali nijedan element sa role="button" nema taj naziv')
   }, 60_000)
 
+  it("kapija 4: labela polja iz submit koraka (Enter) mora da postoji", async () => {
+    const submitTest = ScenarioSchema.parse({
+      id: "shopping-list-submit",
+      unitId: "shopping-list",
+      obligation: "add-item",
+      steps: [{ goto: "/kupovina" }, { submit: { label: "Namirnica", value: "Hleb" } }],
+    })
+    const ok = await runGates({ ...input(drafts.GOOD), tests: [submitTest] })
+    expect(last(ok)).toMatchObject({ gate: "labels", ok: true })
+    const bad = await runGates({ ...input(drafts.BAD_LABEL), tests: [submitTest] })
+    expect(last(bad)).toMatchObject({ gate: "labels", ok: false })
+    expect(last(bad).message).toContain('nema elementa sa accessibilityLabel "Namirnica"')
+    expect(last(bad).message).toContain('(test "shopping-list-submit")')
+  }, 60_000)
+
+  it("kapija 4: naziv linka iz izraza (ternarni operator, map) se prepoznaje", async () => {
+    const linkTest = ScenarioSchema.parse({
+      id: "filters",
+      unitId: "shopping-list",
+      obligation: "add-item",
+      steps: [{ goto: "/kupovina" }, { tap: { role: "link", name: "Dodaj" } }],
+    })
+    const code = drafts.GOOD.replace(
+      '<Pressable role="button" onPress={add}>\n        <Text>Dodaj</Text>',
+      '<Pressable role="link" onPress={add}>\n        <Text style={{ color: "red" }}>{name ? "Dodaj" : "Unesi"}</Text>',
+    )
+    expect(code).toContain('role="link"')
+    const results = await runGates({ ...input(code), tests: [linkTest] })
+    expect(last(results)).toMatchObject({ gate: "labels", ok: true })
+  }, 60_000)
+
   it("kapija 4: promenjen tekst", async () => {
     const results = await runGates(input(drafts.BAD_TEXT))
     expect(last(results)).toMatchObject({ gate: "labels", ok: false })
