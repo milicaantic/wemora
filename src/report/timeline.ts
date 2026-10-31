@@ -30,7 +30,13 @@ export type Timeline = {
   busyMs: number
 }
 
-export type Rescale = { t: string; text: string }
+type TeamCount = { analyzers?: number; builders?: number; testers?: number }
+
+/** One agents.rescaled line (A14, D-021): the team size after the change, the size before (`from`) and why. */
+export type Rescale = { t: string; text: string; team: TeamCount; from: TeamCount | null }
+
+/** Most agents of each kind that ran at the same time, from agent.started / agent.stopped. */
+export type PeakTeam = Partial<Record<AgentKindName, number>>
 
 const KINDS: AgentKindName[] = ["analyzer", "architect", "tester", "builder"]
 
@@ -38,7 +44,9 @@ const LoopData = z.looseObject({ loopId: z.string().min(1) })
 const AgentStarted = z.looseObject({ id: z.string().min(1), kind: z.string().min(1) })
 const TaskAssigned = z.looseObject({ to: z.string().min(1), task: z.record(z.string(), z.unknown()) })
 const ParticipantData = z.looseObject({ name: z.string().min(1), role: z.string().optional() })
-const RescaleData = z.looseObject({ reason: z.string().min(1) })
+const count = z.number().int().nonnegative().optional()
+const TeamData = z.looseObject({ analyzers: count, builders: count, testers: count })
+const RescaleData = TeamData.extend({ reason: z.string().min(1), from: TeamData.optional() })
 
 const ms = (iso: string) => Date.parse(iso)
 
@@ -117,9 +125,32 @@ export function rescales(log: LogLine[]): Rescale[] {
     .filter((l) => l.event === "agents.rescaled")
     .flatMap((l) => {
       const d = RescaleData.safeParse(l.data)
-      return d.success ? [{ t: l.t, text: d.data.reason }] : []
+      if (!d.success) return []
+      const { analyzers, builders, testers, from, reason } = d.data
+      const team = pick({ analyzers, builders, testers })
+      return [{ t: l.t, text: reason, team, from: from ? pick(from) : null }]
     })
     .sort((a, b) => ms(a.t) - ms(b.t))
+}
+
+const pick = (c: TeamCount): TeamCount =>
+  Object.fromEntries(Object.entries({ analyzers: c.analyzers, builders: c.builders, testers: c.testers }).filter(([, v]) => v !== undefined))
+
+/** Peak number of running agents per kind: +1 on agent.started, −1 on agent.stopped (A14). */
+export function peakTeam(log: LogLine[]): PeakTeam {
+  const running = new Map<string, AgentKindName>()
+  const peak: PeakTeam = {}
+  for (const l of [...log].sort((a, b) => ms(a.t) - ms(b.t))) {
+    if (l.event !== "agent.started" && l.event !== "agent.stopped") continue
+    const d = AgentStarted.safeParse(l.data)
+    if (!d.success) continue
+    const kind = (KINDS as string[]).includes(d.data.kind) ? (d.data.kind as AgentKindName) : "other"
+    if (l.event === "agent.started") running.set(d.data.id, kind)
+    else running.delete(d.data.id)
+    const now = [...running.values()].filter((k) => k === kind).length
+    peak[kind] = Math.max(peak[kind] ?? 0, now)
+  }
+  return peak
 }
 
 export type UnitRounds = {

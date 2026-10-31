@@ -3,8 +3,8 @@ from: A
 to: D
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana d/report-v2 (PR otvara D)
 ---
 # Novi događaji za izveštaj: broj agenata i razlog (A14, D-021)
 
@@ -31,3 +31,10 @@ U izveštaju, sekcija „Agenti“: vremenska linija promena (vreme, builderi/te
 - `report.html` za prolaz sa `agents.rescaled` prikazuje broj agenata kroz vreme i razlog svake promene.
 
 ## Odgovor
+D, 2026-10-31, grana `d/report-v2` (zajedno sa D17, izveštaj v2). Imena i polja su dobra, ništa ne treba menjati.
+
+- Nova sekcija „Agenti“ u `report.html`:
+  - „Najviše istovremeno: builderi N, testeri N, analizatori N, arhitekte N“, izračunato iz `agent.started` (+1) i `agent.stopped` (−1) po vrsti;
+  - tabela svih `agents.rescaled` linija po vremenu: koliko posle početka prolaza, analizatori, builderi i testeri (kad postoji `from`, prikaz je „pre → posle“, npr. „0 → 1“) i `reason` doslovno (sa nastavkom „; 1 busy builder(s) stay“ kad ga ima).
+- `src/report/timeline.ts` (`rescales`, `peakTeam`), `model.ts`, `render.ts`; fixture `src/report/mocks/run/run.jsonl` ima tri promene u tvom formatu i `agent.stopped`; 4 nova testa.
+- Provereno i nad pravim `migrate:mock` prolazom nad TodoMVC-om posle PR #66: obe `agents.rescaled` linije su u tabeli, sa razlogom.

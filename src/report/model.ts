@@ -2,7 +2,7 @@ import { z } from "zod"
 import type { ElementRef, IntentionalDifference, ScreenStatus, TapTarget, Unit, UnitResult } from "../contracts"
 import { costTable, type CostTable } from "./costs"
 import type { RunData } from "./load"
-import { buildTimeline, rescales, unitRounds, type Rescale, type Timeline, type UnitRounds } from "./timeline"
+import { buildTimeline, peakTeam, rescales, unitRounds, type PeakTeam, type Rescale, type Timeline, type UnitRounds } from "./timeline"
 
 // Pure: RunData → what the page shows. No disk, no clock, so the same run always gives the same report.
 
@@ -61,6 +61,7 @@ export type ReportModel = {
   /** v2 (D17): computed from run.jsonl only. */
   timeline: Timeline | null
   rescales: Rescale[]
+  peak: PeakTeam
   costs: CostTable
   rounds: UnitRounds[]
   warnings: string[]
@@ -234,6 +235,7 @@ export function toReportModel(data: RunData): ReportModel {
     shared,
     timeline: buildTimeline(data.log),
     rescales: rescales(data.log),
+    peak: peakTeam(data.log),
     costs: costTable(data.log),
     rounds: unitRounds(data.log),
     warnings: data.warnings,

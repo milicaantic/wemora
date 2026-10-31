@@ -2,7 +2,7 @@ import { usdText } from "./costs"
 import { escapeHtml as e } from "./html"
 import { formatDuration, type ReportModel, type RowStatus, type ScreenRow, type SharedRow } from "./model"
 import { STYLES } from "./styles"
-import { speedupText, type AgentKindName, type Timeline } from "./timeline"
+import { speedupText, type AgentKindName, type Rescale, type Timeline } from "./timeline"
 
 // Pure: ReportModel → one self-contained HTML page (no scripts, no external files).
 
@@ -142,15 +142,41 @@ function renderFlow(model: ReportModel): string {
     t.speedup === null
       ? `<p class="muted">Ubrzanje nije moguće izračunati.</p>`
       : `<p>Ubrzanje <strong>${e(speedupText(t.speedup))}</strong>: agenti su zajedno radili ${e(formatDuration(t.busyMs))}, a prolaz je trajao ${e(formatDuration(t.windowMs))} (zbir trajanja svih traka ÷ trajanje prolaza).</p>`
-  const team =
-    model.rescales.length > 0
-      ? `<h3>Broj agenata</h3><ul class="plain">${model.rescales.map((r) => `<li><code>${e(readableTime(r.t))}</code> ${e(r.text)}</li>`).join("")}</ul>`
-      : ""
   return `<h2>Tok prolaza</h2>
 ${speedup}
 <div class="timeline-box">${timelineSvg(t)}</div>
-<p class="legend">${legend}</p>
-${team}`
+<p class="legend">${legend}</p>`
+}
+
+const PEAK_LABEL: [AgentKindName, string][] = [
+  ["builder", "builderi"],
+  ["tester", "testeri"],
+  ["analyzer", "analizatori"],
+  ["architect", "arhitekte"],
+]
+
+// Team size over time (A14, D-021): agents.rescaled lines and the peak from agent.started / agent.stopped.
+function renderAgents(model: ReportModel): string {
+  const peak = PEAK_LABEL.filter(([k]) => (model.peak[k] ?? 0) > 0).map(([k, label]) => `${label} <strong>${model.peak[k]}</strong>`)
+  if (model.rescales.length === 0 && peak.length === 0) return ""
+  const peakLine = peak.length > 0 ? `<p>Najviše istovremeno: ${peak.join(", ")}.</p>` : ""
+  if (model.rescales.length === 0) return `<h2>Agenti</h2>${peakLine}<p class="muted">Broj agenata se nije menjao tokom prolaza (nema linija <code>agents.rescaled</code>).</p>`
+
+  const start = model.startedAt ? Date.parse(model.startedAt) : Date.parse(model.rescales[0]!.t)
+  const cell = (r: Rescale, key: "analyzers" | "builders" | "testers") => {
+    const to = r.team[key]
+    if (to === undefined) return "—"
+    const from = r.from?.[key]
+    return from !== undefined && from !== to ? `${from} → <strong>${to}</strong>` : `${to}`
+  }
+  const rows = model.rescales.map(
+    (r) =>
+      `<tr><td class="num">${e(formatDuration(Date.parse(r.t) - start))}</td><td class="num">${cell(r, "analyzers")}</td><td class="num">${cell(r, "builders")}</td><td class="num">${cell(r, "testers")}</td><td>${e(r.text)}</td></tr>`,
+  )
+  return `<h2>Agenti</h2>
+${peakLine}
+<p class="muted">Conductor menja broj agenata po formulama iz arhitekture, najviše jednom u minuti. Svaka promena i njen razlog:</p>
+<div class="table-scroll"><table class="agents"><thead><tr><th class="num">Posle</th><th class="num">Analizatori</th><th class="num">Builderi</th><th class="num">Testeri</th><th>Razlog</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
 }
 
 function renderCosts(costs: ReportModel["costs"]): string {
@@ -218,6 +244,7 @@ ${renderStop(model.stop)}
 ${screens}
 ${renderShared(model.shared)}
 ${renderFlow(model)}
+${renderAgents(model)}
 ${renderCosts(model.costs)}
 ${renderRounds(model.rounds)}
 ${renderWarnings(model.warnings)}

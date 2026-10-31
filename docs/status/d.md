@@ -98,7 +98,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - D17: izveštaj v2, sve izračunato iz `run.jsonl`, bez modela:
   - `src/report/timeline.ts`: jedan red po agentu; traka je petlja od `message_received.started` do `model.answer` istog agenta sa istim `data.loopId` (Mozaik događaji kroz A-ov `eventLogger`); oznaka trake je zadatak iz poslednjeg `task.assigned` za tog agenta (`part-1`, `plan`, `todo-list · runda 2`); vrsta agenta iz `agent.started`; petlja bez `model.answer` je „otvorena“ traka do kraja loga. `participant.joined`/`left` (samo `role: agent`) su tačke ispod trake.
   - **Ubrzanje** = zbir trajanja svih traka ÷ (poslednji − prvi zapis), jedna decimala: „1,5×“.
-  - **Broj agenata:** linije `agents.rescaled` sa `data.reason`, po vremenu.
+  - **Agenti** (A14, D-021, inbox poruka A → D): najveći broj agenata svake vrste koji su radili istovremeno (iz `agent.started`/`agent.stopped`) i tabela svih `agents.rescaled` promena: vreme od početka prolaza, analizatori, builderi i testeri kao „pre → posle“ (`from`), razlog. Provereno i nad pravim `migrate:mock` prolazom posle A14.
   - **Runde i modeli:** po jedinici, svaka builderova runda (`task.assigned` sa `round` i `model`) i da li je odbijena (`gate.failed`).
   - `src/report/costs.ts`: trošak po agentu (zbir `costUsd`, broj poziva, ulazni/keširani/izlazni tokeni i modeli iz `model.usage`, D-020), sortirano po trošku, plus ukupno.
   - `render.ts`: sekcije „Tok prolaza“ (inline SVG bez biblioteka, boja po vrsti agenta, legenda, `<title>` na traci), „Trošak“, „Runde i modeli“; v1 sekcije ostaju. Na telefonu se osa i tabele skroluju u svom okviru.
@@ -121,7 +121,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 ## Za A (D12, D14)
 - **ID agenta:** Mozaik daje agentu nasumičan UUID (`agent.getId()`), pa je `producerId` u `analysis.done` taj UUID, a `handle.id` je ime koje daje Conductor (npr. `analyzer-1`) i ide u `TaskMeta.agentId` (log, trošak, mock ključevi). Conductor povezuje događaj sa agentom preko `handle.participant.getId()`.
 - `board().agents` (`busyWith`) agent ne dira; pretpostavljam da ga vodi Conductor.
-- **Izveštaj v2 (D17, PD6):** čita `message_received.started`/`model.answer` (`data.loopId`), `agent.started` (`data.kind`), `task.assigned` (`data.to`, `data.task`), `gate.failed`, `participant.joined`/`left` (`data.name`, `data.role`) i `model.usage`/`costUsd`, sve kako ih danas piše `eventLogger` i Conductor. **Za A14:** promenu broja agenata loguj kao `{ agent: "conductor", event: "agents.rescaled", data: { reason: "5 ready units → 4 builders, 2 testers", … } }`; izveštaj prikazuje `data.reason`. Ako izabereš drugo ime ili polje, javi.
+- **Izveštaj v2 (D17, PD6):** čita `message_received.started`/`model.answer` (`data.loopId`), `agent.started` (`data.kind`), `task.assigned` (`data.to`, `data.task`), `gate.failed`, `participant.joined`/`left` (`data.name`, `data.role`) i `model.usage`/`costUsd`, sve kako ih danas piše `eventLogger` i Conductor, plus A14 `agents.rescaled { analyzers, builders, testers, from?, reason }` i `agent.stopped { id, kind }` (D-021); format je dobar, ništa ne treba menjati.
 
 ## Za B i C
 - **B:** ID-jevi obaveza za ručne scenarije Recepata su u `examples/recepti/wemora/README.md` (npr. `recipe-list` / `search-by-name`).
