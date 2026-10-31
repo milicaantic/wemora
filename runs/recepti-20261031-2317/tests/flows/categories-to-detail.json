@@ -1,0 +1,55 @@
+[
+  {
+    "id": "flow-categories-to-detail",
+    "unitId": "categories",
+    "obligation": "categories-to-detail",
+    "flowId": "categories-to-detail",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Palačinke"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Palačinke"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kategorija: Deserti"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Vreme: 30 min"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Težina: Lako"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Ocena: 4,8"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "300 kcal po porciji"
+        }
+      }
+    ]
+  }
+]

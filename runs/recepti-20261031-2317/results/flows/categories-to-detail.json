@@ -1,0 +1,12 @@
+{
+  "flowId": "categories-to-detail",
+  "ok": true,
+  "scenarios": [
+    {
+      "scenarioId": "flow-categories-to-detail",
+      "unitId": "categories",
+      "ok": true,
+      "durationMs": 1532
+    }
+  ]
+}

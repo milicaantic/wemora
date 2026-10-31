@@ -1,0 +1,158 @@
+[
+  {
+    "id": "shopping-list-empty-state",
+    "unitId": "shopping-list",
+    "obligation": "empty-state",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-add-item",
+    "unitId": "shopping-list",
+    "obligation": "add-item",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 0 od 1"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-mark-bought",
+    "unitId": "shopping-list",
+    "obligation": "mark-bought",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Hleb"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 0 od 2"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "Mleko"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kupljeno: 1 od 2"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-delete-bought",
+    "unitId": "shopping-list",
+    "obligation": "delete-bought",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "checkbox",
+          "name": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Obriši kupljene"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  }
+]

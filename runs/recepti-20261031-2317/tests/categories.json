@@ -1,0 +1,101 @@
+[
+  {
+    "id": "categories-initial-state",
+    "unitId": "categories",
+    "obligation": "initial-state",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "expectVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-select-category",
+    "unitId": "categories",
+    "obligation": "select-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Deserti"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-navigate-to-detail",
+    "unitId": "categories",
+    "obligation": "navigate-to-detail",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Palačinke"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Supe"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-use-supe-button",
+    "unitId": "categories",
+    "obligation": "select-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Supe"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Supe"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  }
+]

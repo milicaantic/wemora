@@ -1,0 +1,14 @@
+{
+  "flowId": "add-favorite-and-view",
+  "ok": false,
+  "scenarios": [
+    {
+      "scenarioId": "add-favorite-and-view",
+      "unitId": "recipe-detail",
+      "ok": false,
+      "failedStep": 3,
+      "error": "expectVisible \"Ukloni iz omiljenih\": not found on screen within 5000 ms",
+      "durationMs": 9091
+    }
+  ]
+}

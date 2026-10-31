@@ -1,0 +1,54 @@
+[
+  {
+    "id": "recipe-list-to-detail-flow",
+    "unitId": "recipe-list",
+    "obligation": "recipe-list-to-detail",
+    "flowId": "recipe-list-to-detail",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Sarma"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Pretraga"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sarma"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kategorija: Glavna jela"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Vreme: 180 min"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Težina: Teško"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Ocena: 4,9"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "520 kcal po porciji"
+        }
+      }
+    ]
+  }
+]

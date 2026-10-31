@@ -1,0 +1,168 @@
+[
+  {
+    "id": "recipe-detail-meta",
+    "unitId": "recipe-detail",
+    "obligation": "recipe-meta",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Kategorija: Supe"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Vreme: 45 min"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Težina: Lako"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Ocena: 4,6"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "220 kcal po porciji"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-increase-servings",
+    "unitId": "recipe-detail",
+    "obligation": "increase-servings",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 4"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Povećaj porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 5"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-decrease-servings",
+    "unitId": "recipe-detail",
+    "obligation": "decrease-servings",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Povećaj porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 5"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Smanji porcije"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Porcije: 4"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-add-to-shopping",
+    "unitId": "recipe-detail",
+    "obligation": "add-to-shopping",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Sastojci su dodati u listu za kupovinu"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-back-to-list",
+    "unitId": "recipe-detail",
+    "obligation": "back-to-list",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "expectVisible": {
+          "text": "Nazad na recepte"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Nazad na recepte"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Nazad na recepte"
+        }
+      }
+    ]
+  },
+  {
+    "id": "recipe-detail-favorite-button",
+    "unitId": "recipe-detail",
+    "obligation": "recipe-meta",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Dodaj u omiljene"
+        }
+      }
+    ]
+  }
+]
