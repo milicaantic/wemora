@@ -54,6 +54,8 @@ React Native has no CSS files, no cascade and no inheritance, except that a `Tex
 
 Text style goes on `Text`, box style (background, border, padding) on the `View` or `Pressable` around it.
 
+The theme's `Text` sets a line height for body text. **Whenever you change `fontSize`, set `lineHeight` too** (about 1.2 × the size, e.g. `fontSize: 80, lineHeight: 96`): a big font with the body line height overflows its line and covers the element above it.
+
 ## The theme (`shared/theme/index.tsx`)
 
 Example for a web app whose global CSS is `body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.4em; color: #111111; background: #f5f5f5 }` and `h1 { font-size: 80px; font-weight: 200; color: #b83f45 }`:
@@ -85,7 +87,7 @@ import { View } from "react-native"
 import { Text, colors, fontSizes, fontWeights } from "@/shared/theme"
 
 <View style={{ backgroundColor: colors.background }}>
-  <Text role="heading" style={{ fontSize: fontSizes.h1, fontWeight: fontWeights.h1, color: colors.heading }}>todos</Text>
+  <Text role="heading" style={{ fontSize: fontSizes.h1, lineHeight: 96, fontWeight: fontWeights.h1, color: colors.heading }}>todos</Text>
 </View>
 ```
 
