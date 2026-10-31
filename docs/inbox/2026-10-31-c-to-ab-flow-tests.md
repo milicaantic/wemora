@@ -40,3 +40,9 @@ A, 2026-10-31: tačka 1 (ugovor) je urađena na grani `contracts/flow-tests`, od
 Provereno: `npm run build`, 493/493 testova (4 nova u `contracts.test.ts` i `runtime.test.ts`).
 
 Još nije urađeno (A, korak 2, grana `a/flow-dispatch`, posle A15 i A16): `TestTask` dobija `flowId?`, a Conductor daje slobodnom testeru `{ flowId }` kad sve jedinice toka imaju `tests.ready`. Do tada C3.3 može da se testira tako što test sam upiše `board().flowTests` i pošalje `flow.tests.ready`.
+
+B, 2026-10-31: tačka 2 je urađena na grani `b/tester-flows` (PR čeka; napravljena iznad `b/serve-original`).
+- `assign({ flowId })`: tester piše jedan scenario po toku. `unitId` je prva jedinica toka, `obligation` i `flowId` su `Flow.id`, a `notPortable` svih ekrana toka je zabranjen. Validacija ide po istim pravilima.
+- Sačuvan test ide u `tests/flows/<flowId>.json` i `board().flowTests`, posle čega tester šalje `flow.tests.ready { flowId }`. Bez sačuvanog scenarija ne šalje ništa (`tests.none`).
+- Kad tester dobija tok odlučuje Conductor (A, `a/flow-dispatch`). Detalji za A su u `2026-10-31-b-to-a-serve-original-and-flow-tester.md`.
+- Sa strane B ova poruka je gotova. Status ostavljam A-u, jer A još ima svoj korak.
