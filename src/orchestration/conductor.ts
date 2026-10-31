@@ -12,11 +12,12 @@ import {
   type UnitState,
   type UnitStatus,
 } from "../contracts"
-import { DEFAULTS, FIXED_TEAM, modelForRound } from "../core/config"
+import { analyzerCount, DEFAULTS, FIXED_TEAM, modelForRound } from "../core/config"
 import { log } from "../core/log"
 import { board, emit, join, leave } from "../core/runtime"
 import { createEventLogger } from "./eventLogger"
-import { blockedBy, isFinished, nextForBuilder, nextForTester, type QueueView } from "./queue"
+import { blockedBy, isFinished, nextForBuilder, nextForTester, readyUnits, type QueueView } from "./queue"
+import { planAgentCounts, Rescaler, type AgentCounts } from "./scaling"
 import { realClock, Timers, type Clock } from "./timeouts"
 
 // The Conductor runs one migration (architecture.md §4, D-010): it starts agents, hands out tasks and
@@ -39,8 +40,13 @@ export type ConductorDeps = {
   agents: AgentFactories
 }
 
-/** Team size and rounds (F2 uses FIXED_TEAM; A14 and A15 replace it with the §9 formulas), and the clock for timeouts. */
-export type ConductorOptions = Partial<{ analyzers: number; builders: number; testers: number; maxRounds: number }> & {
+/**
+ * The team follows the §9 formulas (A14) unless `team` fixes it (tests, comparisons). Rounds stay at
+ * FIXED_TEAM.maxRounds until A15. The clock drives timeouts and the one-change-per-minute limit.
+ */
+export type ConductorOptions = {
+  team?: { analyzers: number; builders: number; testers: number }
+  maxRounds?: number
   clock?: Clock
 }
 
@@ -68,7 +74,9 @@ class OurEvents extends SituationSpecification {
 }
 
 export class Conductor {
-  private readonly team: { analyzers: number; builders: number; testers: number; maxRounds: number }
+  private readonly fixedTeam: ConductorOptions["team"]
+  private readonly maxRounds: number
+  private readonly rescaler: Rescaler
   private readonly participant: Participant
   private readonly logger = createEventLogger()
   private readonly byParticipant = new Map<string, AnyWorker>()
@@ -93,9 +101,11 @@ export class Conductor {
     private readonly deps: ConductorDeps,
     options: ConductorOptions = {},
   ) {
-    const { clock, ...team } = options
-    this.team = { ...FIXED_TEAM, ...team }
-    this.timers = new Timers(clock ?? realClock)
+    this.fixedTeam = options.team
+    this.maxRounds = options.maxRounds ?? FIXED_TEAM.maxRounds
+    this.timers = new Timers(options.clock ?? realClock)
+    // A change refused inside the interval is counted again when it ends.
+    this.rescaler = new Rescaler(options.clock ?? realClock, DEFAULTS.rescaleIntervalMs, () => this.enqueue(() => this.dispatch()))
     this.participant = createHuman({
       name: "conductor",
       capabilities: ["orchestrate"],
@@ -125,14 +135,17 @@ export class Conductor {
   private async start(): Promise<void> {
     const { config } = board()
     const parsed = await this.deps.parseApp(config.webDir)
-    const parts = this.deps.splitParts(parsed, Math.max(1, this.team.analyzers))
+    const analyzers = Math.max(1, this.fixedTeam?.analyzers ?? analyzerCount(parsed.totalTokens))
+    const parts = this.deps.splitParts(parsed, analyzers)
     if (parts.length === 0) throw new Error(`no parts to analyze in ${config.webDir}`)
     board().parsed = { ...parsed, parts }
     this.partIds = parts.map((part) => part.id)
     this.pendingParts.push(...this.partIds)
-    log({ agent: "conductor", event: "run.started", data: { webDir: config.webDir, parts: this.partIds.length, team: this.team } })
+    log({ agent: "conductor", event: "run.started", data: { webDir: config.webDir, parts: this.partIds.length, fixedTeam: this.fixedTeam ?? null } })
+    const reason = this.fixedTeam ? "fixed team" : `${parsed.totalTokens} tokens → ${analyzers} analyzer(s)`
+    log({ agent: "conductor", event: "agents.rescaled", data: { analyzers, builders: 0, testers: 0, reason } })
 
-    for (let i = 0; i < Math.min(this.team.analyzers, parts.length); i++) {
+    for (let i = 0; i < Math.min(analyzers, parts.length); i++) {
       this.analyzers.push(this.spawn("analyzer", this.deps.agents.analyzer))
     }
     this.assignParts()
@@ -198,8 +211,11 @@ export class Conductor {
       board().units[unit.id] ??= { status: "waiting", round: 0, model: null, builderId: null, testerId: null, testAttempts: 0 }
     }
     this.gatekeepers.push(this.spawnGatekeeper())
-    for (let i = 0; i < this.team.testers; i++) this.testers.push(this.spawn("tester", this.deps.agents.tester))
-    for (let i = 0; i < this.team.builders; i++) this.builders.push(this.spawn("builder", this.deps.agents.builder))
+    // With the formulas, the first dispatch starts the testers and builders (A14).
+    if (this.fixedTeam) {
+      for (let i = 0; i < this.fixedTeam.testers; i++) this.testers.push(this.spawn("tester", this.deps.agents.tester))
+      for (let i = 0; i < this.fixedTeam.builders; i++) this.builders.push(this.spawn("builder", this.deps.agents.builder))
+    }
     this.dispatch()
     await this.checkFinished()
   }
@@ -223,7 +239,7 @@ export class Conductor {
   private async roundFailed(unitId: string, round: number, lastError: string): Promise<void> {
     this.timers.clear(`build:${unitId}`)
     const builder = this.builders.find((b) => b.task === unitId)
-    if (round >= this.team.maxRounds || !builder) {
+    if (round >= this.maxRounds || !builder) {
       this.failUnit(unitId, builder ? `failed after ${round} round(s)` : "no builder holds this unit")
       this.dispatch()
       return this.checkFinished()
@@ -280,6 +296,7 @@ export class Conductor {
   // Testers take screens from every wave at once; a builder keeps its unit until it is promoted or failed.
   private dispatch(): void {
     if (this.budgetExceeded || this.finished || !board().plan) return
+    this.rescale()
     const beingTested = new Set(this.testers.flatMap((t) => (t.task ? [t.task] : [])))
     for (const tester of this.testers.filter((t) => t.task === null)) {
       const unit = nextForTester(this.view(), beingTested)
@@ -295,6 +312,54 @@ export class Conductor {
       this.setUnit(unit.id, { status: "building", round: 1, model, builderId: builder.handle.id })
       this.assign(builder, { unitId: unit.id, round: 1, model, lastError: null }, unit.id)
     }
+  }
+
+  // §9 counts before every dispatch; at most one change per minute, and only idle agents leave (A14).
+  private rescale(): void {
+    if (this.fixedTeam) return
+    const { config, parsed } = board()
+    const counts = planAgentCounts({
+      totalTokens: parsed?.totalTokens ?? 0,
+      readyUnits: readyUnits(this.view()).length,
+      busyBuilders: this.builders.filter((b) => b.task !== null).length,
+      maxBuilders: config.maxBuilders,
+      maxTesters: config.maxTesters,
+    })
+    const builders = reachable(this.builders, counts.builders)
+    const testers = reachable(this.testers, counts.testers)
+    if (builders === this.builders.length && testers === this.testers.length) return
+    const kept = [
+      ...(builders > counts.builders ? [`${builders - counts.builders} busy builder(s) stay`] : []),
+      ...(testers > counts.testers ? [`${testers - counts.testers} busy tester(s) stay`] : []),
+    ]
+    const reason = [counts.reason, ...kept].join("; ")
+    this.rescaler.maybeApply({ ...counts, builders, testers, reason }, (next) => this.applyCounts(next))
+  }
+
+  private applyCounts(next: AgentCounts): void {
+    const from = { builders: this.builders.length, testers: this.testers.length }
+    this.resize(this.testers, next.testers, "tester", this.deps.agents.tester)
+    this.resize(this.builders, next.builders, "builder", this.deps.agents.builder)
+    log({
+      agent: "conductor",
+      event: "agents.rescaled",
+      data: { analyzers: this.analyzers.length, builders: next.builders, testers: next.testers, from, reason: next.reason },
+    })
+  }
+
+  private resize<T>(workers: Worker<T>[], target: number, kind: AgentKind, factory: (id: string) => AgentHandle<T>): void {
+    while (workers.length < target) workers.push(this.spawn(kind, factory))
+    for (const worker of workers.filter(isIdle)) {
+      if (workers.length <= target) break
+      workers.splice(workers.indexOf(worker), 1)
+      this.stopAgent(worker)
+    }
+  }
+
+  private stopAgent(worker: AnyWorker): void {
+    this.byParticipant.delete(worker.handle.participant.getId())
+    safeLeave(worker.handle.participant)
+    log({ agent: "conductor", event: "agent.stopped", data: { id: worker.handle.id, kind: worker.kind } })
   }
 
   private failUnit(unitId: string, reason: string): void {
@@ -324,6 +389,7 @@ export class Conductor {
     if (this.finished) return
     this.finished = true
     this.timers.clearAll()
+    this.rescaler.stop()
     const { runId, config } = board()
     log({ agent: "conductor", event: "run.finished", data: { outcome, error } })
     let reportPath: string | null = null
@@ -414,6 +480,13 @@ export class Conductor {
     const { plan, units, tests } = board()
     return { plan, units, tests }
   }
+}
+
+const isIdle = (worker: AnyWorker): boolean => worker.task === null && !worker.handle.isBusy()
+
+// Going down only stops idle agents, so busy ones keep the count above the target.
+function reachable(workers: AnyWorker[], target: number): number {
+  return Math.max(target, workers.length - workers.filter(isIdle).length)
 }
 
 function safeLeave(participant: Participant): void {

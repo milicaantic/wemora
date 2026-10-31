@@ -243,3 +243,17 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   3. `UsageRecord.inputTokens` i `LedgerEntry.inputTokens` su ceo ulaz (keš uključen). `UsageRecord` i linija `model.usage` u `run.jsonl` imaju i `cacheReadTokens` i `cacheWriteTokens`.
 - Zašto: gateway hakatona sam radi prompt caching, a Anthropic `usage.input_tokens` tada sadrži samo nekeširani deo (5–6 tokena po pozivu). Mozaik oba keš broja sabira u jedan (`cached_tokens`), pa se iz `TokenUsage` ne vidi šta je čitanje, a šta upis.
 - Posledice: `src/core/config.ts`, `src/core/runner.ts`, `src/orchestration/migrate.ts`, testovi. Ugovor (`LedgerEntry`) se ne menja. Ako gateway koristi keš od 1 h (upis 2×), trošak upisa je potcenjen za 0,75× cene ulaza. Ovo je i dalje procena: stvarnu potrošnju ključa vidi samo izdavalac ključa. Napomena „Anthropic mapper ne radi prompt caching“ u `CLAUDE.md` i `.claude/rules/mozaik.md` §3 važi za Mozaik, ali ne i za gateway.
+
+## D-021: Broj agenata po formulama (A14): najmanje 1 builder, ponovno računanje posle isteka minuta
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A)
+- Odluka:
+  1. Conductor računa broj analizatora na početku iz `parsed.totalTokens`, a broj buildera i testera pre svakog `dispatch()` (posle `plan.ready`, `unit.promoted`, neuspele jedinice, `tests.ready`), po formulama iz `architecture.md` §9, do `RunConfig.maxBuilders` i `maxTesters` (`--max-builders`, `--max-testers`).
+  2. Buildera je **najmanje 1**, i kad formula da 0 (ništa spremno i niko zauzet).
+  3. Promena se primenjuje najviše jednom u `DEFAULTS.rescaleIntervalMs` (60 s). Promena odbijena unutar tog vremena nije izgubljena: kad interval istekne, Conductor ponovo računa (`Rescaler`, `src/orchestration/scaling.ts`).
+  4. Smanjenje gasi samo agenta bez zadatka i bez aktivne petlje. Zauzet agent ostaje, pa broj može privremeno biti iznad formule (razlog to kaže).
+  5. Log: `agents.rescaled { analyzers, builders, testers, from?, reason }` i `agent.stopped { id, kind }`. Ugašen agent ostaje u `board().agents` kao istorija.
+  6. `ConductorOptions.team` fiksira tim (testovi, poređenje). `FIXED_TEAM.maxRounds` (2) važi dok A15 ne uvede runde 3–4.
+- Zašto: (2) bez najmanje jednog buildera, nov posao bi čekao do minut na sledeću dozvoljenu promenu. (3) Recepti otključavaju 5 ekrana desetak sekundi posle prve promene (`data`, pa `layout`). Bez ponovnog računanja ostali bi sa 1 builderom do sledećeg događaja.
+- Posledice: `src/orchestration/scaling.ts` (nov), `conductor.ts`, `migrate.ts` (više ne šalje fiksni tim), `architecture.md` §9. D čita `agents.rescaled` za sekciju izveštaja „broj agenata i razlog“.

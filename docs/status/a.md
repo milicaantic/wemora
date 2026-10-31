@@ -49,8 +49,12 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/cache-cost`)
-- D-020: trošak računa i keširane tokene. Gateway sam radi prompt caching, pa je `input_tokens` bio 5–6 po pozivu (prolaz `030034`: $0.00027 za ~100 poziva). `costUsd` dobija `cache` (čitanje 0,1×, upis 1,25×), `BudgetedRunner` čita keš iz `rowResponse.usage`, a `model.usage` u logu ima `cacheReadTokens` i `cacheWriteTokens`. 4 nova testa, 480/480
+## Gotovo, čeka review i spajanje (grana `a/scaling`)
+- A14 (D-021): broj agenata po formulama iz §9 umesto fiksnog tima. `src/orchestration/scaling.ts` (`planAgentCounts`, `Rescaler`: jedna promena u minutu, odbijena se ponovi kad minut istekne), Conductor računa pre svakog `dispatch()`, gasi samo slobodne agente, najmanje 1 builder. Log `agents.rescaled` i `agent.stopped`. 9 novih testova, 489/489. `migrate:mock` nad TodoMVC-om: 1/1/1, `todo-list` `proven`
+
+## Gotovo (spojeno u main), F2 kraj
+- D-020: trošak računa i keširane tokene (`a/cache-cost`). `costUsd` dobija `cache` (čitanje 0,1×, upis 1,25×), `BudgetedRunner` čita keš iz `rowResponse.usage`, `model.usage` ima `cacheReadTokens` i `cacheWriteTokens`
+- F2 zatvoren po odluci tima (2026-10-31); prelazak na F3
 
 ## Sledeće
 - proveriti D-020 u pravom prolazu: `model.usage` u `run.jsonl` treba da ima `cacheReadTokens` > 0, a `cost:` na kraju realan iznos

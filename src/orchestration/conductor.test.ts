@@ -270,6 +270,44 @@ describe("Conductor timeouts", () => {
     expect(calls.cancels).toEqual([])
   })
 
+  it("starts the team from the §9 formulas and logs the reason (A14)", async () => {
+    const { running } = startRun({})
+    await running
+
+    const rescaled = logEvents().filter((e) => e.event === "agents.rescaled")
+    expect(rescaled[0].data).toEqual({ analyzers: 1, builders: 0, testers: 0, reason: "10000 tokens → 1 analyzer(s)" })
+    // api and store are ready after the plan; the test config allows 2 builders and 1 tester.
+    expect(rescaled[1].data).toMatchObject({
+      builders: 2,
+      testers: 1,
+      from: { builders: 0, testers: 0 },
+      reason: "2 ready + 0 busy → 2 builder(s) (max 2), 1 tester(s) (max 1)",
+    })
+  })
+
+  it("stops an idle builder one interval after the change was refused, and never a busy one", async () => {
+    const { clock, calls, running } = startRun({ silentRounds: { list: Infinity } })
+    // Everything but list is promoted, so one builder is enough, but the last change was less than a minute ago.
+    await vi.waitFor(() => expect(board().units.edit?.status).toBe("promoted"))
+    const busyBuilder = board().units.list.builderId
+    expect(logEvents().some((e) => e.event === "agent.stopped")).toBe(false)
+
+    clock.advance(DEFAULTS.rescaleIntervalMs)
+
+    await vi.waitFor(() => expect(logEvents().filter((e) => e.event === "agent.stopped")).toHaveLength(1))
+    const stopped = logEvents().find((e) => e.event === "agent.stopped")
+    expect(stopped?.data).toMatchObject({ kind: "builder" })
+    expect(stopped?.data?.id).not.toBe(busyBuilder)
+    expect(logEvents().filter((e) => e.event === "agents.rescaled").at(-1)?.data).toMatchObject({ builders: 1, from: { builders: 2 } })
+
+    clock.advance(BUILD_ROUND)
+    await vi.waitFor(() => expect(calls.builder.filter((t) => t.unitId === "list")).toHaveLength(2))
+    clock.advance(BUILD_ROUND)
+    const summary = await running
+    expect(calls.builder.filter((t) => t.unitId === "list").map((t) => t.builderId)).toEqual([busyBuilder, busyBuilder])
+    expect(summary).toMatchObject({ outcome: "finished", units: { list: "failed" } })
+  })
+
   it("ignores a late draft from a round that already timed out", async () => {
     // The cancelled builder still sends draft.submitted for round 1, after round 2 has started.
     const { clock, calls, running } = startRun({ silentRounds: { list: 1 }, lateDraftOnCancel: true })
