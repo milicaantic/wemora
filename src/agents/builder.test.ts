@@ -264,7 +264,7 @@ describe("builder agent", () => {
   }, 120_000)
 })
 
-describe("tema i izvori zavisnosti (D-025)", () => {
+describe("tema i izvori zavisnosti (D-027)", () => {
   const withTheme = (): Plan => {
     const theme = { ...plan.units.find((u) => u.id === "data")!, id: "theme", sources: ["src/components/Layout.css"], writes: ["src/shared/theme/"], dependsOn: [] }
     const units = plan.units.map((u) => (u.id === "theme" ? u : { ...u, dependsOn: [...u.dependsOn, "theme"], sources: u.sources.filter((s) => s !== "src/components/Layout.css") }))

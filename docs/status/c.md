@@ -33,11 +33,11 @@ Faza: F3
 
 - `results/<unitId>.json` sada ima rezultat svakog testa (`scenarios`), status iz pravih rezultata (D → C, grana `c/results-scenarios`)
 
-- **Nivo 2, tema (D-025, čeka A i D):** grana `c/theme`
+- **Nivo 2, tema (D-027):** kod spojen (PR #88), A je upisao D-027 i izmenio `architecture.md` (PR #89)
   - prompt: pravilo 7 („raspored sme da se menja; tipografija i boje se prenose“), odeljak „Theme“ u `builder.md`, tabela „CSS → StyleSheet“ i primer teme u `web-to-rn.md`
   - builder: `read_source` sme da čita i izvore jedinica iz `dependsOn` (globalni CSS teme); zadatak kaže „koristi `Text` i tokene iz `@/shared/theme`“ kad plan ima temu
   - MockRunner: `builder:theme:1` (TodoMVC tema iz `todomvc-app-css`); provereno u browseru: font, veličina, debljina i boja isti kao u originalu
-  - čeka: A (D-025, `architecture.md` §8 i §11), D (jedinica `theme` u arhitekti i mock planovima); posle toga `builder:todo-list:2` prelazi na temu
+  - čeka D: jedinica `theme` u arhitekti i mock planovima (`docs/inbox/2026-10-31-c-to-d-theme-unit.md`); posle toga `builder:todo-list:2` prelazi na temu
 
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
