@@ -206,9 +206,12 @@ Testeri uzimaju jedinice istim redom.
 wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 5] [--mock] [--mock-dir <dir>]
 wemora verify <run-dir>          # bez API ključa
 wemora sabotage <run-dir> <unitId>
+wemora archive <run-dir> [--name <name>]
 ```
 
 `--mock` koristi MockRunner (bez API poziva), sa odgovorima iz `src/agents/mocks/<aplikacija>/` ili `--mock-dir` (D-013). `--budget` je tvrdi limit u dolarima po prolazu. `--original-url` je adresa pokrenutog originala za testera (D-014).
+
+`verify` (B) ponovo pušta sve sačuvane testove završenog prolaza nad web exportom `app/`, bez modela i bez API ključa, ispisuje matricu ekran × test i vraća exit 1 ako bar jedan ekran sa statusom `proven` ili `partial` više ne prolazi. `sabotage` (B) menja jedan promovisan ekran **na mestu**, pa se pušta nad kopijom prolaza (npr. u `runs/`), nikad nad jedinim primerkom. Posle njega `verify` mora da padne baš na tom ekranu. `archive` (D-ov `archiveRun`) kopira završen prolaz u `runs/<name>/` bez `node_modules` i `staging/`, za commit; podrazumevano ime je `<app>-<yyyymmdd>-<hhmm>` iz run-id-ja.
 
 ## 14. Invarijante (moraju uvek da važe)
 

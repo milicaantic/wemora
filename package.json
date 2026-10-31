@@ -10,6 +10,7 @@
     "migrate:mock": "tsx src/cli.ts migrate --mock",
     "verify": "tsx src/cli.ts verify",
     "sabotage": "tsx src/cli.ts sabotage",
+    "archive": "tsx src/cli.ts archive",
     "smoke": "tsx src/cli.ts migrate --mock examples/todomvc"
   },
   "repository": {
