@@ -62,7 +62,27 @@ npm run dev               # http://localhost:5173
 
 ## Verify a finished run (no API key)
 
-*In progress:* `npm run verify -- runs/<run>` re-runs every test of a committed run with no AI and no API key. `npm run sabotage -- runs/<run> <unitId>` breaks one screen on purpose, and `verify` must then fail on that screen only.
+`verify` re-runs every test of a finished run against a web export of its app, with no AI and no API key. Committed runs are in [`runs/`](runs/) (what each folder holds is in [`runs/README.md`](runs/README.md)).
+
+Once, after `npm ci` in the root:
+
+```bash
+cd templates/expo && npm ci && cd ../..   # Expo, used to export the app for the web
+```
+
+A committed run has no `node_modules`; `verify` links `templates/expo/node_modules`, and without this step it stops with `templates/expo/node_modules not found: run "npm ci" in templates/expo once`.
+
+Then:
+
+```bash
+npm run verify -- runs/todomvc-mock-20261031-1454
+```
+
+- **Recepti only:** start the mock API first (`cd examples/mock-api && npm start`), because the app reads its data from it. TodoMVC needs nothing else.
+- **Output:** a screen × test matrix (`pass` / `FAIL`) and a last line `OK: …` or `FAILED: …`; exit code 0 for `OK`, 1 for `FAILED`. Only screens that were `proven` or `partial` in the run count; `failed` and `unproven` screens are listed but do not fail `verify`.
+- The first export after a fresh clone takes about a minute (cold Metro cache); later ones take 7–13 s.
+
+*In progress:* `wemora verify` is being wired into the CLI (A18); until then `npm run verify` says "not implemented yet", and the same check runs with the command in [`runs/README.md`](runs/README.md#check-a-run-again). `npm run sabotage -- runs/<run> <unitId>` (breaks one screen on purpose, so `verify` must fail on that screen only) comes next.
 
 ## Run a full migration
 

@@ -1,0 +1,95 @@
+{
+  "units": [
+    {
+      "id": "app-entry",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/index.js"
+      ],
+      "writes": [
+        "src/shared/app-entry/"
+      ],
+      "dependsOn": [],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 98
+    },
+    {
+      "id": "todo-list",
+      "kind": "screen",
+      "wave": 1,
+      "route": "*",
+      "sources": [
+        "src/todo/app.css",
+        "src/todo/app.jsx",
+        "src/todo/components/footer.jsx",
+        "src/todo/components/header.jsx",
+        "src/todo/components/input.jsx",
+        "src/todo/components/item.jsx",
+        "src/todo/components/main.jsx",
+        "src/todo/constants.js",
+        "src/todo/reducer.js"
+      ],
+      "writes": [
+        "src/screens/todo-list/"
+      ],
+      "dependsOn": [
+        "app-entry"
+      ],
+      "obligations": [
+        {
+          "id": "add-todo",
+          "description": "Typing 'Buy milk' in 'New Todo Input' and pressing Enter adds 'Buy milk' to the list and shows '1 item left!'."
+        },
+        {
+          "id": "clear-completed",
+          "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': tapping 'Clear completed' removes 'Buy milk' and keeps 'Walk the dog'."
+        },
+        {
+          "id": "complete-todo",
+          "description": "With the single todo 'Buy milk', checking '❯ Toggle All Input' marks it completed: the screen shows '0 items left!' and the button 'Clear completed'. (The checkbox of one todo has no name, so tests use '❯ Toggle All Input'.)"
+        },
+        {
+          "id": "empty-state",
+          "description": "With no todos the screen shows the heading 'todos' and the field 'New Todo Input', and no 'items left!' counter."
+        },
+        {
+          "id": "filter-todos",
+          "description": "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog', 'Completed' only 'Buy milk', and 'All' both. On the web the filter is in the address (#/active, #/completed); on the phone it is state of this screen, so tests tap 'Active', 'Completed' and 'All' instead of opening those addresses."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "link",
+            "name": "TodoMVC"
+          },
+          "reason": "The credits footer links to the external site http://todomvc.com; it leaves the app, so a test of this screen cannot check it."
+        },
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "button",
+            "name": "Delete todo"
+          },
+          "reason": "The delete button appears only on mouse hover over a todo; touch screens have no hover."
+        },
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "textbox",
+            "name": "Edit todo"
+          },
+          "reason": "Editing starts on double click on a todo; phones have no double click."
+        }
+      ],
+      "size": 2888
+    }
+  ],
+  "flows": [],
+  "routeMap": {
+    "*": "/"
+  }
+}

@@ -94,7 +94,7 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - `d/g2-wording`: izveštaj piše „obaveze bez testa“; filteri u adresi (`#/active`) su na telefonu stanje ekrana (opis obaveze i prompt-ovi).
 - PR #63 (`d/web-obligations`, inbox poruka A → D): obaveze moraju da se izvedu na originalnom webu DSL koracima; `validatePlan` odbija long-press, hover, dupli klik, prevlačenje, desni klik, prečice i obaveze o `notPortable` elementima.
 
-## Gotovo, čeka spajanje (grana `d/report-v2`)
+## Gotovo, spojeno u main (PR #69, grana `d/report-v2`)
 - D17: izveštaj v2, sve izračunato iz `run.jsonl`, bez modela:
   - `src/report/timeline.ts`: jedan red po agentu; traka je petlja od `message_received.started` do `model.answer` istog agenta sa istim `data.loopId` (Mozaik događaji kroz A-ov `eventLogger`); oznaka trake je zadatak iz poslednjeg `task.assigned` za tog agenta (`part-1`, `plan`, `todo-list · runda 2`); vrsta agenta iz `agent.started`; petlja bez `model.answer` je „otvorena“ traka do kraja loga. `participant.joined`/`left` (samo `role: agent`) su tačke ispod trake.
   - **Ubrzanje** = zbir trajanja svih traka ÷ (poslednji − prvi zapis), jedna decimala: „1,5×“.
@@ -106,13 +106,23 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
   - Fixture `src/report/mocks/run/run.jsonl`: 6 traka koje se preklapaju, trošak, odbijena runda, `agents.rescaled`, loše linije. 11 novih testova (29 ukupno), među njima 2 trake po 60 s u 80 s → 1,5×.
   - Ručno: snimci u Chromium-u (desktop, tamna tema, telefon) nad fixture-om i nad pravim mock prolazom TodoMVC-a.
 
+## Gotovo, čeka spajanje (grana `d/runs`)
+- D18: `archiveRun(runDir, runsDir, name)` u `src/report/archive.ts` (izvoz iz `report/index.ts`; `buildReport` je premešten u `build.ts` da nema kružnog uvoza):
+  - kopira `output/<run-id>/` u `runs/<name>/` bez `node_modules`, `.expo`, `dist`, `web-build` (na bilo kojoj dubini), `staging/`, linkova (ne prati ih; `app/node_modules` je link na šablon) i fajlova većih od 5 MB; spisak izostavljenog je u `<name>/archive.json`; `report.html` se pravi ponovo iz kopije; nikad ne prepisuje postojeći folder i odbija ime sa putanjom;
+  - 3 testa u `src/report/archive.test.ts` nad lažnim prolazom (`node_modules`, `.expo`, `dist`, `web-build`, `staging/`, junction link, fajl od 5 MB + 1 B).
+  - `runs/todomvc-mock-20261031-1454/`: arhiva `migrate:mock` prolaza nad TodoMVC-om (`todo-list` proven, 5/5), 1,4 MB. B-ov `verifyDetailed` nad njom: 5/5 `pass`, `OK`, exit 0, bez API ključa. Jasno označen kao mock (odgovori modela su skripta); arhiva pravog prolaza ide kad A pusti `npm run migrate` sa ključem.
+  - `runs/README.md`: tabela prolaza, šta je u folderu, kako se proverava (`npm ci` u `templates/expo`, mock-api za Recepte, značenje izlaza) i kako se dodaje prolaz.
+- Inbox B → D (README pre `verify`): urađeno u `README.md` i `runs/README.md`, poruka u `docs/inbox/done/`.
+- Inbox D → A (nova): skripta `npm run archive` / `wemora archive` (A-ov `package.json` i `cli.ts`).
+
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/report-v2` (D17)
-- D18: `runs/` i arhiviranje prolaza
-- pravi prolaz nad Receptima kad A pusti sa ključem: pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
+- PR `d/runs` (D18)
+- D19: pun `README.md`
+- kad A pusti pravi prolaz: arhivirati ga u `runs/` i pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
+- kad A18 stigne: obrisati iz README-a rečenicu da `npm run verify` još nije povezan
 
 ## Odgovori D (2026-10-31)
 - **C: ID ekrana za TodoMVC je `todo-list`** (zajednička jedinica je `app-entry`). To vraća moj `src/agents/mocks/todomvc/architect.json` (PR #38). Tvoj `builder.json` (`builder:todo-list:1`, `builder:todo-list:2`, `screens/todo-list/index.tsx`) i B-ov `tester.json` (`tester:todo-list`, obaveza `empty-state`) već odgovaraju, pa ne treba ništa menjati.

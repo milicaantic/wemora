@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wemora izveštaj todomvc-mock-20261031-1454</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1d2433; --muted: #5b6577; --line: #e2e6ec;
+  --proven: #1f8a4c; --proven-bg: #e3f4ea;
+  --partial: #9a6a00; --partial-bg: #fdf3d6;
+  --unproven: #5b6577; --unproven-bg: #eceff3;
+  --failed: #c0362c; --failed-bg: #fbe5e3;
+  --none: #7a8496; --none-bg: #ffffff;
+  --code-bg: #f0f2f5;
+  --k-analyzer: #3a6ea5; --k-architect: #7b4fb0; --k-tester: #1f8a7a; --k-builder: #c4661f; --k-other: #7a8496;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --panel: #1b2029; --text: #e6e9ef; --muted: #9aa3b2; --line: #2c3340;
+    --proven: #4cc27e; --proven-bg: #173323;
+    --partial: #e3b341; --partial-bg: #3a3016;
+    --unproven: #a3acba; --unproven-bg: #262c36;
+    --failed: #f0756b; --failed-bg: #3d1f1d;
+    --none: #8d96a6; --none-bg: #1b2029;
+    --code-bg: #232935;
+    --k-analyzer: #6b9fd6; --k-architect: #a985d6; --k-tester: #4cc2b0; --k-builder: #e8935a; --k-other: #8d96a6;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Segoe UI", Arial, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 12px; }
+h3 { font-size: 16px; margin: 0; }
+p { margin: 6px 0; }
+.muted { color: var(--muted); }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 8px; padding: 12px 16px; }
+.tile .n { font-size: 28px; font-weight: 700; color: var(--c); }
+.status-proven { --c: var(--proven); --cb: var(--proven-bg); }
+.status-partial { --c: var(--partial); --cb: var(--partial-bg); }
+.status-unproven { --c: var(--unproven); --cb: var(--unproven-bg); }
+.status-failed { --c: var(--failed); --cb: var(--failed-bg); }
+.status-no-result { --c: var(--none); --cb: var(--none-bg); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--c); background: var(--cb); border: 1px solid var(--c); white-space: nowrap; }
+.screen { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
+.screen-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.reason { margin-top: 8px; }
+ul.plain { margin: 6px 0 0; padding-left: 20px; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.outcome { width: 44px; font-weight: 700; text-align: center; }
+.pass { color: var(--proven); } .fail { color: var(--failed); } .not-run { color: var(--muted); }
+.error { color: var(--failed); overflow-wrap: anywhere; }
+.shared td:first-child { width: 30%; }
+.warnings { background: var(--partial-bg); border: 1px solid var(--partial); border-radius: 8px; padding: 12px 18px; }
+.run-stop { margin: 16px 0; }
+.run-stop ol { margin: 8px 0 0; padding-left: 22px; }
+.timeline-box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+svg.timeline { display: block; width: 100%; min-width: 720px; height: auto; }
+.table-scroll { overflow-x: auto; }
+.table-scroll table { min-width: 560px; }
+.table-scroll td code { white-space: nowrap; }
+svg.timeline text { fill: var(--text); font: 12px system-ui, "Segoe UI", Arial, sans-serif; }
+svg.timeline .tick { fill: var(--muted); font-size: 11px; }
+svg.timeline .grid { stroke: var(--line); stroke-dasharray: 2 3; }
+svg.timeline .lane { stroke: var(--line); }
+svg.timeline .bar-text { fill: #ffffff; font-size: 11px; pointer-events: none; }
+.bar.open { opacity: 0.55; }
+.kind-analyzer { fill: var(--k-analyzer); background: var(--k-analyzer); }
+.kind-architect { fill: var(--k-architect); background: var(--k-architect); }
+.kind-tester { fill: var(--k-tester); background: var(--k-tester); }
+.kind-builder { fill: var(--k-builder); background: var(--k-builder); }
+.kind-other { fill: var(--k-other); background: var(--k-other); }
+circle.joined, i.dot.joined { fill: var(--text); background: var(--text); }
+circle.left, i.dot.left { fill: var(--panel); stroke: var(--text); stroke-width: 1.5; background: var(--panel); border: 1.5px solid var(--text); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; }
+.swatch { width: 14px; height: 10px; border-radius: 2px; }
+i.dot { width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+tfoot td { font-weight: 600; border-bottom: none; }
+@media (max-width: 640px) { main { padding: 20px 16px 48px; } td, th { padding: 6px; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Wemora izveštaj</h1>
+<p>Prolaz <code>todomvc-mock-20261031-1454</code></p>
+<p class="muted">Od 2026-10-31 13:54:43 UTC do 2026-10-31 13:57:41 UTC (2 min 58 s)</p>
+<section class="summary" aria-label="Sažetak"><div class="tile status-proven"><div class="n">1</div><div>dokazan</div></div><div class="tile status-partial"><div class="n">0</div><div>delimično dokazan</div></div><div class="tile status-unproven"><div class="n">0</div><div>nedokazan</div></div><div class="tile status-failed"><div class="n">0</div><div>neuspeo</div></div></section>
+
+<p class="muted">Ekran je dokazan samo kad svi testovi prolaze i pokrivene su sve obaveze i svi interaktivni elementi originala. Ekran bez testova nikad nije dokazan.</p>
+<h2>Ekrani</h2>
+<article class="screen status-proven" id="unit-todo-list">
+<div class="screen-head"><h3>todo-list</h3><code>*</code><span class="badge status-proven">dokazan</span><span class="muted">talas 1 · 2 runde</span></div>
+<p class="coverage">5/5 obaveze, 1/1 elemenata</p>
+
+<p><strong>Namerne razlike (3):</strong></p><ul class="plain"><li>link &#39;TodoMVC&#39; nije prenosivo: The credits footer links to the external site http://todomvc.com; it leaves the app, so a test of this screen cannot check it.</li><li>button &#39;Delete todo&#39; nije prenosivo: The delete button appears only on mouse hover over a todo; touch screens have no hover.</li><li>textbox &#39;Edit todo&#39; nije prenosivo: Editing starts on double click on a todo; phones have no double click.</li></ul>
+<table><thead><tr><th>Rezultat</th><th>Scenario</th><th>Obaveza</th><th>Greška</th></tr></thead><tbody><tr><td class="outcome not-run" title="nije pušten">—</td><td><code>todo-list-empty-state</code></td><td>empty-state</td><td></td></tr><tr><td class="outcome not-run" title="nije pušten">—</td><td><code>todo-list-add-todo</code></td><td>add-todo</td><td></td></tr><tr><td class="outcome not-run" title="nije pušten">—</td><td><code>todo-list-complete-todo</code></td><td>complete-todo</td><td></td></tr><tr><td class="outcome not-run" title="nije pušten">—</td><td><code>todo-list-filter-todos</code></td><td>filter-todos</td><td></td></tr><tr><td class="outcome not-run" title="nije pušten">—</td><td><code>todo-list-clear-completed</code></td><td>clear-completed</td><td></td></tr></tbody></table>
+</article>
+<h2>Zajedničke jedinice</h2>
+<p class="muted">Nemaju svoje UI testove; dokazuju se kroz ekrane koji ih koriste.</p>
+<table class="shared"><thead><tr><th>Jedinica</th><th>Status</th><th>Fajlova</th><th>Rundi</th><th>Napomena</th></tr></thead><tbody><tr><td><code>app-entry</code></td><td><span class="badge status-proven">promovisana</span></td><td>1</td><td>1</td><td></td></tr></tbody></table>
+<h2>Tok prolaza</h2>
+<p>Ubrzanje <strong>0,7×</strong>: agenti su zajedno radili 2 min 8 s, a prolaz je trajao 2 min 58 s (zbir trajanja svih traka ÷ trajanje prolaza).</p>
+<div class="timeline-box"><svg class="timeline" viewBox="0 0 1000 144" role="img" aria-label="Vremenska osa: 4 agenata tokom 2 min 58 s"><line class="grid" x1="130" y1="20" x2="130" y2="144"/><text class="tick" x="130" y="16" text-anchor="start">0 s</text><line class="grid" x1="343.5" y1="20" x2="343.5" y2="144"/><text class="tick" x="343.5" y="16" text-anchor="middle">45 s</text><line class="grid" x1="557" y1="20" x2="557" y2="144"/><text class="tick" x="557" y="16" text-anchor="middle">1 min 29 s</text><line class="grid" x1="770.5" y1="20" x2="770.5" y2="144"/><text class="tick" x="770.5" y="16" text-anchor="middle">2 min 14 s</text><line class="grid" x1="984" y1="20" x2="984" y2="144"/><text class="tick" x="984" y="16" text-anchor="end">2 min 58 s</text><line class="lane" x1="130" y1="40" x2="984" y2="40"/><text class="lane-label" x="122" y="44" text-anchor="end">analyzer-1</text><g><title>analyzer-1 · part-1 · 0 s</title><rect class="bar kind-analyzer" x="131.4" y="32" width="2" height="16" rx="3"/></g><circle class="joined" cx="131.4" cy="51" r="3"><title>analyzer-1 ulazi posle 0 s</title></circle><circle class="left" cx="984" cy="51" r="3"><title>analyzer-1 izlazi posle 2 min 58 s</title></circle><line class="lane" x1="130" y1="68" x2="984" y2="68"/><text class="lane-label" x="122" y="72" text-anchor="end">architect-1</text><g><title>architect-1 · plan · 0 s</title><rect class="bar kind-architect" x="131.7" y="60" width="2" height="16" rx="3"/></g><circle class="joined" cx="131.6" cy="79" r="3"><title>architect-1 ulazi posle 0 s</title></circle><circle class="left" cx="984" cy="79" r="3"><title>architect-1 izlazi posle 2 min 58 s</title></circle><line class="lane" x1="130" y1="96" x2="984" y2="96"/><text class="lane-label" x="122" y="100" text-anchor="end">tester-1</text><g><title>tester-1 · todo-list · 2 min 0 s</title><rect class="bar kind-tester" x="288.8" y="88" width="574" height="16" rx="3"/><text class="bar-text" x="293.8" y="100">todo-list</text></g><circle class="joined" cx="132.4" cy="107" r="3"><title>tester-1 ulazi posle 0 s</title></circle><circle class="left" cx="984" cy="107" r="3"><title>tester-1 izlazi posle 2 min 58 s</title></circle><line class="lane" x1="130" y1="124" x2="984" y2="124"/><text class="lane-label" x="122" y="128" text-anchor="end">builder-1</text><g><title>builder-1 · app-entry · runda 1 · 4 s</title><rect class="bar kind-builder" x="132.6" y="116" width="19" height="16" rx="3"/></g><g><title>builder-1 · todo-list · runda 1 · 0 s</title><rect class="bar kind-builder" x="171.5" y="116" width="2" height="16" rx="3"/></g><g><title>builder-1 · todo-list · runda 2 · 4 s</title><rect class="bar kind-builder" x="863.2" y="116" width="19.2" height="16" rx="3"/></g><circle class="joined" cx="132.4" cy="135" r="3"><title>builder-1 ulazi posle 1 s</title></circle><circle class="left" cx="984" cy="135" r="3"><title>builder-1 izlazi posle 2 min 58 s</title></circle></svg></div>
+<p class="legend"><span><i class="swatch kind-analyzer"></i>analizator</span><span><i class="swatch kind-architect"></i>arhitekta</span><span><i class="swatch kind-tester"></i>tester</span><span><i class="swatch kind-builder"></i>builder</span><span><i class="dot joined"></i>ulazi</span><span><i class="dot left"></i>izlazi</span></p>
+<h2>Agenti</h2>
+<p>Najviše istovremeno: builderi <strong>1</strong>, testeri <strong>1</strong>, analizatori <strong>1</strong>, arhitekte <strong>1</strong>.</p>
+<p class="muted">Conductor menja broj agenata po formulama iz arhitekture, najviše jednom u minuti. Svaka promena i njen razlog:</p>
+<div class="table-scroll"><table class="agents"><thead><tr><th class="num">Posle</th><th class="num">Analizatori</th><th class="num">Builderi</th><th class="num">Testeri</th><th>Razlog</th></tr></thead><tbody><tr><td class="num">0 s</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td>2986 tokens → 1 analyzer(s)</td></tr><tr><td class="num">1 s</td><td class="num">1</td><td class="num">0 → <strong>1</strong></td><td class="num">0 → <strong>1</strong></td><td>1 ready + 0 busy → 1 builder(s) (max 4), 1 tester(s) (max 2)</td></tr></tbody></table></div>
+<h2>Trošak</h2><p class="muted">Nema zapisa o trošku (prolaz bez modela, npr. <code>--mock</code>, ne troši ništa).</p>
+<h2>Runde i modeli</h2>
+<p class="muted">✗ znači da je Gatekeeper odbio nacrt te runde (<code>gate.failed</code>), pa je builder dobio sledeću.</p>
+<div class="table-scroll"><table class="rounds"><thead><tr><th>Jedinica</th><th>Runda: model</th><th class="num">Odbijeno</th></tr></thead><tbody><tr><td><code>app-entry</code></td><td><span class="pass">1: claude-haiku-5-5 ✓</span></td><td class="num">0</td></tr><tr><td><code>todo-list</code></td><td><span class="fail">1: claude-haiku-5-5 ✗</span> · <span class="pass">2: claude-haiku-5-5 ✓</span></td><td class="num">1</td></tr></tbody></table></div>
+
+</main>
+</body>
+</html>

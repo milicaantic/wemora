@@ -1,0 +1,30 @@
+{
+  "unitId": "app-entry",
+  "status": "unproven",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "app-entry",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "app-entry",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "app-entry",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    }
+  ],
+  "scenarios": [],
+  "coverage": null
+}

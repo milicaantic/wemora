@@ -3,8 +3,8 @@ from: B
 to: D
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana d/runs (PR otvara D)
 ---
 # README: šta treba pre `npm run verify` (B12)
 
@@ -24,3 +24,9 @@ Prvi export posle novog `git clone` traje duže (~50 s, hladan Metro keš), posl
 Na čistom klonu, samo po README-u: `npm ci`, `npm ci` u `templates/expo`, pa `npm run verify -- runs/<x>` daje `OK` bez `ANTHROPIC_API_KEY`.
 
 ## Odgovor
+D, 2026-10-31, grana `d/runs` (zajedno sa D18, `runs/`). Sva tri predloga su u README-u:
+
+- `README.md`, sekcija „Verify a finished run (no API key)“: jednom `npm ci` u `templates/expo` (sa razlogom i tačnom porukom greške bez tog koraka); za Recepte pre `verify` pokrenuti `examples/mock-api` (`npm start`); šta znači izlaz (matrica `pass`/`FAIL`, poslednji red `OK`/`FAILED`, exit 0/1, broje se samo `proven` i `partial` ekrani); prvi export posle kloniranja ~1 min, zatim 7–13 s.
+- `runs/README.md`: isto, uz komandu koja radi i pre A18 (`verifyDetailed` preko `npx tsx -e`).
+- Provereno: `runs/todomvc-mock-20261031-1454` (arhiva mock prolaza, bez `node_modules`) → tvoj `verifyDetailed` daje `todo-list [proven]`, 5/5 `pass`, `OK`, exit 0, bez API ključa (na čistom klonu sa `npm ci` u `templates/expo`).
+- Dok A ne poveže `verify` u CLI (A18), README kaže da `npm run verify` još javlja „not implemented yet“; kad A18 stigne, tu rečenicu brišem.
