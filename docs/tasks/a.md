@@ -69,6 +69,7 @@ export type Step =                                                              
   | { goto: string }
   | { tap: TapTarget }
   | { fill: { label: string; value: string } }
+  | { submit: { label: string; value: string } }                                // dodao B (D-017, PR #56): fill pa Enter
   | { expectVisible: { text: string } }
   | { expectNotVisible: { text: string } }
 export type Scenario = {                                                        // + schema
@@ -565,6 +566,13 @@ Moja stavka: `npx vitest run src/core src/agents/_shared src/orchestration` je z
   2. bez `tests.ready` 10 min → jedinicu dobija drugi tester (`testerId` se menja) i `testAttempts === 1`; posle još 10 min `testAttempts === 2`, a Gatekeeper je obavešten na način dogovoren u P9;
   3. kad `draft.submitted` stigne pre isteka, `cancel` se ne poziva.
 - **Zavisnosti i mock:** odgovori na P9 i P10; C (Gatekeeper promoviše `unproven`). Dok čekam, koristim lažni Gatekeeper iz `mocks/fakeAgents.ts`.
+
+### Korak `submit` u DSL-u ✅ 2026-10-31 — **uradio B** (uz A-ovu dozvolu, grana `contracts/submit`, PR #56)
+Zapis je ovde da A ima kontekst; ceo opis je u `docs/decisions.md` (D-017) i `docs/status/b.md`.
+- **Ugovor (`src/contracts/`, A-ov folder):** `StepSchema` u `scenario.ts` ima nov korak `{ submit: { label, value } }` (upis u polje pa Enter; na telefonu `TextInput` sa `onSubmitEditing`). Test u `contracts.test.ts`: `submit` sa labelom i vrednošću prolazi, sa dodatnim ključem pada.
+- **B-ov deo (stavke 1–6 iz A-ove poruke):** `scenarios/compile.ts` (akcija `submit`; meta kao `fill`, pa ga pokrivenost, `notPortable` i `reveal` vide kao korišćenje polja; nepoznat korak sada obara `tsc` umesto da se tiho izvrši kao `expectNotVisible`), `run.ts` (`fill` pa `press("Enter")`), `validate.ts` (`submit` je radnja za pravilo 3), `prompts/tester.md`, `mocks/todomvc/tester.json` (5 scenarija za svih 5 obaveza `todo-list`). Stavka 6 provereno: Enter u RN `TextInput` na Expo webu okida `onSubmitEditing`. Svih 5 TodoMVC scenarija prolazi `validateScenario` nad pravim TodoMVC-om.
+- **Ostaje za A:** D-017 iz „predlog“ u „prihvaćeno“; dopuniti tabelu koraka u `architecture.md` §11 korakom `submit`.
+- **Ostaje za C (pre G2):** mock nacrt za `todo-list` u `src/agents/mocks/todomvc/builder.json` mora da prođe nove testove (linkovi „Active“, „Completed“, „All“, polje `New Todo Input` sa `onSubmitEditing`, checkbox „❯ Toggle All Input“, dugme „Clear completed“), a kapija 4 `labels` da proverava i `submit.label`. Dok se to ne uradi, `migrate:mock` nad TodoMVC-om daje `todo-list: failed` (kapija 4 ne nalazi linkove).
 
 ### Kapija G2 (proverava A)
 Lista je u tim-plan.md §6. A je pušta na čistom `main`-u, redom: `npm run build && npm test`, `npm run migrate:mock -- examples/todomvc`, pa pravi prolaz `npm run migrate -- examples/todomvc --budget 1`. Zatim u `run.jsonl` proverava preklapanje tester/builder, `gate.failed` posle kog builder popravlja nacrt, odsustvo uspešnih upisa van `staging/` i trošak ispod limita. Na kraju commit-uje `runs/todomvc-<vreme>/`.
