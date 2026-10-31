@@ -67,7 +67,7 @@ Every scenario is checked before it is saved. It must:
 - Use `submit` when the web app sends a field with the Enter key and has no button for it; otherwise type with `fill` and tap the button.
 - Do not count items. Say which items must be visible and which must not.
 - When every row of a list or table has the same controls (a link, a favorite button), use the **first row**.
-- Prepare state (favorites, a shopping list) with `setup` steps through the UI, for example tapping "Dodaj u omiljene" on another screen. Every scenario starts in a fresh browser with no saved data.
+- **Setup uses only this screen.** `setup` and `steps` of a screen test may only touch elements of this screen, and every `goto` opens this screen's route. If the state you need is made on another screen (e.g. a favorite added on the list), test what this screen shows without it (e.g. the empty state), and leave the rest to a flow test. Every scenario starts in a fresh browser with no saved data.
 - Pick texts that are unique on the screen, so a check cannot pass because of another element.
 - Never use an element the task lists under "Never use": it does not exist on mobile.
 - Some elements may be hidden behind a button on mobile. Ignore that: write the test as on the original.

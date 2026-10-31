@@ -75,7 +75,7 @@ const CHANGES_NOTHING_HINT =
   "(e.g. the search field label on a list): the name you tapped is usually visible on both screens. " +
   "In a screen test never check a text of the other screen: it may not be in the app yet, so both screens would be blocked. " +
   "After a button that changes state, check what it changes (a new button name, a message, a count). " +
-  "If the action only prepares state for a later check, put it in setup."
+  "If the action only prepares state for a later check, put it in setup (on this screen only)."
 
 type Probe = { action: number; checks: number[]; variants: Scenario[] }
 

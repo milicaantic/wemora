@@ -132,6 +132,10 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - B-ov `coverage.test.ts`: jedan broj (obaveza bez testa 5 → 4), jer ručni plan sada nema `sort-by-time`; poseban commit.
 - Nije provereno: novi pravi prolaz nad Receptima (A, ključ).
 
+## Gotovo, čeka spajanje (grana `d/cross-screen-state`)
+- Inbox A → D (19:10): obaveza ekrana ne sme da traži stanje napravljeno na drugom ekranu (pravilo 6 u promptu arhitekte i analizatora; 1–5 obaveza po ekranu). Ručni i mock plan: `favorites` samo `empty-state`, nov tok `manage-favorites-flow`. README: `.env` u `app/` pre `npx expo start --web`. B-ov `shows-favorites.json` je test toka, B-ov `validate.test.ts` prihvata tokove (poseban commit).
+- Spojeno pre toga: `d/navigation-flows` (PR #102), `d/testable-obligations`.
+
 ## U radu
 - ništa
 

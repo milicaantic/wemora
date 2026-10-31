@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { PlanSchema, type Plan, type Scaffold } from "../contracts"
@@ -68,6 +68,11 @@ export const scaffold: Scaffold = async (input, outDir) => {
   // Paketi se ne kopiraju (stotine MB): link na šablon, a i keš ostaje topao (D-006).
   const modules = join(TEMPLATE_DIR, "node_modules")
   if (existsSync(modules)) symlinkSync(modules, join(appDir, "node_modules"), "junction")
+
+  // .env iz .env.example: Expo ga čita i za ručni `expo start` (adresa mock-api-ja); export je i bez njega
+  // dobija iz serveApp/exportEnv. Root .gitignore ignoriše .env, pa ne ide u git.
+  const example = join(appDir, ".env.example")
+  if (existsSync(example)) writeFileSync(join(appDir, ".env"), readFileSync(example))
 
   // Početna ruta šablona se uklanja; rute dolaze samo iz plana.
   rmSync(join(appDir, "src/app/index.tsx"), { force: true })

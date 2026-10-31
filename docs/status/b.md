@@ -135,6 +135,12 @@ Poslednja izmena: 2026-10-31
   - klik na recept pa „Nazad na recepte“ → validan.
 - Kriterijum A-ove poruke (tester ne odustaje od `navigate-to-detail`) proverava se u sledećem pravom prolazu.
 
+## Na `staging`-u: A-ova poruka `2026-10-31-a-to-b-setup-same-screen.md` (G3)
+- Test ekrana otvara samo svoju rutu, i u `setup` i u `steps`:
+  - pravilo u promptu testera;
+  - provera u `scenarioProblem` (`matchesRoute`); testovi toka su izuzeti.
+- Ranije, na `main`-u (PR #101): test navigacije proverava da je ovaj ekran nestao, a nikad tekst drugog ekrana.
+
 ## U radu
 - ništa
 

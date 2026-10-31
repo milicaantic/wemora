@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { initLog, log } from "./log"
+import { initLog, log, onLog } from "./log"
 import { handleUnhandledRejection, installSafety } from "./safety"
 
 const dirs: string[] = []
@@ -57,6 +57,24 @@ describe("log", () => {
 
     expect(() => fresh.log({ agent: "x", event: "early" })).not.toThrow()
     expect(String(stderr.mock.calls[0][0])).toContain("[log before initLog]")
+  })
+})
+
+describe("onLog", () => {
+  it("passes every entry to a listener until it stops, and a throwing listener does not stop logging", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "onlog-"))
+    initLog(dir)
+    const seen: string[] = []
+    const stop = onLog((entry) => seen.push(entry.event))
+    const stopBroken = onLog(() => {
+      throw new Error("listener bug")
+    })
+    log({ agent: "conductor", event: "plan.ready" })
+    stop()
+    stopBroken()
+    log({ agent: "conductor", event: "run.finished" })
+    expect(seen).toEqual(["plan.ready"])
+    rmSync(dir, { recursive: true, force: true })
   })
 })
 

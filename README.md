@@ -111,6 +111,8 @@ The raw events are in `output/<run-id>/run.jsonl`, one JSON line each with a tim
 
 Everything is written to `output/<run-id>/` ([what is in it](#what-a-run-writes)). To open the mobile app itself, run this in `output/<run-id>/app` (do not run `npm install` there, it shares the template's packages):
 
+If the app reads data from an API (Recepti does), first copy `.env.example` to `.env` in that `app/` folder, so the app knows the API address; keep `examples/mock-api` running.
+
 ```bash
 npx expo start --web
 ```

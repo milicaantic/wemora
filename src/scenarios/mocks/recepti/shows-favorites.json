@@ -1,7 +1,8 @@
 {
   "id": "favorites-shows-favorites",
-  "unitId": "favorites",
-  "obligation": "shows-favorites",
+  "unitId": "recipe-list",
+  "flowId": "manage-favorites-flow",
+  "obligation": "manage-favorites-flow",
   "setup": [
     { "goto": "/" },
     { "tap": { "role": "button", "name": "Dodaj u omiljene: Sarma" } }

@@ -180,6 +180,13 @@ describe("Recepti manual scenarios", () => {
 
   it.each(files)("%s is a valid scenario for a unit and obligation of the plan", (file) => {
     const s = ScenarioSchema.parse(JSON.parse(readFileSync(`${mocks("recepti")}/${file}`, "utf8")))
+    if (s.flowId) {
+      // A flow test (D-022): unitId is the first unit of the flow and obligation is the flow's id.
+      const flow = plan.flows.find((f) => f.id === s.flowId)
+      expect(flow?.unitIds[0]).toBe(s.unitId)
+      expect(s.obligation).toBe(s.flowId)
+      return
+    }
     const unit = plan.units.find((u) => u.id === s.unitId)
     expect(unit?.obligations.map((o) => o.id)).toContain(s.obligation)
   })

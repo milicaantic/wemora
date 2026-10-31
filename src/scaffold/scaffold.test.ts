@@ -69,6 +69,8 @@ describe("scaffold nad planom za Recepte", () => {
     const app = join(outDir, "app")
     expect(existsSync(join(app, "package.json"))).toBe(true)
     expect(existsSync(join(app, "app.json"))).toBe(true)
+    // app/.env sa adresom mock-api-ja, za ručni `expo start` (A → C)
+    expect(readFileSync(join(app, ".env"), "utf8")).toContain("EXPO_PUBLIC_API_URL=http://localhost:3000")
     expect(existsSync(join(app, "dist"))).toBe(false)
     expect(existsSync(join(app, ".expo"))).toBe(false)
     // node_modules je link na šablon (ako je šablon instaliran), nikad kopija

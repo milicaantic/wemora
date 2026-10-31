@@ -7,6 +7,13 @@ import path from "node:path"
 export type LogEntry = { t: string; agent: string; event: string; costUsd?: number; data?: unknown }
 
 let logFile: string | null = null
+const listeners = new Set<(entry: LogEntry) => void>()
+
+/** Calls `listener` after every logged entry (e.g. the CLI's progress lines); returns a function that stops it. */
+export function onLog(listener: (entry: LogEntry) => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
 
 export function initLog(runDir: string): void {
   mkdirSync(runDir, { recursive: true })
@@ -15,7 +22,15 @@ export function initLog(runDir: string): void {
 
 // Never throws: logging is called from error paths and Mozaik handlers, where a throw would crash the run.
 export function log(entry: Omit<LogEntry, "t">): void {
-  const line = serialize({ t: new Date().toISOString(), ...entry })
+  const full: LogEntry = { t: new Date().toISOString(), ...entry }
+  for (const listener of listeners) {
+    try {
+      listener(full)
+    } catch {
+      // A listener must never break logging.
+    }
+  }
+  const line = serialize(full)
   if (logFile === null) {
     process.stderr.write(`[log before initLog] ${line}\n`)
     return
