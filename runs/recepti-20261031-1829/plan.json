@@ -1,0 +1,357 @@
+{
+  "units": [
+    {
+      "id": "data",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/api/client.ts",
+        "src/api/useAsync.ts",
+        "src/components/FavoriteButton.tsx",
+        "src/format.ts",
+        "src/store/favorites.ts",
+        "src/store/localStore.ts",
+        "src/store/shoppingList.ts"
+      ],
+      "writes": [
+        "src/shared/data/"
+      ],
+      "dependsOn": [
+        "theme"
+      ],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 1680
+    },
+    {
+      "id": "layout",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/App.tsx",
+        "src/components/Layout.tsx",
+        "src/components/Sidebar.tsx",
+        "src/components/Status.tsx",
+        "src/main.tsx"
+      ],
+      "writes": [
+        "src/shared/layout/",
+        "src/app/_layout.tsx"
+      ],
+      "dependsOn": [
+        "data",
+        "theme"
+      ],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 654
+    },
+    {
+      "id": "theme",
+      "kind": "shared",
+      "wave": 0,
+      "sources": [
+        "src/components/Layout.css"
+      ],
+      "writes": [
+        "src/shared/theme/"
+      ],
+      "dependsOn": [],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 305
+    },
+    {
+      "id": "categories",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/kategorije",
+      "sources": [
+        "src/pages/CategoriesPage.css",
+        "src/pages/CategoriesPage.tsx"
+      ],
+      "writes": [
+        "src/screens/categories/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "empty-category",
+          "description": "Tapping a category that has no recipes shows 'U ovoj kategoriji nema recepata' in the right panel."
+        },
+        {
+          "id": "no-category-selected",
+          "description": "When the screen first opens, the right panel shows 'Izaberite kategoriju'."
+        },
+        {
+          "id": "select-category",
+          "description": "Tapping a category button (e.g. 'Deserti') shows that category's name and its recipes on the right panel."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "region",
+            "name": "side-by-side columns"
+          },
+          "reason": "Category list and recipe detail are side-by-side columns on the web; on mobile they are shown as a single-column flow (tap category → see recipes below or on a new panel)."
+        }
+      ],
+      "size": 812
+    },
+    {
+      "id": "favorites",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/omiljeni",
+      "sources": [
+        "src/pages/FavoritesPage.css",
+        "src/pages/FavoritesPage.tsx"
+      ],
+      "writes": [
+        "src/screens/favorites/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "empty-state",
+          "description": "When no recipes are marked as favorite, the screen shows 'Nemate omiljenih recepata'."
+        },
+        {
+          "id": "remove-favorite",
+          "description": "With at least one favorite recipe showing as a card, tapping 'Ukloni iz omiljenih' on that card removes it from the screen and it is no longer visible."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "grid",
+            "name": "three-column card grid"
+          },
+          "reason": "Three-column card grid is too wide for a phone; replaced with a single-column card list. Same content is shown."
+        }
+      ],
+      "size": 453
+    },
+    {
+      "id": "recipe-detail",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/recepti/:id",
+      "sources": [
+        "src/pages/RecipeDetailPage.css",
+        "src/pages/RecipeDetailPage.tsx"
+      ],
+      "writes": [
+        "src/screens/recipe-detail/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "add-to-shopping",
+          "description": "Tapping 'Dodaj sastojke u listu za kupovinu' shows the confirmation text 'Sastojci su dodati u listu za kupovinu'."
+        },
+        {
+          "id": "back-to-list",
+          "description": "Tapping 'Nazad na recepte' navigates back to the recipe list screen (the '/' route)."
+        },
+        {
+          "id": "decrease-servings-disabled",
+          "description": "When 'Porcije' is at 1, the 'Smanji porcije' button is disabled (not tappable / visually inactive)."
+        },
+        {
+          "id": "increase-servings",
+          "description": "Tapping 'Povećaj porcije' (or the '+' button for 'Porcije') increases the serving count and updates the ingredient amounts shown on screen."
+        },
+        {
+          "id": "shows-details",
+          "description": "Opening any recipe detail page shows the recipe name as a heading together with its category, time, difficulty, rating and calories."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "region",
+            "name": "two-column ingredients and steps layout"
+          },
+          "reason": "Ingredients and steps are side by side on the web; on mobile they are shown in a single-column scrollable layout."
+        }
+      ],
+      "size": 1043
+    },
+    {
+      "id": "recipe-list",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/",
+      "sources": [
+        "src/pages/RecipeListPage.css",
+        "src/pages/RecipeListPage.tsx"
+      ],
+      "writes": [
+        "src/screens/recipe-list/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "filter-by-category",
+          "description": "Tapping the 'Deserti' button under 'Kategorija' shows only recipes in that category and hides recipes from other categories."
+        },
+        {
+          "id": "no-results",
+          "description": "Typing a string that matches no recipe name in 'Pretraga' (e.g. 'zzznema') shows 'Nema recepata za zadatu pretragu'."
+        },
+        {
+          "id": "search-by-name",
+          "description": "Typing 'Sarma' in the 'Pretraga' field shows only recipes with 'Sarma' in the name and hides other recipes."
+        },
+        {
+          "id": "toggle-favorite",
+          "description": "Tapping the favorite button (star icon) on a recipe row marks it as favorite; tapping it again removes the favorite state. Because the button has no unique text name per row, use the 'Omiljeni' nav link to verify: after tapping the star on a recipe, navigating to '/omiljeni' shows that recipe. This is covered by the recipe-list-to-favorites flow."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "tooltip",
+            "name": "Sastojci"
+          },
+          "reason": "Ingredients tooltip appears only on mouse hover; touch screens have no hover. Full ingredients are shown on the detail screen."
+        },
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "button",
+            "name": "Sortiraj po vremenu"
+          },
+          "reason": "Sorting only changes the order of rows; a test cannot verify order."
+        },
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "table",
+            "name": "recipes table"
+          },
+          "reason": "8-column table is too wide for a phone screen; replaced with a card or list layout."
+        }
+      ],
+      "size": 1390
+    },
+    {
+      "id": "shopping-list",
+      "kind": "screen",
+      "wave": 1,
+      "route": "/kupovina",
+      "sources": [
+        "src/pages/ShoppingListPage.css",
+        "src/pages/ShoppingListPage.tsx"
+      ],
+      "writes": [
+        "src/screens/shopping-list/"
+      ],
+      "dependsOn": [
+        "data",
+        "layout",
+        "theme"
+      ],
+      "obligations": [
+        {
+          "id": "add-item",
+          "description": "Filling 'Namirnica' with 'Mleko' and tapping 'Dodaj' adds 'Mleko' to the list and it becomes visible on screen."
+        },
+        {
+          "id": "add-item-enter",
+          "description": "Filling 'Namirnica' with 'Hleb' and pressing Enter (submit) also adds 'Hleb' to the list and it becomes visible on screen."
+        },
+        {
+          "id": "clear-bought",
+          "description": "Add 'Mleko', check 'Mleko' as bought (tapping 'Mleko' row or its checkbox), then tap 'Obriši kupljene': 'Mleko' is no longer shown on the list."
+        },
+        {
+          "id": "empty-state",
+          "description": "With no items in the list the screen shows 'Lista za kupovinu je prazna'."
+        }
+      ],
+      "intentionalDifferences": [
+        {
+          "kind": "notPortable",
+          "element": {
+            "role": "table",
+            "name": "shopping list table"
+          },
+          "reason": "Two-column table with checkboxes is replaced with a list layout on mobile; same data is shown."
+        }
+      ],
+      "size": 758
+    }
+  ],
+  "flows": [
+    {
+      "id": "add-ingredients-and-shop",
+      "description": "Open a recipe detail ('/recepti/:id'), tap 'Dodaj sastojke u listu za kupovinu', then navigate to '/kupovina': the added ingredients appear in the shopping list.",
+      "unitIds": [
+        "recipe-detail",
+        "shopping-list"
+      ]
+    },
+    {
+      "id": "category-to-recipe-detail",
+      "description": "On '/kategorije', tap a category then tap a recipe link: the recipe detail page ('/recepti/:id') opens and shows that recipe's name and details.",
+      "unitIds": [
+        "categories",
+        "recipe-detail"
+      ]
+    },
+    {
+      "id": "favorites-to-detail",
+      "description": "On '/omiljeni', tap a favorite recipe's name: the recipe detail page ('/recepti/:id') opens and shows that recipe's name and details.",
+      "unitIds": [
+        "favorites",
+        "recipe-detail"
+      ]
+    },
+    {
+      "id": "mark-favorite-and-view",
+      "description": "On the recipe list ('/'), tap the favorite star button on a recipe row; then navigate to '/omiljeni': the recipe appears as a card in the favorites list.",
+      "unitIds": [
+        "recipe-list",
+        "favorites"
+      ]
+    },
+    {
+      "id": "recipe-list-to-detail",
+      "description": "On '/', tap a recipe name link: the recipe detail page ('/recepti/:id') opens and shows that recipe's name and details.",
+      "unitIds": [
+        "recipe-list",
+        "recipe-detail"
+      ]
+    }
+  ],
+  "routeMap": {
+    "/": "/",
+    "/kategorije": "/kategorije",
+    "/kupovina": "/kupovina",
+    "/omiljeni": "/omiljeni",
+    "/recepti/:id": "/recepti/[id]"
+  }
+}

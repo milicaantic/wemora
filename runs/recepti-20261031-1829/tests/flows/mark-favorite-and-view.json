@@ -1,0 +1,35 @@
+[
+  {
+    "id": "mark-favorite-and-view",
+    "unitId": "recipe-list",
+    "obligation": "mark-favorite-and-view",
+    "flowId": "mark-favorite-and-view",
+    "steps": [
+      {
+        "goto": "/"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj u omiljene: Pileća supa"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Omiljeni"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Omiljeni recepti"
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "categories-no-selection-default",
+    "unitId": "categories",
+    "obligation": "no-category-selected",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "expectVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-select-deserti",
+    "unitId": "categories",
+    "obligation": "select-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Deserti"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Deserti"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-select-supe",
+    "unitId": "categories",
+    "obligation": "select-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Supe"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Supe"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  },
+  {
+    "id": "categories-test-salate-empty",
+    "unitId": "categories",
+    "obligation": "empty-category",
+    "steps": [
+      {
+        "goto": "/kategorije"
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Salate"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Izaberite kategoriju"
+        }
+      }
+    ]
+  }
+]

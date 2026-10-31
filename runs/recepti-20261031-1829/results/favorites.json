@@ -1,0 +1,66 @@
+{
+  "unitId": "favorites",
+  "status": "partial",
+  "rounds": 1,
+  "gates": [
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "parse",
+      "ok": true,
+      "message": "1 fajl(ova) sintaksno ispravno."
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "forbiddenApis",
+      "ok": true,
+      "message": "Nema web-only API-ja."
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "tsc",
+      "ok": true,
+      "message": "Nema grešaka tipova."
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "labels",
+      "ok": true,
+      "message": "Pronađeno 1 labela/tekstova; preskočeno 0 (dolaze iz podataka, nema ih u originalu)."
+    },
+    {
+      "unitId": "favorites",
+      "round": 1,
+      "gate": "scenarios",
+      "ok": true,
+      "message": "Svi testovi jedinice prolaze (1)."
+    }
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "favorites-empty-state",
+      "unitId": "favorites",
+      "ok": true,
+      "durationMs": 527
+    }
+  ],
+  "coverage": {
+    "unitId": "favorites",
+    "obligations": {
+      "covered": [
+        "empty-state"
+      ],
+      "missing": [
+        "remove-favorite"
+      ]
+    },
+    "elements": {
+      "covered": [],
+      "missing": [],
+      "notPortable": []
+    }
+  }
+}

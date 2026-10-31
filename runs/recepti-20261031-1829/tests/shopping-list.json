@@ -1,0 +1,115 @@
+[
+  {
+    "id": "shopping-list-empty-state",
+    "unitId": "shopping-list",
+    "obligation": "empty-state",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "expectVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-add-item",
+    "unitId": "shopping-list",
+    "obligation": "add-item",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Mleko"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-add-item-enter",
+    "unitId": "shopping-list",
+    "obligation": "add-item-enter",
+    "steps": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "submit": {
+          "label": "Namirnica",
+          "value": "Hleb"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Hleb"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shopping-list-clear-scenario",
+    "unitId": "shopping-list",
+    "obligation": "clear-bought",
+    "setup": [
+      {
+        "goto": "/kupovina"
+      },
+      {
+        "fill": {
+          "label": "Namirnica",
+          "value": "Mleko"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj"
+        }
+      },
+      {
+        "tap": {
+          "text": "Mleko"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "tap": {
+          "role": "button",
+          "name": "Obriši kupljene"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Mleko"
+        }
+      }
+    ]
+  }
+]

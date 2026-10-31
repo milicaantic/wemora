@@ -1,0 +1,60 @@
+[
+  {
+    "id": "add-ingredients-and-shop",
+    "unitId": "recipe-detail",
+    "obligation": "add-ingredients-and-shop",
+    "flowId": "add-ingredients-and-shop",
+    "steps": [
+      {
+        "goto": "/recepti/1"
+      },
+      {
+        "expectVisible": {
+          "text": "Pileća supa"
+        }
+      },
+      {
+        "tap": {
+          "role": "button",
+          "name": "Dodaj sastojke u listu za kupovinu"
+        }
+      },
+      {
+        "tap": {
+          "role": "link",
+          "name": "Lista za kupovinu"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Namirnica"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Piletina: 500 g"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Šargarepa: 2 kom"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Celer: 1 kom"
+        }
+      },
+      {
+        "expectVisible": {
+          "text": "Rezanci: 100 g"
+        }
+      },
+      {
+        "expectNotVisible": {
+          "text": "Lista za kupovinu je prazna"
+        }
+      }
+    ]
+  }
+]
