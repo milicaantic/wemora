@@ -44,6 +44,8 @@ export const DEFAULTS = {
   maxSchemaRetries: 2,
   maxPlanRetries: 2,
   rescaleIntervalMs: 60_000,
+  // After a 429 the builder limit drops by 1 for this long; another 429 in that time drops it again (A16).
+  rateLimitCooldownMs: 60_000,
   builderRoundTimeoutMs: 10 * 60_000,
   testerUnitTimeoutMs: 8 * 60_000,
   testsWaitTimeoutMs: 10 * 60_000,

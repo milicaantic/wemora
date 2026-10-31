@@ -49,7 +49,10 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/cli-verify`)
+## Gotovo, čeka review i spajanje (grana `a/load-control`)
+- A16 (D-024): 429 spušta granicu buildera za 1 (najviše jednom u 60 s, najmanje 1, mirno vreme vraća), `budget.exceeded` odmah obara jedinice koje se grade i prekida agente umesto čekanja timeouta, bez nove runde; `tests.missing` za predate ekrane bez testova; budžet pre plana ne pokreće arhitektu; ishod `budget.exceeded`. `cli.ts` više ne pada na izlazu na Windowsu (`exitCode` + `unref` tajmer). Lažni agenti posle `cancel` ne šalju ništa. 4 nova testa, 545/545; `migrate:mock` OK; ručno `--budget 0.01` ×4: `budget.exceeded (the budget ran out before the plan)` za ~5 s, ~$0.01, exit 1, bez pada
+
+## Gotovo (spojeno u main), `a/cli-verify` (PR #78)
 - A18: `wemora verify <run-dir>` i `wemora sabotage <run-dir> <unitId>` u `src/cli.ts`, preko B-ovih `verifyDetailed`, `formatVerifyReport` i `sabotageDetailed` (dinamički uvoz, bez Mozaika). Greške: poruka i exit 1. Tekst upotrebe kaže da se `sabotage` pušta nad kopijom. 3 nova testa u `cli.test.ts` (B-ov `verify` je tamo mock), 524/524. Ručno nad kopijom `migrate:mock` prolaza za TodoMVC (`archiveRun` u scratchpad), bez `ANTHROPIC_API_KEY`: `verify` 5/5 OK exit 0 → `sabotage todo-list` („New Todo Input“, label) exit 0 → `verify` 1/5 FAILED exit 1 (`empty-state` prolazi). Kriterijumi iz obe B-ove poruke ispunjeni
 - `wemora archive <run-dir> [--name <name>]` i `npm run archive` (D-ova poruka, D18): poziva D-ov `archiveRun` u `runs/`, podrazumevano ime `<app>-<yyyymmdd>-<hhmm>` iz run-id-ja, bez Mozaika. 4 nova testa, 528/528. Ručno: arhiva mock prolaza u `runs/` pa `verify` nad njom OK 5/5; drugi put isto ime → greška, exit 1
 

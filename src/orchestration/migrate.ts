@@ -56,7 +56,12 @@ export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv
   let conductor: Conductor | null = null
   const budgeted = options.mock
     ? null
-    : new BudgetedRunner({ budgetUsd: options.budget, onBudgetExceeded: () => conductor?.notifyBudgetExceeded(), onUsage: recordUsage })
+    : new BudgetedRunner({
+        budgetUsd: options.budget,
+        onBudgetExceeded: () => conductor?.notifyBudgetExceeded(),
+        onRateLimited: () => conductor?.notifyRateLimited(),
+        onUsage: recordUsage,
+      })
   const runner = budgeted ?? new MockRunner(loadMockFixtureDir(mockDir))
 
   initializeRuntime({ state: createInitialState(runId, config), inferenceRunnerConfig: { runner } })

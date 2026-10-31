@@ -282,3 +282,16 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   4. `DEFAULTS.budgetUsd` (`--budget`) je $5 umesto $3, zbog cena iz tačke 2 i do 4 runde po jedinici (A15).
 - Zašto: gateway hakatona nudi samo ova dva modela (D-018), a kod i dokumentacija su i dalje navodili modele 5.5 i njihove cene. To je zbunjivalo i tražilo `.env` podešavanje za jedini gateway koji koristimo.
 - Posledice: `src/core/config.ts`, `runner.ts` i njihovi testovi, `.env.example`, `CLAUDE.md`, `.claude/rules/mozaik.md` §3, `architecture.md` §9 i §12, `tasks/a.md`, `tim-plan.md`, `wemora-plan.md` (i nova procena troška, §6.1). `claude-haiku-5-5` je ostao samo kao tekst u testovima i fixture-ima kod C-a i D-a i u `tasks/b.md` i `c.md` (poruke u inboxu, po jedna za B, C i D).
+
+## D-024: Posle `budget.exceeded` jedinice koje se grade odmah padaju (dopuna P11); 429 spušta granicu buildera
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A)
+- Odluka:
+  1. Na `budget.exceeded`: nema novih zadataka ni nove runde (`roundFailed`). Jedinica sa statusom `building` odmah dobija `failed` sa razlogom „budget exceeded“, a njen builder se prekida (`cancel`). Testeri se prekidaju. Predati nacrti (`submitted`) se i dalje proveravaju, a za ekran bez `tests.ready` Conductor šalje `tests.missing`, da Gatekeeper ne čeka.
+  2. Ako budžet nestane pre plana, novi analizatori i arhitekta se ne pokreću. Prolaz se završava kad se zauzeti vrate.
+  3. Ishod prolaza u kom je budžet potrošen je `budget.exceeded`, i kad svaka jedinica ima konačan status, i kad arhitekta zbog toga ne napravi plan.
+  4. Na 429 ili 529 (`BudgetedRunner.onRateLimited` → `Conductor.notifyRateLimited()`) granica buildera pada za 1, najmanje do 1, najviše jednom u `DEFAULTS.rateLimitCooldownMs` (60 s). 429 u tom vremenu znači još jedan korak dole kad vreme istekne, a mirno vreme vraća jednog buildera, do `--max-builders`. Granica važi u `dispatch()` odmah, a `rescale()` (A14) gasi slobodne buildere. Log: `rate.limited` i `rate.recovered { maxBuilders }`.
+  5. `src/cli.ts` ne zove `process.exit` odmah, nego postavi `process.exitCode`, a `process.exit` ide tek posle 500 ms, preko `unref` tajmera, ako nešto drži proces živim.
+- Zašto: (1) P11 je predlagao da se aktivne petlje „završe“, ali runner odbija svaki sledeći poziv, pa builder ne može da preda nacrt. Conductor bi čekao timeout od 10 min po rundi i zatim pokretao nove runde, do 40 min bez koristi. (2) i (3): pravi prolaz sa `--budget 0.01` je pokrenuo arhitektu posle `budget.exceeded` i završio sa `plan.failed`. (5): kratak prolaz je na Windowsu padao na izlazu (`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`, exit 127), jer je `process.exit` stizao dok se keep-alive TLS veza ka API-ju još zatvarala.
+- Posledice: `src/orchestration/conductor.ts`, `migrate.ts` (`onRateLimited`), `mocks/fakeAgents.ts` (lažni agent posle `cancel` ne šalje ništa, kao pravi), `src/core/config.ts` (`rateLimitCooldownMs`), `src/cli.ts`, `architecture.md` §9.

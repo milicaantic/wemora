@@ -97,6 +97,10 @@ export class Conductor {
   private planHandled = false
   private budgetExceeded = false
   private finished = false
+  // A16: the builder limit while the API answers 429 (null = config.maxBuilders), and whether one came in this window.
+  private rateLimit: number | null = null
+  private rateLimitedAgain = false
+  private readonly testsArrived = new Set<string>()
 
   constructor(
     private readonly deps: ConductorDeps,
@@ -127,6 +131,11 @@ export class Conductor {
   notifyBudgetExceeded(): void {
     if (this.finished) return
     emit("budget.exceeded", {}, this.participant.getId())
+  }
+
+  /** Called by the runner's onRateLimited on every 429 or 529 (A16). */
+  notifyRateLimited(): void {
+    this.enqueue(() => this.onRateLimited())
   }
 
   private enqueue(work: () => Promise<void> | void): void {
@@ -162,6 +171,7 @@ export class Conductor {
         if (worker) this.release(worker)
         return this.onPlanReady()
       case EVENTS.planFailed:
+        if (this.budgetExceeded) return this.finish("budget.exceeded", "the budget ran out before the plan")
         return this.finish("plan.failed", "the architect could not produce a valid plan")
       case EVENTS.testsReady:
         return this.onTestsReady(worker, event.payload as EventPayloads["tests.ready"])
@@ -177,15 +187,19 @@ export class Conductor {
       case EVENTS.unitPromoted:
         return this.onPromoted(event.payload as EventPayloads["unit.promoted"])
       case EVENTS.budgetExceeded:
+        if (this.budgetExceeded) return
         this.budgetExceeded = true
         log({ agent: "conductor", event: "dispatch.stopped", data: { reason: "budget.exceeded" } })
+        if (!board().plan) return this.endBeforePlan()
+        this.stopForBudget()
         return this.checkFinished()
     }
   }
 
-  private onAnalysisDone(worker: AnyWorker | undefined, { partId }: EventPayloads["analysis.done"]): void {
+  private onAnalysisDone(worker: AnyWorker | undefined, { partId }: EventPayloads["analysis.done"]): Promise<void> | void {
     this.analyzedParts.add(partId)
     if (worker) this.release(worker)
+    if (this.budgetExceeded) return this.endBeforePlan()
     this.assignParts()
     const allDone = this.partIds.every((id) => this.analyzedParts.has(id))
     if (allDone && this.architects.length === 0) {
@@ -224,6 +238,7 @@ export class Conductor {
   // Tests may also arrive late from a tester that already timed out; they still count, but only the tester
   // that currently holds the screen is freed.
   private onTestsReady(worker: AnyWorker | undefined, { unitId }: EventPayloads["tests.ready"]): void {
+    this.testsArrived.add(unitId)
     this.timers.clear(`tests:${unitId}`)
     const tester = this.testers.find((t) => t.task === unitId && (!worker || t === worker))
     if (tester) this.release(tester)
@@ -241,8 +256,9 @@ export class Conductor {
   private async roundFailed(unitId: string, round: number, lastError: string): Promise<void> {
     this.timers.clear(`build:${unitId}`)
     const builder = this.builders.find((b) => b.task === unitId)
-    if (round >= this.maxRounds || !builder) {
-      this.failUnit(unitId, builder ? `failed after ${round} round(s)` : "no builder holds this unit")
+    if (this.budgetExceeded || round >= this.maxRounds || !builder) {
+      const reason = this.budgetExceeded ? "budget exceeded" : builder ? `failed after ${round} round(s)` : "no builder holds this unit"
+      this.failUnit(unitId, reason)
       this.dispatch()
       return this.checkFinished()
     }
@@ -307,9 +323,13 @@ export class Conductor {
       this.setUnit(unit.id, { testerId: tester.handle.id })
       this.assign(tester, { unitId: unit.id }, unit.id)
     }
+    // While the API answers 429, fewer builders work at once, even before rescale() lets idle ones go.
+    let working = this.builders.filter((b) => b.task !== null).length
     for (const builder of this.builders.filter((b) => b.task === null)) {
+      if (working >= this.builderLimit()) break
       const unit = nextForBuilder(this.view())
       if (!unit) break
+      working++
       const model = modelForRound(1)
       this.setUnit(unit.id, { status: "building", round: 1, model, builderId: builder.handle.id })
       this.assign(builder, { unitId: unit.id, round: 1, model, lastError: null }, unit.id)
@@ -324,7 +344,7 @@ export class Conductor {
       totalTokens: parsed?.totalTokens ?? 0,
       readyUnits: readyUnits(this.view()).length,
       busyBuilders: this.builders.filter((b) => b.task !== null).length,
-      maxBuilders: config.maxBuilders,
+      maxBuilders: this.builderLimit(),
       maxTesters: config.maxTesters,
     })
     const builders = reachable(this.builders, counts.builders)
@@ -364,6 +384,65 @@ export class Conductor {
     log({ agent: "conductor", event: "agent.stopped", data: { id: worker.handle.id, kind: worker.kind } })
   }
 
+  private builderLimit(): number {
+    return this.rateLimit ?? board().config.maxBuilders
+  }
+
+  // A16: one step down per window; a 429 inside the window means one more step down when it ends.
+  private onRateLimited(): void {
+    if (this.finished) return
+    this.rateLimitedAgain = true
+    if (!this.timers.has("rate-limit")) this.lowerBuilderLimit()
+  }
+
+  private lowerBuilderLimit(): void {
+    const before = this.builderLimit()
+    this.rateLimit = Math.max(1, before - 1)
+    this.rateLimitedAgain = false
+    if (this.rateLimit !== before) log({ agent: "conductor", event: "rate.limited", data: { maxBuilders: this.rateLimit } })
+    this.timers.start("rate-limit", DEFAULTS.rateLimitCooldownMs, () => this.enqueue(() => this.onRateLimitWindowEnd()))
+    this.dispatch()
+  }
+
+  // A quiet window gives one builder back, until the limit is config.maxBuilders again.
+  private onRateLimitWindowEnd(): void {
+    if (this.finished || this.rateLimit === null) return
+    if (this.rateLimitedAgain) return this.lowerBuilderLimit()
+    const max = board().config.maxBuilders
+    this.rateLimit = Math.min(max, this.rateLimit + 1)
+    log({ agent: "conductor", event: "rate.recovered", data: { maxBuilders: this.rateLimit } })
+    if (this.rateLimit === max) this.rateLimit = null
+    else this.timers.start("rate-limit", DEFAULTS.rateLimitCooldownMs, () => this.enqueue(() => this.onRateLimitWindowEnd()))
+    this.dispatch()
+  }
+
+  // Without a plan nothing can be built: no new analyzer or architect; the run ends once the busy ones are back.
+  private endBeforePlan(): Promise<void> | void {
+    if ([...this.analyzers, ...this.architects].some((w) => w.task !== null)) return
+    return this.finish("budget.exceeded", "the budget ran out before the plan")
+  }
+
+  // P11 + D-024: every next model call would be refused, so building units fail now instead of waiting
+  // for their timeouts. Submitted drafts are still checked (no model); the Gatekeeper stops waiting for
+  // tests that will not come.
+  private stopForBudget(): void {
+    for (const builder of this.builders.filter((b) => b.task !== null)) {
+      const unitId = builder.task!
+      if (board().units[unitId]?.status !== "building") continue
+      this.timers.clear(`build:${unitId}`)
+      builder.handle.cancel("budget exceeded")
+      this.failUnit(unitId, "budget exceeded")
+    }
+    for (const tester of this.testers.filter((t) => t.task !== null)) {
+      this.timers.clear(`tests:${tester.task}`)
+      tester.handle.cancel("budget exceeded")
+      this.release(tester)
+    }
+    for (const [unitId, unit] of Object.entries(board().units)) {
+      if (unit.status === "submitted" && !this.testsArrived.has(unitId)) emit("tests.missing", { unitId }, this.participant.getId())
+    }
+  }
+
   private failUnit(unitId: string, reason: string): void {
     this.setUnit(unitId, { status: "failed" })
     const builder = this.builders.find((b) => b.task === unitId)
@@ -377,7 +456,8 @@ export class Conductor {
 
   private async checkFinished(): Promise<void> {
     if (this.finished || !board().plan) return
-    if (isFinished(this.view())) return this.finish("finished")
+    // A run where the budget ran out says so, even when every unit got a final status.
+    if (isFinished(this.view())) return this.finish(this.budgetExceeded ? "budget.exceeded" : "finished")
     const inProgress = Object.values(board().units).some((u) => u.status === "building" || u.status === "submitted")
     if (this.budgetExceeded && !inProgress) {
       for (const [unitId, unit] of Object.entries(board().units)) {

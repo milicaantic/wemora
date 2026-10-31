@@ -179,10 +179,14 @@ function positiveNumber(raw: string | undefined, fallback: number, flag: string)
   return value
 }
 
-// process.exit, not exitCode: a finished run may leave servers or timers that would keep Node alive.
+// Node exits by itself when nothing is left. Exiting at once can crash libuv on Windows while the API's
+// keep-alive socket is still closing; the unref'd timer only ends a process that servers or timers keep alive.
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).then(
-    (code) => process.exit(code),
+    (code) => {
+      process.exitCode = code
+      setTimeout(() => process.exit(code), 500).unref()
+    },
     (error: unknown) => {
       console.error(error)
       process.exit(1)

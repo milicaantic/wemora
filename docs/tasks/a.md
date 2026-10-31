@@ -32,8 +32,8 @@ Ovo su koraci osobe A iz `docs/tim-plan.md` (faze F0–F4), prepisani tako da sv
 | | | **Kapija G2 (proverava A)** | |
 | A14 | F3 | Broj agenata po formulama | `a/scaling` |
 | A15 | F3 | Eskalacija modela | `a/scaling` |
-| A16 | F3 | 429 i `budget.exceeded` | `a/scaling` |
-| A17 | F3 | Dodavanje testera u toku rada (opciono) | `a/scaling` |
+| A16 | F3 | 429 i `budget.exceeded` | `a/load-control` |
+| A17 | F3 | Dodavanje testera u toku rada (opciono) | `a/load-control` |
 | A18 | F3 | `cli verify` i `cli sabotage` | `a/cli-verify` |
 | A19 | F4 | Stabilizacija | `a/fix-<opis>` |
 
