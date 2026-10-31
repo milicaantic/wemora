@@ -10,9 +10,9 @@
 
 Wemora reads a React single-page app, plans the migration, and lets a team of AI agents rewrite it for Expo (React Native) screen by screen. Other agents write UI tests against the **running original**, and plain code (not AI) decides whether each mobile screen passes them. The result is a mobile app plus a report that says, for every screen, whether its behavior is **proven**.
 
-![Wemora report: the TodoMVC screen is proven, 5 of 5 obligations, 5 passing tests](docs/img/report-summary.png)
+![Wemora report of a real run on the Recepti app: 3 screens proven, 1 partially proven, 1 failed](docs/img/recepti-report-summary.png)
 
-<sub>The report of the run in [`runs/todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html). The report is in Serbian, the team's language.</sub>
+<sub>The report of a real run (Claude Haiku 4.5 and Sonnet 4.6) on the 5-screen Recepti app, committed in [`runs/recepti-20261031-1829`](runs/recepti-20261031-1829/report.html): 3 screens proven, 1 partially proven, 1 failed, in 15 minutes for $4.46. The report is in Serbian, the team's language.</sub>
 
 Built for the **JigJoy × NTP Novi Sad Hackathon** (Freestyle) on the [Mozaik](https://www.npmjs.com/package/@mozaik-ai/core) multi-agent framework.
 
@@ -100,6 +100,15 @@ npm run migrate -- examples/recepti        # terminal 2
 4. **The Gatekeeper** (plain code) checks every draft and runs its tests on the mobile app. A screen that passes goes into the app; one that fails goes back to its builder with the exact failing step, up to 4 rounds.
 5. **The report** gives every screen a status (**proven**, **partially proven**, **unproven** or **failed**) and shows when each agent worked.
 
+### See the agents work in parallel
+
+Open `output/<run-id>/report.html` after a run, or the committed real run [`runs/recepti-20261031-1829/report.html`](runs/recepti-20261031-1829/report.html) without running anything. The report is in Serbian; two sections show the concurrency:
+
+- **„Tok prolaza“ (run timeline):** one row per agent. Overlapping bars are agents working at the same time; the line above says how much faster the run was than the same work done one agent after another.
+- **„Agenti“ (agents):** the most agents at once, and every change of the team (builders, testers) with the time and the reason.
+
+The raw events are in `output/<run-id>/run.jsonl`, one JSON line each with a timestamp and the agent's name. For example, `agents.rescaled` lines are the team changes, and `task.assigned` lines show which agent got which screen and when.
+
 Everything is written to `output/<run-id>/` ([what is in it](#what-a-run-writes)). To open the mobile app itself, run this in `output/<run-id>/app` (do not run `npm install` there, it shares the template's packages):
 
 ```bash
@@ -139,7 +148,13 @@ To keep a finished run and commit it, `npm run archive -- output/<run-id>` copie
 
 ## Check the proof again, with no AI and no API key
 
-[`runs/`](runs/) holds a finished migration of TodoMVC. `verify` builds its mobile app and runs every saved test again:
+[`runs/`](runs/) holds finished migrations: [`recepti-20261031-1829`](runs/recepti-20261031-1829/report.html) (a real run on Recepti) and [`todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html) (TodoMVC with recorded model answers). `verify` builds the mobile app of a run and runs every saved test again. For Recepti, start the data server first (`cd examples/mock-api && npm start`), then:
+
+```bash
+npm run verify -- runs/recepti-20261031-1829
+```
+
+TodoMVC needs nothing else:
 
 ```bash
 npm run verify -- runs/todomvc-mock-20261031-1454
@@ -219,7 +234,7 @@ flowchart LR
 
 1. **Analyze.** A parser finds the routes, files and web-only APIs. Analyzer agents describe each screen: what it shows, what the user can do, what will not fit a phone. An architect agent turns this into a plan: units of work, the **obligations** each screen must keep (with the exact texts of the original), and the **intentional differences** (for example, filters that move behind a button on a phone). Code checks the plan and sends errors back to the architect.
 2. **Build and test at the same time.** Tester agents write tests for every screen while builder agents rewrite screens, shared code first. A builder gets up to four rounds per screen, each with the last error; rounds 3 and 4 use a stronger model.
-3. **Gatekeeper.** For each draft: it parses, has no web-only APIs (`div`, `window`, `localStorage`…), passes `tsc`, keeps the labels of the original, and passes all tests of the screen on the mobile web build. After each new screen, the tests of all earlier screens run again; if one breaks, the change is undone.
+3. **Gatekeeper.** For each draft: it parses, has no web-only APIs (`div`, `window`, `localStorage`…), passes `tsc`, keeps the labels of the original, and passes all tests of the screen on the mobile web build. After each new screen, the tests of all earlier screens run again; if one breaks, the change is undone. When all screens of a **flow** (for example "add a recipe to favorites, then open Omiljeni") are in the app, the flow's own tests run too; a failing flow is reported and undoes nothing.
 4. **Report.** Every screen ends with a status:
 
 | Status | Meaning |
@@ -233,7 +248,11 @@ flowchart LR
 
 The report also shows a timeline of all agents, how much faster the parallel run was, how many agents worked over time and why, the cost per agent, and the rounds per screen.
 
-![Timeline in the report: one row per agent](docs/img/report-timeline.png)
+![Timeline of the real Recepti run: an analyzer, an architect, 2 testers and 4 builders, with a 2.6x speedup over running them one after another](docs/img/recepti-report-timeline.png)
+
+In the real Recepti run above, the agents worked 39 minutes in total within a 15-minute run (2.6× faster than one after another). The Conductor logs every change of the team with its reason:
+
+![Agents section of the report: the number of builders and testers over time and the reason for each change](docs/img/recepti-report-agents.png)
 
 ---
 
@@ -242,7 +261,7 @@ The report also shows a timeline of all agents, how much faster the parallel run
 Wemora is built on [`@mozaik-ai/core`](https://www.npmjs.com/package/@mozaik-ai/core) 4.1.0. Every agent, and the deterministic parts too, is a participant in one Mozaik runtime:
 
 - **Parallel agents.** Analyzers, testers and builders are separate agents, each with one active loop and a fresh context per task ([`src/agents/_shared/`](src/agents/_shared/)).
-- **The team size changes during the run.** The Conductor adds and removes agents with `join` / `leave` from the amount of ready work, at most once a minute, and never stops a busy agent ([`src/orchestration/`](src/orchestration/)).
+- **The team size changes during the run.** The Conductor adds and removes agents with `join` / `leave` from the amount of ready work, at most once a minute, and never stops a busy agent. It adds a tester when screens wait for tests, lowers the number of builders when the API answers 429, and stops cleanly when the budget runs out ([`src/orchestration/`](src/orchestration/)).
 - **A shared board.** `MigrationState` extends Mozaik's `RuntimeState` and holds the plan, tests, results and costs ([`src/core/state.ts`](src/core/state.ts)); events carry only IDs ([`src/contracts/events.ts`](src/contracts/events.ts)).
 - **Interception enforces ownership.** `OwnershipGuard` rejects any file a builder tries to write outside its own folder, before the write happens ([`src/agents/_shared/guards.ts`](src/agents/_shared/guards.ts)).
 - **Deterministic participants.** The Conductor and the Gatekeeper are plain-code participants that react to the same events as the agents ([`src/agents/gatekeeperParticipant.ts`](src/agents/gatekeeperParticipant.ts)).
