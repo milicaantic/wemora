@@ -58,7 +58,8 @@ Every scenario is checked before it is saved. It must:
 2. **Fail on a blank screen.** The `steps` (without `setup`) run on an empty placeholder of the mobile app. Check something only this screen has, not a title or menu every screen shows.
 3. **Show that each action changes something.** After every `tap`, `fill` or `submit`, at least one of the checks that follow it must be false without the action and true with it. A good pair: after typing "sarma" in the search field, `expectNotVisible "Musaka"` (Musaka was visible before the search).
    - **Navigation to another screen:** after tapping a link or button that leaves this screen, check only that **this** screen is gone: `expectNotVisible` of something that exists only on this screen (for example the "Pretraga" field on the list, or the "Nazad na recepte" link on the detail). **Never** check a text of the other screen: that screen may not be in the app yet, and the test would block both screens. Checks across screens belong to flow tests. Never check only the name you tapped either: it is visible on both screens, so the tap changes nothing.
-   - **After a button that changes state** (add to favorites, add to the list), check what the button changes: its new name, a message, or the item on the screen where it now appears.
+   - **After a button that changes its own state** (add to favorites, add to the list), check what you see after the tap on **this** screen: the button's new name if the original changes it (e.g. "Ukloni iz omiljenih: Pileća supa"), a message, or that the old name is gone. Copy the new name from `aria_snapshot` after the tap.
+   - **Cover every element.** When every obligation has a test but some interactive elements from the task have none, keep going: write a scenario that taps or fills each of them (with an obligation that already has a test), then save it.
 
 # How to write good scenarios
 

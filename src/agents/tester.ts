@@ -132,7 +132,6 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
   // returns what to tell the model next: move on after MAX_FAILURES_PER_OBLIGATION, or nothing.
   function failed(tool: "try_scenario" | "save_scenario", scenario: Scenario, problem: string): string {
     const active = current()
-    const { unit } = active
     log({
       agent: id,
       event: tool === "try_scenario" ? "tester.try_failed" : "tester.save_failed",
@@ -140,16 +139,33 @@ export function createTester(id: string, deps: TesterDeps): AgentHandle<TesterTa
     })
     active.failuresInARow++
     let note = ""
-    const known = unit.obligations.some((o) => o.id === scenario.obligation)
+    // Only an obligation that still has no test can be given up: a failed scenario for an element may name an
+    // obligation that is already covered, and giving that up would refuse every later try.
+    const open = openObligations(active).includes(scenario.obligation)
     const count = (active.failures.get(scenario.obligation) ?? 0) + 1
     active.failures.set(scenario.obligation, count)
-    if (known && count >= MAX_FAILURES_PER_OBLIGATION && !active.givenUp.has(scenario.obligation)) {
+    if (open && count >= MAX_FAILURES_PER_OBLIGATION) {
       active.givenUp.add(scenario.obligation)
       log({ agent: id, event: "tester.obligation_skipped", data: { ...where(active), obligation: scenario.obligation, failures: count } })
       const next = openObligations(active)
       note = `\nGive up on obligation "${scenario.obligation}" after ${count} failed attempts and move to the next one${next.length > 0 ? `: ${next.join(", ")}` : ""}.`
+      // The failures so far were for obligations: the elements get their own attempts (A's inbox 2026-10-31).
+      if (next.length === 0) active.failuresInARow = 0
     }
-    return note + finishIfDone(active)
+    const end = finishIfDone(active)
+    return note + (end || elementsNote(active))
+  }
+
+  // Once no obligation is open, what still has no test, so the tester covers it instead of stopping.
+  function elementsNote(active: Task): string {
+    if (openObligations(active).length > 0) return ""
+    const missing = computeCoverage(active.unit, active.saved, active.interactive).elements.missing
+    if (missing.length === 0) return ""
+    const covered = active.unit.obligations.map((o) => o.id).filter((o) => !active.givenUp.has(o))
+    return (
+      `\nEvery obligation is covered or given up, but these elements have no test yet: ${missing.map((e) => `${e.role} "${e.name}"`).join(", ")}. ` +
+      `Write one scenario that taps or fills each${covered.length > 0 ? ` (obligation: one that already has a test, e.g. ${covered[0]})` : ""}, then save it.`
+    )
   }
 
   // Obligations without a saved scenario that were not given up.
