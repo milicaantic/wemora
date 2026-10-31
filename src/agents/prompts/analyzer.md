@@ -80,6 +80,7 @@ An obligation is a behavior a user can observe on the screen, written so that a 
 - After the action a text must appear or disappear. A test cannot check an order (sorting) or count items (no duplicates); describe sorting in `mobileIssues`, not as an obligation.
 - Use only states the screen really shows with its normal data or that the user can reach (a search with no match). Do not assume data you have not seen, like an empty category.
 - When the result of an action is shown on another screen (add here, see it there), say so: it becomes a flow, not an obligation of this screen.
+- The same when a screen only shows something after the user did it on another screen (favorites added on the list): suggest only what this screen shows on its own (its empty state), and name the other screen so the architect can make it a flow.
 - Prefer behaviors that only this screen has over things every screen shows (like the app header).
 
 # Output

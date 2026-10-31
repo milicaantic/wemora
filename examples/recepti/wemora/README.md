@@ -36,7 +36,7 @@ Prolazi `PlanSchema` i `validatePlan` nad pravim `parseApp("examples/recepti")` 
 | `recipe-list` | `shows-recipes`, `search-by-name`, `filter-by-category`, `toggle-favorite`, `open-detail` |
 | `recipe-detail` | `shows-recipe`, `scale-servings`, `toggle-favorite`, `add-to-shopping-list`, `not-found` |
 | `categories` | `pick-category`, `open-recipe` |
-| `favorites` | `empty-state`, `shows-favorites`, `remove-favorite` |
+| `favorites` | `empty-state` (dodavanje i uklanjanje omiljenih traži recept dodat na listi, pa je u toku `manage-favorites-flow`) |
 | `shopping-list` | `empty-state`, `add-item`, `mark-bought`, `clear-bought` |
 
 Opisi obaveza navode tačan tekst sa ekrana, sa podacima iz `examples/mock-api` (fixture `default`). Svaka obaveza se proverava DSL koracima na originalu: posle radnje se neki tekst pojavi ili nestane; nema redosleda ni brojanja; rezultat je na istom ekranu (inače je tok). Zato nema obaveze za sortiranje: „Sortiraj po vremenu“ menja samo redosled, pa je `notPortable` (inbox A → D, G3).
@@ -50,6 +50,8 @@ Opisi obaveza navode tačan tekst sa ekrana, sa podacima iz `examples/mock-api` 
 ## Tokovi
 
 - `favorite-flow`: `recipe-detail` → `favorites`
+- `manage-favorites-flow`: `recipe-list` → `favorites` (dodaj „Sarma“ na listi, vidi je u Omiljenim, ukloni je)
+- `open-recipe-flow`: `recipe-list` i `categories` → `recipe-detail` (šta detalj pokaže posle klika na recept)
 - `shopping-flow`: `recipe-detail` → `shopping-list`
 
 ## Otvoreno
