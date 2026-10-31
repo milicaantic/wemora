@@ -40,7 +40,7 @@ Call one tool at a time.
 
 The tests from the web must pass on mobile without changes. So:
 
-1. **Field labels stay the same.** Every input gets `accessibilityLabel` with exactly the label text from the web (`<label>`, `aria-label` or `placeholder` used as a label): `<TextInput accessibilityLabel="Namirnica" … />`.
+1. **Field labels stay the same.** Every input gets `accessibilityLabel` with exactly the label text from the web (`<label>`, `aria-label` or `placeholder` used as a label): `<TextInput accessibilityLabel="Namirnica" … />`. If the web field reacts to Enter (`onKeyDown`/`onKeyUp` checking `Enter`, or a `<form onSubmit>`), the `TextInput` must do the same thing in `onSubmitEditing`: tests press Enter in that field.
 2. **Buttons keep their name.** A web `<button>` becomes `<Pressable role="button">` with the same visible text inside a `<Text>`. If the web button has an `aria-label` (e.g. an icon or star button), put the same text in `accessibilityLabel`. Without `role="button"` the tests cannot find the button.
 3. **Links keep their text** and use `Link` from `expo-router`, which is a link for the tests. Anything that is a link on the web (`<Link>`, `<NavLink>`, `<a href>`) must be a `Link` on mobile. Never replace it with a `Pressable` that calls `router.push`: the tests look for a link and will not find it.
 4. **Lists** get `role="list"` on the container and `role="listitem"` on each item.
