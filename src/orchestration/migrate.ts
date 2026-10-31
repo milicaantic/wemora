@@ -9,6 +9,7 @@ import { installSafety } from "../core/safety"
 import { createInitialState } from "../core/state"
 import { buildReport } from "../report"
 import { scaffold } from "../scaffold"
+import { serveOriginal } from "../scenarios"
 import { createAgentFactories } from "./agents"
 import { Conductor, type RunSummary } from "./conductor"
 
@@ -24,11 +25,19 @@ export type MigrateOptions = {
   mock: boolean
   /** Folder with MockRunner replies; default src/agents/mocks/<web folder name>/ (D-013). */
   mockDir?: string
-  /** The running original web app for the tester (Q8); started by hand until B's serveOriginal (PD5). */
+  /** The running original web app for the tester (Q8). Without it, B's serveOriginal builds and serves webDir (PD5). */
   originalUrl?: string
 }
 
-export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv = process.env, now = new Date()): Promise<number> {
+/** Replaceable so tests do not build the original web app. */
+export type MigrateServices = { serveOriginal: typeof serveOriginal }
+
+export async function runMigrate(
+  options: MigrateOptions,
+  env: NodeJS.ProcessEnv = process.env,
+  now = new Date(),
+  services: MigrateServices = { serveOriginal },
+): Promise<number> {
   const webDir = path.resolve(options.webDir)
   const appName = path.basename(webDir)
   if (!existsSync(webDir)) return fail(`web app folder not found: ${webDir}`)
@@ -39,6 +48,31 @@ export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv
     return fail(`no mock replies in ${mockDir}; each agent owner adds <agent>.json there (D-013), or pass --mock-dir`)
   }
 
+  // Before any agent starts: a web app that cannot be built stops the run here, with no run folder.
+  let original: { url: string; close(): Promise<void> } | null = null
+  if (!options.originalUrl) {
+    console.log(`building and serving the original web app from ${webDir} (pass --original-url to use a running one)`)
+    try {
+      original = await services.serveOriginal(webDir)
+    } catch (error) {
+      console.error(`wemora migrate: the original web app could not be served: ${error instanceof Error ? error.message : String(error)}`)
+      return 1
+    }
+  }
+  const originalUrl = options.originalUrl ?? original!.url
+  try {
+    return await runWith(options, { webDir, appName, mockDir, originalUrl, servedOriginal: original !== null }, now)
+  } finally {
+    await original?.close().catch(() => {})
+  }
+}
+
+async function runWith(
+  options: MigrateOptions,
+  run: { webDir: string; appName: string; mockDir: string; originalUrl: string; servedOriginal: boolean },
+  now: Date,
+): Promise<number> {
+  const { webDir, appName, mockDir, originalUrl } = run
   const runId = `${stamp(now)}-${appName}`
   const runDir = path.resolve(options.out, runId)
   mkdirSync(runDir, { recursive: true })
@@ -68,10 +102,10 @@ export async function runMigrate(options: MigrateOptions, env: NodeJS.ProcessEnv
   log({
     agent: "cli",
     event: "migrate.started",
-    data: { runId, webDir, mock: options.mock, mockDir: options.mock ? mockDir : undefined, originalUrl: options.originalUrl },
+    data: { runId, webDir, mock: options.mock, mockDir: options.mock ? mockDir : undefined, originalUrl, servedOriginal: run.servedOriginal },
   })
 
-  const agents = createAgentFactories({ originalUrl: options.originalUrl })
+  const agents = createAgentFactories({ originalUrl })
   // The team follows the §9 formulas, up to --max-builders and --max-testers from the board's config (A14).
   conductor = new Conductor({ parseApp, splitParts, scaffold, buildReport, agents: agents.factories })
   const summary = await conductor.run()

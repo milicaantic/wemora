@@ -28,7 +28,7 @@ export class UsageError extends Error {}
 export const USAGE = `Usage:
   wemora migrate <web-dir> [--original-url <url>] [--out output] [--max-builders 4] [--max-testers 2] [--budget 5] [--mock] [--mock-dir <dir>]
 
-  --original-url  the running original web app, for the tester (start it first, e.g. npm run serve in examples/todomvc)
+  --original-url  a running original web app for the tester; without it, wemora builds <web-dir> (npm run build) and serves it
   wemora verify <run-dir>
   wemora sabotage <run-dir> <unitId>
   wemora archive <run-dir> [--name <name>]

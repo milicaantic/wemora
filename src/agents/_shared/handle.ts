@@ -31,5 +31,6 @@ export interface AgentHandle<TTask> {
 
 export type AnalyzeTask = { partId: string }
 export type ArchitectTask = { partIds: string[] }
-export type TestTask = { unitId: string }
+/** A screen, or a flow across screens (D-022), which the Conductor hands out once every screen of it has tests. */
+export type TestTask = { unitId: string } | { flowId: string }
 export type BuildTask = { unitId: string; round: number; model: string; lastError: string | null }

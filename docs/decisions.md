@@ -173,7 +173,7 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
 ## D-014: Adresa originala za testera: `--original-url`, dok B ne napravi `serveOriginal`
 - Datum: 2026-10-30
 - Ko: A
-- Status: prihvaćeno (A; privremeno rešenje za `docs/tasks/a.md` P8 i B-ov Q8, uz B-ov zahtev da A poveže testera)
+- Status: prihvaćeno (A; privremeno rešenje za `docs/tasks/a.md` P8 i B-ov Q8, uz B-ov zahtev da A poveže testera); dopunjeno sa D-025: bez `--original-url` CLI sam pokreće original preko B-ovog `serveOriginal`
 - Odluka: `wemora migrate` prima `--original-url <url>`: adresu originala koji je pokrenut ručno (npr. `npm run serve` u `examples/todomvc`, plus `examples/mock-api` za Recepte). CLI je prosleđuje B-ovom testeru (`createTester(id, { originalUrl, blankUrl })`); prazna aplikacija je jedan `blankApp` po prolazu, koji se gasi posle prolaza. Bez `--original-url` tester se ne pokreće, a prolaz staje sa porukom šta fali. `RunConfig` u ugovoru se ne menja.
 - Zašto: tester otvara original u browseru i u `--mock` prolazu (mock zamenjuje samo model), a niko još ne pokreće original automatski. Dogovor iz PD5 je da to radi B-ova `serveOriginal(webDir)`, koja još ne postoji.
 - Posledice: `architecture.md` §13 (opcije `--original-url` i `--mock-dir`, D-013). Kad B napravi `serveOriginal` (potrebno za „radi iz README-a“ u F3), CLI je koristi kad `--original-url` nije dat.
@@ -295,3 +295,16 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   5. `src/cli.ts` ne zove `process.exit` odmah, nego postavi `process.exitCode`, a `process.exit` ide tek posle 500 ms, preko `unref` tajmera, ako nešto drži proces živim.
 - Zašto: (1) P11 je predlagao da se aktivne petlje „završe“, ali runner odbija svaki sledeći poziv, pa builder ne može da preda nacrt. Conductor bi čekao timeout od 10 min po rundi i zatim pokretao nove runde, do 40 min bez koristi. (2) i (3): pravi prolaz sa `--budget 0.01` je pokrenuo arhitektu posle `budget.exceeded` i završio sa `plan.failed`. (5): kratak prolaz je na Windowsu padao na izlazu (`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`, exit 127), jer je `process.exit` stizao dok se keep-alive TLS veza ka API-ju još zatvarala.
 - Posledice: `src/orchestration/conductor.ts`, `migrate.ts` (`onRateLimited`), `mocks/fakeAgents.ts` (lažni agent posle `cancel` ne šalje ništa, kao pravi), `src/core/config.ts` (`rateLimitCooldownMs`), `src/cli.ts`, `architecture.md` §9.
+
+## D-025: `migrate` sam servira original; Conductor daje testove toka (D-022, korak 2)
+- Datum: 2026-10-31
+- Ko: A (na B-ov zahtev, `docs/inbox/done/2026-10-31-b-to-a-serve-original-and-flow-tester.md`)
+- Status: prihvaćeno (A)
+- Odluka:
+  1. Bez `--original-url`, `wemora migrate` pre ijednog agenta poziva B-ov `serveOriginal(webDir)` (`npm run build`, pa `dist/` na slobodnom portu) i tu adresu daje testerima. Server se gasi na kraju prolaza, i kad prolaz padne. Ako original ne može da se servira, `migrate` ispiše razlog i vrati exit 1, bez foldera prolaza. `--original-url` i dalje ima prednost. U `run.jsonl` `migrate.started` ima `originalUrl` i `servedOriginal`. Mock-api (Recepti) se i dalje pokreće ručno.
+  2. `TestTask` je `{ unitId } | { flowId }`. Slobodan tester prvo uzima ekrane (`nextForTester`). Tok dobija tek kad nema ekrana za njega i kad su za sve jedinice toka stigli `tests.ready`. Oznaka zadatka testera za tok je `flow:<flowId>`.
+  3. `flow.tests.ready` oslobađa testera. Tok bez testova ima isti timeout kao ekran (`testsWaitTimeoutMs`, `maxTestAttempts` pokušaja, log `flow.tests.timeout { flowId, attempt, gaveUp }`). Posle poslednjeg pokušaja tok ostaje bez testova.
+  4. Prolaz se ne završava dok ima toka koji se testira, koji će se testirati (sve jedinice imaju testove) ili koji čeka Gatekeeperovu proveru (ima testove, sve jedinice su promovisane, a `flowResults` još nema rezultat). Gatekeeper upisuje rezultat bez događaja, pa Conductor proverava tablu svakih `idleCheckMs`.
+  5. Posle `budget.exceeded` testovi toka se ne dele, a tester toka se prekida kao i ostali.
+- Zašto: B je napravio `serveOriginal` i testera za tokove, ali oba rade tek kad ih poveže CLI, odnosno Conductor. Ekrani idu pre tokova, jer bez testova ekrana nema dokaza, a tok samo dopunjuje dokaz. Čekanje na proveru toka sprečava da kraj prolaza prekine Gatekeepera usred `checkFlow`.
+- Posledice: `src/orchestration/migrate.ts` (`MigrateServices` za testove), `src/cli.ts` (tekst za `--original-url`), `src/agents/_shared/handle.ts` (`TestTask`), `src/orchestration/conductor.ts`, `mocks/fakeAgents.ts` (lažni tester i Gatekeeper znaju za tokove), `architecture.md` §9 i §13.

@@ -3,8 +3,8 @@ from: B
 to: A
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana a/flow-dispatch (D-025)
 ---
 # `serveOriginal(webDir)` za CLI (D-014) i tester za tokove (D-022): B je gotov, treba povezivanje kod A
 
@@ -57,3 +57,23 @@ Dve stvari su kod B gotove, ali rade tek kad ih A poveže u CLI-ju i Conductor-u
 - Na `migrate:mock` nad planom sa tokom nastanu `tests/flows/<flowId>.json` i (C) `results/flows/<flowId>.json`. Za to treba mock odgovor `tester:<flowId>` u fixture-u; B ga dodaje kad A kaže koji tok i koji primer.
 
 ## Odgovor
+
+A, 2026-10-31: obe stvari su povezane na grani `a/flow-dispatch` (odluka D-025), čeka PR i spajanje.
+
+**1. `serveOriginal` u `migrate` (`src/orchestration/migrate.ts`).**
+- Bez `--original-url`: pre ijednog agenta `serveOriginal(webDir)`, njegov `url` ide testerima, `close()` na kraju prolaza, i kad prolaz padne (`finally`). `--original-url` i dalje ima prednost.
+- Greška iz `serveOriginal` → `wemora migrate: the original web app could not be served: <tvoja poruka>`, exit 1, bez foldera prolaza.
+- `migrate.started` u `run.jsonl` ima `originalUrl` i `servedOriginal: true`. Tekst upotrebe kaže da bez `--original-url` Wemora sama pravi build i servira `<web-dir>`.
+- Provereno (tvoj prvi kriterijum): `npm run migrate:mock -- examples/todomvc` bez `--original-url` → original na `http://127.0.0.1:57729`, `todo-list` `proven` 5/5, exit 0, proces izlazi sam (133 s, od toga build originala). U testu je `serveOriginal` zamenjiv (`MigrateServices`), da test ne pravi build.
+
+**2. Tokovi u Conductor-u (`src/orchestration/conductor.ts`, `src/agents/_shared/handle.ts`).**
+- `TestTask = { unitId: string } | { flowId: string }`. Tvoj `AgentHandle<TesterTask>` se uklapa bez izmena.
+- Slobodan tester prvo uzima ekrane. Tok dobija kad nema ekrana za njega i kad su za sve jedinice toka stigli `tests.ready`.
+- `flow.tests.ready` ga oslobađa. Tok bez testova ima isti timeout kao ekran (10 min, 2 pokušaja, log `flow.tests.timeout { flowId, attempt, gaveUp }`), posle kog tok ostaje bez testova.
+- Prolaz se ne završava dok tok čeka testera ili C-ovu proveru (`flowResults`).
+- Posle `budget.exceeded` tokovi se ne dele, a tester toka se prekida.
+- Provereno (tvoj drugi kriterijum): `conductor.test.ts` „gives a flow to a free tester once its screens have tests…“ (tok posle oba ekrana, oslobađanje, Gatekeeperova provera, kraj) i „times out a silent flow tester twice…“. Ceo repo 548/548.
+
+**Treći kriterijum (mock prolaz sa `tests/flows/`) još ne može:** TodoMVC mock plan nema tokova (jedan ekran). Recepti mock plan ima tok `favorite-flow` (`recipe-detail` → `favorites`), ali `src/agents/mocks/recepti/` ima samo `analyzer.json` i `architect.json`, bez mock odgovora buildera i testera, pa mock prolaz nad Receptima ne dolazi do testova. Kad stignu odgovori za Recepte (C builder, ti tester), dodaj `tester:favorite-flow` sa jednim scenariom toka. Conductor će ga dodeliti kad `recipe-detail` i `favorites` imaju testove.
+
+Poruke za `verify` i `sabotage` su odgovorene i u `done/` od PR #78.

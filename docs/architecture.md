@@ -142,6 +142,8 @@ Testeri uzimaju jedinice istim redom.
 
 **429 i budžet (A16, D-024):** na svaki 429 ili 529 Conductor spušta granicu buildera za 1 (najmanje 1), najviše jednom u `DEFAULTS.rateLimitCooldownMs` (60 s). Novi 429 u tom vremenu znači još jedan korak dole kad vreme istekne, a mirno vreme vraća jednog buildera, do `--max-builders` (`rate.limited` i `rate.recovered` u logu). Na `budget.exceeded` nema novih zadataka ni novih rundi. Jedinice koje se grade odmah su `failed` („budget exceeded“), a njihovi agenti se prekidaju, jer bi im runner odbio svaki sledeći poziv. Predati nacrti se i dalje proveravaju, a Gatekeeper dobija `tests.missing` za ekrane čiji testovi neće stići. Ako budžet nestane pre plana, arhitekta se ne pokreće. Ishod prolaza je tada `budget.exceeded`.
 
+**Testovi toka (D-022, D-025):** slobodan tester prvo uzima ekrane, a tok tek kad su za sve njegove jedinice stigli `tests.ready`. `flow.tests.ready` ga oslobađa, a tok bez testova ima isti timeout kao ekran. Prolaz čeka tokove koji se testiraju ili čekaju Gatekeeperovu proveru.
+
 ## 10. Gatekeeper
 
 **Kapije, redom** (prva koja padne vraća grešku builderu):
@@ -211,7 +213,7 @@ wemora sabotage <run-dir> <unitId>
 wemora archive <run-dir> [--name <name>]
 ```
 
-`--mock` koristi MockRunner (bez API poziva), sa odgovorima iz `src/agents/mocks/<aplikacija>/` ili `--mock-dir` (D-013). `--budget` je tvrdi limit u dolarima po prolazu. `--original-url` je adresa pokrenutog originala za testera (D-014).
+`--mock` koristi MockRunner (bez API poziva), sa odgovorima iz `src/agents/mocks/<aplikacija>/` ili `--mock-dir` (D-013). `--budget` je tvrdi limit u dolarima po prolazu. `--original-url` je adresa pokrenutog originala za testera (D-014). Bez nje `migrate` sam pravi build originala i servira ga preko B-ovog `serveOriginal` (D-025); mock-api za Recepte se i dalje pokreće ručno.
 
 `verify` (B) ponovo pušta sve sačuvane testove završenog prolaza nad web exportom `app/`, bez modela i bez API ključa, ispisuje matricu ekran × test i vraća exit 1 ako bar jedan ekran sa statusom `proven` ili `partial` više ne prolazi. `sabotage` (B) menja jedan promovisan ekran **na mestu**, pa se pušta nad kopijom prolaza (npr. u `runs/`), nikad nad jedinim primerkom. Posle njega `verify` mora da padne baš na tom ekranu. `archive` (D-ov `archiveRun`) kopira završen prolaz u `runs/<name>/` bez `node_modules` i `staging/`, za commit; podrazumevano ime je `<app>-<yyyymmdd>-<hhmm>` iz run-id-ja.
 

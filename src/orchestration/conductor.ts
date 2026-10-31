@@ -5,6 +5,7 @@ import {
   type AgentKind,
   type BuildReport,
   type EventPayloads,
+  type Flow,
   type ParseApp,
   type Scaffold,
   type ScreenStatus,
@@ -101,6 +102,11 @@ export class Conductor {
   private rateLimit: number | null = null
   private rateLimitedAgain = false
   private readonly testsArrived = new Set<string>()
+  // D-022 step 2: flows a tester works on, flows done with testing (tests came, or gave up), tries per flow.
+  private readonly flowsTesting = new Set<string>()
+  private readonly flowsSettled = new Set<string>()
+  private readonly flowsWithTests = new Set<string>()
+  private readonly flowAttempts = new Map<string, number>()
 
   constructor(
     private readonly deps: ConductorDeps,
@@ -175,6 +181,8 @@ export class Conductor {
         return this.finish("plan.failed", "the architect could not produce a valid plan")
       case EVENTS.testsReady:
         return this.onTestsReady(worker, event.payload as EventPayloads["tests.ready"])
+      case EVENTS.flowTestsReady:
+        return this.onFlowTestsReady(worker, event.payload as EventPayloads["flow.tests.ready"])
       case EVENTS.testsMissing:
         return // sent by the Conductor itself for the Gatekeeper (D-016)
       case EVENTS.draftSubmitted:
@@ -245,6 +253,18 @@ export class Conductor {
     this.dispatch()
   }
 
+  private onFlowTestsReady(worker: AnyWorker | undefined, { flowId }: EventPayloads["flow.tests.ready"]): Promise<void> {
+    const label = flowLabel(flowId)
+    this.timers.clear(`tests:${label}`)
+    this.flowsTesting.delete(flowId)
+    this.flowsSettled.add(flowId)
+    this.flowsWithTests.add(flowId)
+    const tester = this.testers.find((t) => t.task === label && (!worker || t === worker))
+    if (tester) this.release(tester)
+    this.dispatch()
+    return this.checkFinished()
+  }
+
   private onDraftSubmitted({ unitId, round }: EventPayloads["draft.submitted"]): void {
     if (this.isStale(unitId, round, EVENTS.draftSubmitted)) return
     this.timers.clear(`build:${unitId}`)
@@ -270,7 +290,8 @@ export class Conductor {
 
   // A tester that sends nothing for testsWaitTimeoutMs is cancelled and the screen goes back to the queue,
   // after untried screens; after the last attempt the Gatekeeper hears tests.missing (D-016).
-  private onTestsTimeout(unitId: string): void {
+  private onTestsTimeout(unitId: string): Promise<void> | void {
+    if (unitId.startsWith(FLOW)) return this.onFlowTestsTimeout(unitId.slice(FLOW.length))
     const tester = this.testers.find((t) => t.task === unitId)
     if (!tester || this.finished) return
     tester.handle.cancel(`timeout: no tests.ready within ${DEFAULTS.testsWaitTimeoutMs / 60_000} min`)
@@ -280,6 +301,23 @@ export class Conductor {
     log({ agent: "conductor", event: "tests.timeout", data: { unitId, tester: tester.handle.id, attempt: attempts } })
     if (attempts >= DEFAULTS.maxTestAttempts) emit("tests.missing", { unitId }, this.participant.getId())
     this.dispatch()
+  }
+
+  // A flow tester that sends nothing gets the same limit as a screen's; after the last try the flow stays
+  // without tests, and the report says it was not checked.
+  private onFlowTestsTimeout(flowId: string): Promise<void> | void {
+    const tester = this.testers.find((t) => t.task === flowLabel(flowId))
+    if (!tester || this.finished) return
+    tester.handle.cancel(`timeout: no flow.tests.ready within ${DEFAULTS.testsWaitTimeoutMs / 60_000} min`)
+    this.release(tester)
+    this.flowsTesting.delete(flowId)
+    const attempt = (this.flowAttempts.get(flowId) ?? 0) + 1
+    this.flowAttempts.set(flowId, attempt)
+    const gaveUp = attempt >= DEFAULTS.maxTestAttempts
+    if (gaveUp) this.flowsSettled.add(flowId)
+    log({ agent: "conductor", event: "flow.tests.timeout", data: { flowId, tester: tester.handle.id, attempt, gaveUp } })
+    this.dispatch()
+    return this.checkFinished()
   }
 
   // A builder that submits nothing for builderRoundTimeoutMs is cancelled; that round counts as failed (P10).
@@ -318,10 +356,17 @@ export class Conductor {
     const beingTested = new Set(this.testers.flatMap((t) => (t.task ? [t.task] : [])))
     for (const tester of this.testers.filter((t) => t.task === null)) {
       const unit = nextForTester(this.view(), beingTested)
-      if (!unit) break
-      beingTested.add(unit.id)
-      this.setUnit(unit.id, { testerId: tester.handle.id })
-      this.assign(tester, { unitId: unit.id }, unit.id)
+      if (unit) {
+        beingTested.add(unit.id)
+        this.setUnit(unit.id, { testerId: tester.handle.id })
+        this.assign(tester, { unitId: unit.id }, unit.id)
+        continue
+      }
+      // Screens first; a flow goes to a free tester once every screen of it has tests (D-022).
+      const flow = this.nextFlow()
+      if (!flow) break
+      this.flowsTesting.add(flow.id)
+      this.assign(tester, { flowId: flow.id }, flowLabel(flow.id))
     }
     // While the API answers 429, fewer builders work at once, even before rescale() lets idle ones go.
     let working = this.builders.filter((b) => b.task !== null).length
@@ -384,6 +429,24 @@ export class Conductor {
     log({ agent: "conductor", event: "agent.stopped", data: { id: worker.handle.id, kind: worker.kind } })
   }
 
+  private nextFlow(): Flow | undefined {
+    return (board().plan?.flows ?? []).find(
+      (f) => !this.flowsTesting.has(f.id) && !this.flowsSettled.has(f.id) && f.unitIds.every((u) => this.testsArrived.has(u)),
+    )
+  }
+
+  // The run waits for flows being tested, flows that will be (every screen has tests), and flows the
+  // Gatekeeper still has to check: it writes flowResults without an event.
+  private flowsPending(): boolean {
+    const { plan, units, flowResults } = board()
+    return (plan?.flows ?? []).some((flow) => {
+      if (this.flowsTesting.has(flow.id)) return true
+      if (!this.budgetExceeded && !this.flowsSettled.has(flow.id) && flow.unitIds.every((u) => this.testsArrived.has(u))) return true
+      const checkable = this.flowsWithTests.has(flow.id) && flow.unitIds.every((u) => units[u]?.status === "promoted")
+      return checkable && !flowResults[flow.id]
+    })
+  }
+
   private builderLimit(): number {
     return this.rateLimit ?? board().config.maxBuilders
   }
@@ -434,6 +497,10 @@ export class Conductor {
       this.failUnit(unitId, "budget exceeded")
     }
     for (const tester of this.testers.filter((t) => t.task !== null)) {
+      if (tester.task!.startsWith(FLOW)) {
+        this.flowsTesting.delete(tester.task!.slice(FLOW.length))
+        this.flowsSettled.add(tester.task!.slice(FLOW.length))
+      }
       this.timers.clear(`tests:${tester.task}`)
       tester.handle.cancel("budget exceeded")
       this.release(tester)
@@ -457,7 +524,11 @@ export class Conductor {
   private async checkFinished(): Promise<void> {
     if (this.finished || !board().plan) return
     // A run where the budget ran out says so, even when every unit got a final status.
-    if (isFinished(this.view())) return this.finish(this.budgetExceeded ? "budget.exceeded" : "finished")
+    if (isFinished(this.view())) {
+      if (!this.flowsPending()) return this.finish(this.budgetExceeded ? "budget.exceeded" : "finished")
+      this.timers.start("flows", DEFAULTS.idleCheckMs, () => this.enqueue(() => this.checkFinished()))
+      return
+    }
     const inProgress = Object.values(board().units).some((u) => u.status === "building" || u.status === "submitted")
     if (this.budgetExceeded && !inProgress) {
       for (const [unitId, unit] of Object.entries(board().units)) {
@@ -563,6 +634,10 @@ export class Conductor {
     return { plan, units, tests }
   }
 }
+
+// A tester's task label: the unit ID for a screen, this prefix plus the flow ID for a flow.
+const FLOW = "flow:"
+const flowLabel = (flowId: string): string => `${FLOW}${flowId}`
 
 const isIdle = (worker: AnyWorker): boolean => worker.task === null && !worker.handle.isBusy()
 
