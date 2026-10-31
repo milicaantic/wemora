@@ -46,6 +46,8 @@ export const DEFAULTS = {
   rescaleIntervalMs: 60_000,
   // After a 429 the builder limit drops by 1 for this long; another 429 in that time drops it again (A16).
   rateLimitCooldownMs: 60_000,
+  // This many screens waiting for a tester, while a draft waits for tests, add one tester (A17).
+  testerBacklog: 3,
   builderRoundTimeoutMs: 10 * 60_000,
   testerUnitTimeoutMs: 8 * 60_000,
   testsWaitTimeoutMs: 10 * 60_000,

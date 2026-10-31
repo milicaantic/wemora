@@ -308,3 +308,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   5. Posle `budget.exceeded` testovi toka se ne dele, a tester toka se prekida kao i ostali.
 - Zašto: B je napravio `serveOriginal` i testera za tokove, ali oba rade tek kad ih poveže CLI, odnosno Conductor. Ekrani idu pre tokova, jer bez testova ekrana nema dokaza, a tok samo dopunjuje dokaz. Čekanje na proveru toka sprečava da kraj prolaza prekine Gatekeepera usred `checkFlow`.
 - Posledice: `src/orchestration/migrate.ts` (`MigrateServices` za testove), `src/cli.ts` (tekst za `--original-url`), `src/agents/_shared/handle.ts` (`TestTask`), `src/orchestration/conductor.ts`, `mocks/fakeAgents.ts` (lažni tester i Gatekeeper znaju za tokove), `architecture.md` §9 i §13.
+
+## D-026: Tester više kad se ekrani gomilaju bez testova (A17)
+- Datum: 2026-10-31
+- Ko: A
+- Status: prihvaćeno (A)
+- Odluka: „builderi čekaju“ iz `tasks/a.md` A17 znači da bar jedan nacrt čeka svoje testove u Gatekeeperu (ekran `submitted` bez `tests.ready`), jer builder kod nas ne čeka testove direktno. Kad uz to najmanje `DEFAULTS.testerBacklog` (3) ekrana čeka testera (bez testova, nijedan tester ga nema, nije `failed` i ima još pokušaja), `planAgentCounts` daje jednog testera više od formule iz §9, do `maxTesters`. Promena ide kroz isti `Rescaler` (najviše jednom u minutu), a razlog u `agents.rescaled` se završava sa „… → +1 tester“.
+- Zašto: u pravim prolazima nad TodoMVC-om tester je bio usko grlo (do 8 min po ekranu), a nacrti su čekali u Gatekeeperu. Formula iz §9 računa testere samo po broju buildera.
+- Posledice: `src/core/config.ts` (`testerBacklog`), `src/orchestration/scaling.ts`, `conductor.ts`, `architecture.md` §9.

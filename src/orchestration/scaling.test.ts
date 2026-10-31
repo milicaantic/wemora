@@ -23,6 +23,19 @@ describe("planAgentCounts", () => {
     expect(result).toMatchObject({ analyzers: 3, builders: 3, testers: 2 })
   })
 
+  it("adds one tester while 3 screens wait for a tester and a draft waits for tests (A17)", () => {
+    const input = { totalTokens: 7_000, readyUnits: 1, busyBuilders: 1, maxBuilders: 4, maxTesters: 2 }
+    expect(planAgentCounts({ ...input, untestedScreens: 3, draftsWaitingForTests: 1 })).toMatchObject({
+      builders: 2,
+      testers: 2,
+      reason: "1 ready + 1 busy → 2 builder(s) (max 4), 2 tester(s) (max 2); 3 screen(s) wait for a tester while 1 draft(s) wait for tests → +1 tester",
+    })
+    // Below the threshold, with no draft waiting, or at maxTesters: the formula alone.
+    expect(planAgentCounts({ ...input, untestedScreens: 2, draftsWaitingForTests: 1 }).testers).toBe(1)
+    expect(planAgentCounts({ ...input, untestedScreens: 5, draftsWaitingForTests: 0 }).testers).toBe(1)
+    expect(planAgentCounts({ ...input, maxTesters: 1, untestedScreens: 5, draftsWaitingForTests: 2 }).testers).toBe(1)
+  })
+
   it("keeps one builder when nothing is ready or busy", () => {
     const result = planAgentCounts({ totalTokens: 3_000, readyUnits: 0, busyBuilders: 0, maxBuilders: 4, maxTesters: 2 })
     expect(result).toMatchObject({ builders: 1, testers: 1 })

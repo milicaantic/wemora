@@ -391,6 +391,7 @@ export class Conductor {
       busyBuilders: this.builders.filter((b) => b.task !== null).length,
       maxBuilders: this.builderLimit(),
       maxTesters: config.maxTesters,
+      ...this.testerBacklog(),
     })
     const builders = reachable(this.builders, counts.builders)
     const testers = reachable(this.testers, counts.testers)
@@ -445,6 +446,19 @@ export class Conductor {
       const checkable = this.flowsWithTests.has(flow.id) && flow.unitIds.every((u) => units[u]?.status === "promoted")
       return checkable && !flowResults[flow.id]
     })
+  }
+
+  // A17: screens no tester has taken yet (and that may still get tests), and drafts held for their tests.
+  private testerBacklog(): { untestedScreens: number; draftsWaitingForTests: number } {
+    const { plan, units } = board()
+    const beingTested = new Set(this.testers.map((t) => t.task))
+    const screens = (plan?.units ?? []).filter((u) => u.kind === "screen" && !this.testsArrived.has(u.id))
+    const untestedScreens = screens.filter((u) => {
+      const unit = units[u.id]
+      return !beingTested.has(u.id) && unit?.status !== "failed" && (unit?.testAttempts ?? 0) < DEFAULTS.maxTestAttempts
+    }).length
+    const draftsWaitingForTests = screens.filter((u) => units[u.id]?.status === "submitted").length
+    return { untestedScreens, draftsWaitingForTests }
   }
 
   private builderLimit(): number {
