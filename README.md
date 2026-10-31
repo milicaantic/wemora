@@ -4,19 +4,20 @@
 
 ![Wemora report: one TodoMVC screen proven with 5 of 5 obligations and 5 passing tests](docs/img/report-summary.png)
 
-*The report of a committed run, [`runs/todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html): the TodoMVC screen is **proven**: all 5 obligations are covered by tests that passed on the original web app and on the new mobile app.*
+*The report of a committed run, [`runs/todomvc-mock-20261031-1454`](runs/todomvc-mock-20261031-1454/report.html): the TodoMVC screen is **proven**: all 5 obligations are covered by tests that passed on the original web app and on the new mobile app. The report itself is in Serbian, the language of the team.*
 
-> **Srpski, ukratko:** Wemora je CLI alat koji od React web aplikacije pravi Expo mobilnu aplikaciju i za svaki ekran izvršnim testovima dokazuje da se ponaša isto kao original. Testove piše tester-agent nad pokrenutim originalom, builder-agent ih nikad ne vidi, a presudu daje običan kod (Gatekeeper), ne AI. Projekat za JigJoy × NTP Novi Sad Hackathon (Freestyle), napravljen na Mozaik frameworku.
+Built for the JigJoy × NTP Novi Sad Hackathon (Freestyle category) on the [Mozaik](https://www.npmjs.com/package/@mozaik-ai/core) multi-agent framework.
 
 <!--
 TODO(D19), what is still missing in this README (also in docs/status/d.md):
 1. A Recepti run in runs/ (runs/recepti-<time>): needs a real run (A, API key) or tester/builder mock
    replies for Recepti (B, C). Then: screenshot of its report here, and use it in "Quick start".
-2. `npm run verify` and `npm run sabotage` in the CLI (A18; B's sabotage function is merged, PR #72, but not wired into the CLI yet). Then: remove the
-   "until A18" notes and the npx tsx command, and add the sabotage step to "Quick start".
+2. `npm run verify` and `npm run sabotage` in the CLI (A18; both functions are merged, the CLI still
+   prints "not implemented yet"). Then: replace the `npx tsx -e …` commands in "Quick start" with
+   `npm run verify -- <run>` and `npm run sabotage -- <run> <unitId>` and paste their output.
 3. A real-model run (`npm run migrate`, not --mock) archived in runs/, with its cost and speed-up
    from the report, quoted in "How Wemora uses Mozaik".
-4. Team names and roles, and a license (package.json says ISC; there is no LICENSE file).
+4. A license: the team has not chosen one (there is no LICENSE file; package.json says ISC, the npm default).
 5. Last pass: follow this README on a clean clone (someone who did not write it), and paste every
    command and its output from the terminal.
 -->
@@ -109,10 +110,25 @@ npm test                                   # unit tests, no network, no API key
 
 ### Check a committed run again
 
-[`runs/`](runs/) holds finished runs; [`runs/README.md`](runs/README.md) says what each folder holds. `verify` re-runs every test of a run on a web export of its app, with no AI and no API key:
+[`runs/`](runs/) holds finished runs; [`runs/README.md`](runs/README.md) says what each folder holds. `verify` re-runs every test of a run on a web export of its app, with no AI and no API key.
+
+> The commands `npm run verify -- <run>` and `npm run sabotage -- <run> <unitId>` are being wired into the CLI and still print "not implemented yet". Until then, the commands below call the same functions directly; they work in Git Bash and PowerShell.
 
 ```bash
-npm run verify -- runs/todomvc-mock-20261031-1454
+npx tsx -e "import('./src/verify/index.ts').then(async (m) => { const d = await m.verifyDetailed('runs/todomvc-mock-20261031-1454'); console.log(m.formatVerifyReport(d)); process.exit(d.ok ? 0 : 1) })"
+```
+
+```
+verify /path/to/wemora/runs/todomvc-mock-20261031-1454
+
+todo-list  [proven]
+  pass  todo-list-empty-state
+  pass  todo-list-add-todo
+  pass  todo-list-complete-todo
+  pass  todo-list-filter-todos
+  pass  todo-list-clear-completed
+
+OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run
 ```
 
 Then open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-20261031-1454/report.html) in a browser.
@@ -122,17 +138,33 @@ Then open [`runs/todomvc-mock-20261031-1454/report.html`](runs/todomvc-mock-2026
 - **Recepti runs only:** start the mock API first (`cd examples/mock-api && npm start`), because the app reads its data from it. TodoMVC needs nothing else.
 - The first export after a fresh clone takes about a minute (cold Metro cache); later ones take 7–13 s.
 
-> *In progress (A18):* `npm run verify` is not wired into the CLI yet and prints "not implemented yet". Until then, the same check runs with:
->
-> ```bash
-> npx tsx -e "import('./src/verify/index.ts').then(async (m) => { const d = await m.verifyDetailed('runs/todomvc-mock-20261031-1454'); console.log(m.formatVerifyReport(d)); process.exit(d.ok ? 0 : 1) })"
-> ```
->
-> Expected: `todo-list [proven]`, five `pass` lines, `OK: 5/5 tests pass on 1 screen(s) whose tests passed in the run`.
+### Break a screen on purpose: `verify` must catch it
 
-<!-- TODO(D19): when A18 wires verify and sabotage into the CLI, add: `npm run sabotage -- runs/<run> <unitId>` breaks one screen on
-purpose, and `npm run verify` must then FAIL on that screen only (paste both outputs). Switch the example
-to runs/recepti-<time> once it exists. -->
+`sabotage` changes one promoted screen of a run (it replaces a label or text the tests look for with `[sabotaged]`), so `verify` must then fail on that screen. It edits the run folder in place, so work on a copy in `output/` (ignored by git):
+
+```bash
+node -e "require('fs').cpSync('runs/todomvc-mock-20261031-1454', 'output/sabotage-demo', { recursive: true })"
+npx tsx -e "import('./src/verify/index.ts').then(async (m) => console.log(await m.sabotageDetailed('output/sabotage-demo', 'todo-list')))"
+npx tsx -e "import('./src/verify/index.ts').then(async (m) => { const d = await m.verifyDetailed('output/sabotage-demo'); console.log(m.formatVerifyReport(d)); process.exit(d.ok ? 0 : 1) })"
+```
+
+`sabotage` reports what it changed (`target: 'New Todo Input', kind: 'label'` in `app/src/screens/todo-list/index.tsx`), and `verify` fails with exit code 1:
+
+```
+verify /path/to/wemora/output/sabotage-demo
+
+todo-list  [proven]
+  pass  todo-list-empty-state
+  FAIL  todo-list-add-todo at step 2: submit field labelled "New Todo Input": not found on screen within 5000 ms
+  FAIL  todo-list-complete-todo at step 2: submit field labelled "New Todo Input": not found on screen within 5000 ms
+  FAIL  todo-list-filter-todos at step 2: submit field labelled "New Todo Input": not found on screen within 5000 ms
+  FAIL  todo-list-clear-completed at step 2: submit field labelled "New Todo Input": not found on screen within 5000 ms
+
+FAILED: 1/5 tests pass on 1 screen(s) whose tests passed in the run
+```
+
+<!-- TODO(D19): when A18 lands, use `npm run verify -- runs/<run>` and `npm run sabotage -- <copy> <unitId>` here
+and paste their output; switch the example to runs/recepti-<time> once it exists. -->
 
 ## Run a full migration
 
@@ -211,6 +243,15 @@ To keep a run, copy it into `runs/` without dependencies and drafts (see [`runs/
 
 ## Team
 
-Built in a team of four for the JigJoy × NTP Novi Sad Hackathon (Freestyle category). Who owns what is in [`CLAUDE.md`](CLAUDE.md#vlasništvo-foldera) and [`docs/tim-plan.md`](docs/tim-plan.md).
+Built by a team of four for the JigJoy × NTP Novi Sad Hackathon (Freestyle category). Each person owns one part of the code:
 
-<!-- TODO(D19): names and roles of the four team members; license (no LICENSE file yet, package.json says ISC). -->
+| | Owns | Folders |
+|---|---|---|
+| **JavorFaks** | contracts, runtime and board, inference runner, Conductor and agent scaling, CLI | [`src/contracts/`](src/contracts/), [`src/core/`](src/core/), [`src/orchestration/`](src/orchestration/), [`src/agents/_shared/`](src/agents/_shared/), [`src/cli.ts`](src/cli.ts) |
+| **Vujic04** | test DSL and runners, tester agent, `verify` and `sabotage` | [`src/scenarios/`](src/scenarios/), [`src/verify/`](src/verify/), [`src/agents/tester.ts`](src/agents/tester.ts) |
+| **Milica Antić** | Expo template, scaffold, Gatekeeper and its gates, builder agent | [`src/gatekeeper/`](src/gatekeeper/), [`src/scaffold/`](src/scaffold/), [`templates/expo/`](templates/expo/), [`src/agents/builder.ts`](src/agents/builder.ts) |
+| **Kuzma04** | parser and plan checks, analyzer and architect agents, report, example apps, `runs/`, this README | [`src/analysis/`](src/analysis/), [`src/report/`](src/report/), [`examples/`](examples/), [`src/agents/analyzer.ts`](src/agents/analyzer.ts), [`src/agents/architect.ts`](src/agents/architect.ts) |
+
+The plan, the decisions and the messages between us are in [`docs/`](docs/) (in Serbian): [`architecture.md`](docs/architecture.md), [`decisions.md`](docs/decisions.md), [`tim-plan.md`](docs/tim-plan.md), [`inbox/`](docs/inbox/).
+
+<!-- TODO(D19): full names if the team wants them instead of GitHub handles; a license (no LICENSE file yet, package.json says ISC, the npm default). -->
