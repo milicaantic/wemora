@@ -274,6 +274,9 @@ describe("builderBrief", () => {
     expect(brief).toContain("- screens/recipe-detail/")
     expect(brief).toContain("Shared units (read them with read_app, import as @/shared/<id>): data, layout")
     expect(brief).toContain("Start with read_source.")
+    // spisak postojećih ruta, da builder ne pravi linkove na nepostojeće
+    expect(brief).toContain("Mobile routes of the app (link and navigate only to these; you never create routes):")
+    for (const r of ["/", "/recepti/[id]", "/kategorije", "/omiljeni", "/kupovina"]) expect(brief).toContain(`- ${r}`)
   })
 
   it("druga runda nosi poruku Gatekeepera", () => {

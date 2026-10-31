@@ -90,6 +90,8 @@ describe("Gatekeeper-učesnik", () => {
   it("dva nacrta u isto vreme se proveravaju jedan za drugim", async () => {
     board().tests["recipe-list"] = [test("recipe-list")]
     board().tests["categories"] = [test("categories")]
+    emit("tests.ready", { unitId: "recipe-list" }, builder.getId())
+    emit("tests.ready", { unitId: "categories" }, builder.getId())
     maxActive = 0
     submit("recipe-list")
     submit("categories")
@@ -131,18 +133,22 @@ describe("Gatekeeper-učesnik", () => {
     emit("draft.submitted", { unitId: "shopping-list", round: 1 }, builder.getId())
     await new Promise((r) => setTimeout(r, 100))
     expect(calls.length).toBe(before)
-    expect(outcomes.some((o) => o.unitId === "shopping-list")).toBe(false)
+    expect(outcomes.some((o) => o.unitId === "shopping-list" && o.type === "gate.failed")).toBe(false)
   })
 
-  it("tests.ready pušta nacrt koji je čekao testove", async () => {
-    delete board().tests["categories"]
-    submit("categories", 2)
-    await new Promise((r) => setTimeout(r, 30))
-    expect(calls.some((c) => c.unitId === "categories" && c.round === 2)).toBe(false)
-    board().tests["categories"] = [test("categories")]
-    emit("tests.ready", { unitId: "categories" }, builder.getId())
-    await new Promise((r) => setTimeout(r, 100))
-    expect(calls.find((c) => c.unitId === "categories" && c.round === 2)?.tests).toBe(1)
+  it("testovi na tabli nisu dovoljni: čeka se događaj tests.ready (tester ih upisuje jedan po jedan)", async () => {
+    // tester je sačuvao 1 od 3 testa i još radi
+    board().tests["shopping-list"] = [test("shopping-list")]
+    board().units["shopping-list"] = { status: "building", round: 1, model: null, builderId: "builder-7", testerId: null, testAttempts: 0 }
+    emit("draft.submitted", { unitId: "shopping-list", round: 1 }, builder.getId())
+    await new Promise((r) => setTimeout(r, 150))
+    expect(calls.some((c) => c.unitId === "shopping-list" && c.round === 1)).toBe(false)
+
+    // tester završi: svi testovi na tabli, pa tests.ready
+    board().tests["shopping-list"] = [test("shopping-list"), { ...test("shopping-list"), id: "shopping-list-t2" }, { ...test("shopping-list"), id: "shopping-list-t3" }]
+    emit("tests.ready", { unitId: "shopping-list" }, builder.getId())
+    await waitFor("unit.promoted", "shopping-list")
+    expect(calls.find((c) => c.unitId === "shopping-list" && c.round === 1)?.tests).toBe(3)
   })
 
   it("zajednička jedinica ne čeka testove", async () => {
