@@ -24,6 +24,7 @@
       Wemora
     </a>
     <nav class="toplinks" aria-label="Sections">
+      <a href="#run">Real run</a>
       <a href="#how">How it works</a>
       <a href="#gatekeeper">Gatekeeper</a>
       <a href="#proof">Proof</a>
@@ -100,6 +101,33 @@
     </div>
     <p class="caption">Layout is free to change: the sidebar becomes a bottom bar and the table becomes a card. Field labels, button names and visible text stay the same, so the web test finds everything on the phone.</p>
   </div>
+
+  <section id="run">
+    <div class="wrap">
+      <p class="eyebrow">A real run</p>
+      <h2>The same steps on the original and on the app Wemora built.</h2>
+      <p class="lede">TodoMVC, recorded in a browser. Three todos are added with Enter, one is completed, the filters switch and completed todos are cleared, using the same field label, link names and button text on both.</p>
+      <div class="run-grid">
+        <figure class="run-web">
+          <div class="frame-label"><span>Original · React · web</span></div>
+          <div class="browser">
+            <div class="browser-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="url">localhost:7002/#/</span></div>
+            <video class="run-video" src="media/todomvc-web.webm" poster="media/todomvc-web.png" muted loop playsinline autoplay preload="metadata" aria-label="TodoMVC web original: adding, completing, filtering and clearing todos"></video>
+          </div>
+        </figure>
+        <figure class="run-phone">
+          <div class="frame-label"><span>Wemora · Expo · 390×844</span><b>proven</b></div>
+          <div class="phone">
+            <div class="screen"><video class="run-video" src="media/todomvc-phone.webm" poster="media/todomvc-phone.png" muted loop playsinline autoplay preload="metadata" aria-label="The Expo app built by Wemora doing the same steps"></video></div>
+          </div>
+        </figure>
+      </div>
+      <div class="run-foot">
+        <button class="btn btn-ghost" type="button" id="replay">Replay both</button>
+        <p class="note">From <code>npm run migrate:mock -- examples/todomvc</code>: builder answers are recorded, while the Gatekeeper, the tests and the app are real. <code>todo-list</code>: proven in round 2, 5 of 5 tests on the phone build. Fonts, sizes and colors come from the web CSS through the shared theme.</p>
+      </div>
+    </div>
+  </section>
 
   <section id="how">
     <div class="wrap">
@@ -206,5 +234,6 @@ screens/todo-list/index.tsx:19: &lt;div&gt; ne postoji u React Native, koristi &
 </footer>
 
 <script src="js/copy.js"></script>
+<script src="js/run.js"></script>
 </body>
 </html>

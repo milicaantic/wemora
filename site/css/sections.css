@@ -60,3 +60,16 @@
 .member .l { font: 600 12px var(--mono); letter-spacing: .14em; color: var(--accent); }
 .member .name { margin-top: 6px; font-size: 22px; }
 .member p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+
+/* ---------- real run (videos) ---------- */
+.run-grid { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, .62fr); gap: 28px; align-items: end; margin-top: 40px; }
+.run-grid figure { margin: 0; min-width: 0; }
+.run-video { display: block; width: 100%; height: auto; background: var(--sunk); }
+.run-web .run-video { aspect-ratio: 960 / 640; }
+.run-phone .phone { max-width: 260px; }
+.run-phone .screen { position: relative; }
+.run-phone .run-video { height: 100%; object-fit: cover; }
+.run-foot { display: flex; gap: 18px; align-items: flex-start; margin-top: 22px; flex-wrap: wrap; }
+.run-foot .note { margin: 0; flex: 1; min-width: 0; max-width: 72ch; }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
