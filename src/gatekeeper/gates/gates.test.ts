@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { PlanSchema, ScenarioSchema } from "../../contracts"
 import { scaffold } from "../../scaffold/index"
 import * as drafts from "../mocks/drafts"
-import { forbiddenApisGate, runGates, type GateCheck, type GateInput } from "./index"
+import { forbiddenApisGate, labelsGate, runGates, type GateCheck, type GateInput } from "./index"
 
 const root = (p: string) => fileURLToPath(new URL(`../../../${p}`, import.meta.url))
 const PLAN = PlanSchema.parse(JSON.parse(readFileSync(root("examples/recepti/wemora/plan.manual.json"), "utf8")))
@@ -82,6 +82,26 @@ describe("kapija 2: forbiddenApis", () => {
   it("ne smeta reč window/document kad nije globalna promenljiva", async () => {
     const code = `const o = { window: 1, document: "x" }\nexport const w = o.window + o.document\nexport const t = "window i localStorage"\n`
     expect((await forbiddenApisGate(input(code))).ok).toBe(true)
+  })
+})
+
+describe("kapija 4: labelsGate", () => {
+  it("link iz menija napravljenog iz niza (`<Link>{l.label}</Link>`) se prepoznaje po stringu iz istog fajla", async () => {
+    const menu = [
+      `import { Link } from "expo-router"`,
+      `const links = [{ href: "/omiljeni", label: "Omiljeni" }]`,
+      `export default function Menu() {`,
+      `  return <>{links.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}</>`,
+      `}`,
+      ``,
+    ].join("\n")
+    const tap = (name: string) =>
+      ScenarioSchema.parse({ id: `tap-${name}`, unitId: "shopping-list", obligation: "add-item", steps: [{ goto: "/kupovina" }, { tap: { role: "link", name } }] })
+    const gate = (name: string) => labelsGate({ ...input(menu), tests: [tap(name)], originalFiles: [] })
+    expect(await gate("Omiljeni")).toMatchObject({ gate: "labels", ok: true })
+    const missing = await gate("Kategorije")
+    expect(missing.ok).toBe(false)
+    expect(missing.message).toContain('nema elementa sa role="link" i nazivom "Kategorije"')
   })
 })
 

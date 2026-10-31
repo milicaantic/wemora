@@ -23,7 +23,8 @@ export const DEFAULT_RUNNER_SETTINGS: RunnerSettings = {
 }
 
 type Failure = { step: number; message: string }
-type WaitForQuiet = () => Promise<void>
+/** `fromNow`: count the quiet time from now, so requests that start just after an action are waited for. */
+type WaitForQuiet = (fromNow?: boolean) => Promise<void>
 
 /**
  * Runs scenarios one after another in a fresh browser context each (empty localStorage): setup first, then steps.
@@ -127,6 +128,8 @@ async function runActions(
     try {
       if (action.kind === "expectNotVisible") await waitForQuiet()
       await perform(page, baseUrl, viewport, settings, action)
+      // A tap may open another screen that loads its data; the next check must not run on the old screen.
+      if (action.kind === "tap" || action.kind === "fill" || action.kind === "submit") await waitForQuiet(true)
     } catch (err) {
       return { step: action.step, message: `${describeAction(action)}: ${explain(err, action, settings)}` }
     }
@@ -217,7 +220,8 @@ function trackNetwork(page: Page, settings: RunnerSettings): WaitForQuiet {
   page.on("requestfinished", done)
   page.on("requestfailed", done)
 
-  return async () => {
+  return async (fromNow = false) => {
+    if (fromNow) lastActivity = Date.now()
     const deadline = Date.now() + settings.stepTimeoutMs
     while (Date.now() < deadline) {
       if (inFlight === 0 && Date.now() - lastActivity >= settings.networkQuietMs) return

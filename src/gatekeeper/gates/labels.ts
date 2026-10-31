@@ -19,6 +19,9 @@ type Found = {
   labels: Set<string>
   roles: { role: string; names: string[] }[]
   texts: string[]
+  // Uloge elemenata koji prikazuju izračunatu vrednost (npr. meni iz niza: `<Link>{link.label}</Link>`),
+  // sa doslovnim stringovima istog fajla, odakle ta vrednost najverovatnije dolazi.
+  computedRoles: { role: string; texts: Set<string> }[]
 }
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim()
@@ -82,13 +85,28 @@ function textPieces(node: ts.Node): string[] {
   return out
 }
 
+/** Da li element prikazuje izračunatu vrednost, npr. `{link.label}`, a ne samo konstantan tekst. */
+function showsComputed(node: ts.JsxElement): boolean {
+  let computed = false
+  walk(node, (n) => {
+    if (!ts.isJsxExpression(n) || !n.expression || inAttribute(n, node)) return
+    if (!ts.isStringLiteral(n.expression) && !ts.isNoSubstitutionTemplateLiteral(n.expression)) computed = true
+  })
+  return computed
+}
+
 function collect(files: string[]): Found {
-  const found: Found = { labels: new Set(), roles: [], texts: [] }
+  const found: Found = { labels: new Set(), roles: [], texts: [], computedRoles: [] }
   for (const file of files) {
     const sf = parseFile(file)
+    const fileTexts = new Set<string>()
+    const fileComputedRoles = new Set<string>()
     walk(sf, (n) => {
       if (ts.isJsxText(n) && norm(n.text)) found.texts.push(norm(n.text))
-      if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) found.texts.push(norm(n.text))
+      if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {
+        found.texts.push(norm(n.text))
+        fileTexts.add(norm(n.text))
+      }
       if (ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n)) found.texts.push(norm(n.text))
 
       const opening = ts.isJsxElement(n) ? n.openingElement : ts.isJsxSelfClosingElement(n) ? n : undefined
@@ -101,8 +119,10 @@ function collect(files: string[]): Found {
       if (role) {
         const pieces = ts.isJsxElement(n) ? textPieces(n) : []
         found.roles.push({ role, names: [...(label ? [norm(label)] : []), norm(pieces.join(" ")), ...pieces] })
+        if (ts.isJsxElement(n) && showsComputed(n)) fileComputedRoles.add(role)
       }
     })
+    for (const role of fileComputedRoles) found.computedRoles.push({ role, texts: fileTexts })
   }
   return found
 }
@@ -116,6 +136,7 @@ function missing(need: Need, found: Found): string | undefined {
   }
   if (need.kind === "role") {
     if (found.roles.some((r) => r.role === need.role && r.names.includes(v))) return undefined
+    if (found.computedRoles.some((r) => r.role === need.role && r.texts.has(v))) return undefined
     const textExists = found.texts.some((t) => t.includes(v)) || found.labels.has(v)
     if (textExists) {
       return `postoji tekst "${need.value}", ali nijedan element sa role="${need.role}" nema taj naziv; dodaj role="${need.role}" na element (npr. <Pressable role="${need.role}">) ${where}`
