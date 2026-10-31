@@ -17,7 +17,8 @@ Use this table for every element. Imports: `View`, `Text`, `TextInput`, `Pressab
 | `textarea` | `TextInput multiline` | the label text |
 | `input type="checkbox"` | `<Pressable role="checkbox" aria-checked={checked} accessibilityLabel="…" onPress={toggle}>` | the label text |
 | `select` / `option` | a row of `<Pressable role="button">` per option, or a list in a modal | the label and each option text |
-| `form onSubmit` | the submit button calls the same function; `TextInput onSubmitEditing` too | — |
+| input that reacts to Enter (`onKeyDown`/`onKeyUp` with `"Enter"`) | `<TextInput accessibilityLabel="…" onSubmitEditing={…} />` that calls the same function as the web Enter handler | the label text, exactly |
+| `form onSubmit` | the submit button calls the same function; the `TextInput` calls it in `onSubmitEditing` too (Enter submits the form on the web) | — |
 | `ul` / `ol` | `<View role="list">` | — |
 | `li` | `<View role="listitem">` | the text |
 | long list (`items.map` with many rows) | `FlatList` (wrap rows in `role="listitem"`) | — |
@@ -134,6 +135,30 @@ export default function RootLayout() {
   )
 }
 ```
+
+## Enter in a field
+
+Web:
+
+```tsx
+<input aria-label="New Todo Input" onKeyDown={(e) => { if (e.key === "Enter") addItem(e.currentTarget.value) }} />
+```
+
+React Native:
+
+```tsx
+<TextInput
+  accessibilityLabel="New Todo Input"
+  value={title}
+  onChangeText={setTitle}
+  onSubmitEditing={() => {
+    addItem(title)
+    setTitle("")
+  }}
+/>
+```
+
+`onSubmitEditing` fires when the user presses Enter (on the phone keyboard: the return key). Clear the field the same way the web does.
 
 ## A full example: web button and input → React Native
 

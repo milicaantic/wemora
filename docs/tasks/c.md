@@ -173,7 +173,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 - [ ] isto sa pravim modelom (`--budget 1`)
 
 ### Kapija G2 (proverava A) — moj deo
-- [ ] bar 1 ekran TodoMVC-a „dokazan“ kroz Gatekeeper
+- [x] bar 1 ekran TodoMVC-a „dokazan“ kroz Gatekeeper (`todo-list`: proven u rundi 2, 5/5 B-ovih scenarija, mock prolaz)
 - [x] ručno pokvaren nacrt dobija `gate.failed` sa razumljivom porukom, builder ga popravi u sledećoj rundi (mock prolaz, `todo-list` runda 1 → 2)
 - [x] u `run.jsonl` nema uspešnih upisa buildera van `staging/` (mock prolaz; guard testiran u `builder.test.ts`)
 
@@ -189,7 +189,7 @@ Zavisi od A: `runtime` (`runLoop`, `sendEvent`), `freshContext()`, `OwnershipGua
 ### C3.2 Statusi u `results/`
 - [x] svaka jedinica dobija `proven / partial / unproven / failed` u `results/<unitId>.json`
 - [x] ekran bez testova posle drugog timeouta ulazi u aplikaciju kao `unproven` (na `tests.missing`, D-016)
-- [ ] povezano sa B-ovim `computeCoverage()` i D-ovim izveštajem
+- [x] povezano sa B-ovim `computeCoverage()` i D-ovim izveštajem (`proven` traži punu pokrivenost sa table; `report.html` prikazuje statuse)
 
 ### C3.3 Testovi toka — **samo ako je sve ostalo zeleno**
 - [ ] Gatekeeper pušta `Flow` kad su sve njegove jedinice promovisane

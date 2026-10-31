@@ -1,4 +1,4 @@
-// Kapija 4: svaka labela, naziv dugmeta i tekst iz testova jedinice postoji u kodu nacrta.
+// Kapija 4: svaka labela (fill i submit), naziv dugmeta i tekst iz testova jedinice postoji u kodu nacrta.
 //
 // Proverava se samo ono što postoji doslovno u originalnom web kodu jedinice.
 // Ostalo (npr. "Sarma", "Kupljeno: 0 od 1") dolazi iz podataka i ne može da bude u kodu.
@@ -29,6 +29,7 @@ function needsOf(tests: Scenario[]): Need[] {
     for (const step of [...(t.setup ?? []), ...t.steps]) {
       let need: Need | undefined
       if ("fill" in step) need = { kind: "label", value: step.fill.label, test: t.id }
+      else if ("submit" in step) need = { kind: "label", value: step.submit.label, test: t.id }
       else if ("tap" in step) {
         const tap = step.tap
         need = "role" in tap
@@ -62,14 +63,21 @@ function attrs(el: ts.JsxOpeningElement | ts.JsxSelfClosingElement): Map<string,
   return out
 }
 
-/** Konstantni tekstovi unutar čvora: JSX tekst i stringovi u {…}. */
+/** Da li je čvor deo vrednosti nekog JSX atributa (style, role, onPress…), a ne vidljiv tekst. */
+function inAttribute(node: ts.Node, stop: ts.Node): boolean {
+  for (let p = node.parent; p && p !== stop; p = p.parent) if (ts.isJsxAttribute(p)) return true
+  return false
+}
+
+/**
+ * Konstantni tekstovi unutar elementa: JSX tekst i svi stringovi u {…}, i u izrazima
+ * (npr. `{f === "all" ? "All" : "Active"}`), osim vrednosti atributa.
+ */
 function textPieces(node: ts.Node): string[] {
   const out: string[] = []
   walk(node, (n) => {
     if (ts.isJsxText(n) && norm(n.text)) out.push(norm(n.text))
-    if (ts.isJsxExpression(n) && n.expression && (ts.isStringLiteral(n.expression) || ts.isNoSubstitutionTemplateLiteral(n.expression))) {
-      out.push(norm(n.expression.text))
-    }
+    if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && norm(n.text) && !inAttribute(n, node)) out.push(norm(n.text))
   })
   return out
 }
