@@ -12,6 +12,25 @@ const ROOT_LAYOUT = "src/app/_layout.tsx"
 const list = (items: string[]) => items.map((x) => `"${x}"`).join(", ")
 const overlaps = (a: string, b: string) => a.startsWith(b) || b.startsWith(a)
 
+// Gestures the test DSL has no step for (architecture.md §11). Quoted texts are UI texts, so they are skipped.
+const GESTURES: [RegExp, string][] = [
+  [/\blong[- ]?(press|tap)\w*/i, "a long press"],
+  [/\bhover\w*/i, "mouse hover"],
+  [/\bdouble[- ]?(click|tap)\w*|\bdblclick\b/i, "a double click"],
+  [/\bdrag\w*|\bswip\w*/i, "dragging or swiping"],
+  [/\bright[- ]?click\w*|\bcontext menu\b/i, "a right click"],
+  [/\bkeyboard shortcut\w*|\bpress(es|ing)? (escape|esc|tab|arrow\w*|ctrl|cmd)\b/i, "a keyboard shortcut"],
+]
+const QUOTED = /'[^'\n]*'|"[^"\n]*"|‘[^’\n]*’|“[^”\n]*”/g
+
+function untestableGesture(description: string): string | null {
+  const plain = description.replace(QUOTED, "''")
+  return GESTURES.find(([pattern]) => pattern.test(plain))?.[1] ?? null
+}
+
+const mentions = (description: string, name: string) =>
+  [`'${name}'`, `"${name}"`, `‘${name}’`, `“${name}”`].some((quoted) => description.includes(quoted))
+
 /** Finds one dependency cycle, as a list of unit ids that starts and ends with the same id. */
 function findCycle(units: Unit[]): string[] | null {
   const byId = new Map(units.map((u) => [u.id, u]))
@@ -159,10 +178,25 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
       errors.push(`shared unit "${unit.id}" must not have obligations; shared units are proven through the screens that use them`)
     }
     const seen = new Set<string>()
+    const notPortable = unit.intentionalDifferences.flatMap((d) => (d.kind === "notPortable" ? [d.element.name] : []))
     for (const obligation of unit.obligations) {
       if (seen.has(obligation.id)) errors.push(`unit "${unit.id}" has obligation id "${obligation.id}" more than once`)
       seen.add(obligation.id)
       if (!ID.test(obligation.id)) errors.push(`obligation id "${obligation.id}" in unit "${unit.id}" must be kebab-case`)
+      // Tests must pass on the original web with the DSL steps only (A, docs/inbox 2026-10-31).
+      const gesture = untestableGesture(obligation.description)
+      if (gesture) {
+        errors.push(
+          `obligation "${obligation.id}" of unit "${unit.id}" needs ${gesture}, which a test cannot do; tests run on the original web with only goto, tap, fill, submit (type and press Enter), expectVisible and expectNotVisible on named elements. Rewrite it with those steps, or drop it and keep the element in intentionalDifferences`,
+        )
+      }
+      for (const name of notPortable) {
+        if (mentions(obligation.description, name)) {
+          errors.push(
+            `obligation "${obligation.id}" of unit "${unit.id}" uses '${name}', which the same unit marks notPortable, so no test can use it; drop the obligation or describe it with another named element`,
+          )
+        }
+      }
     }
   }
 
