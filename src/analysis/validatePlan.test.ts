@@ -160,6 +160,30 @@ describe("validatePlan catches broken plans", () => {
     expectError(errors, `"recipe-list" writes "src/app/_layout.tsx"`, "outside its folder")
   })
 
+  it("obligations a test cannot do on the original web: gestures and notPortable elements", () => {
+    const errors = check((p) => {
+      unit(p, "recipe-list").obligations.push(
+        { id: "edit-on-hold", description: "Long-pressing a recipe reveals an edit field." },
+        { id: "row-details", description: "Hovering a row shows 'Sastojci' with the ingredients." },
+        { id: "quick-edit", description: "Double-clicking a name opens the editor." },
+      )
+      unit(p, "shopping-list").obligations.push({ id: "reorder", description: "Dragging 'Hleb' above 'Mleko' changes the order." })
+    })
+    expectError(errors, `obligation "edit-on-hold" of unit "recipe-list" needs a long press`, "goto, tap, fill, submit")
+    expectError(errors, `obligation "row-details" of unit "recipe-list" needs mouse hover`)
+    expectError(errors, `obligation "quick-edit" of unit "recipe-list" needs a double click`)
+    expectError(errors, `obligation "reorder" of unit "shopping-list" needs dragging or swiping`)
+    // 'Sastojci' is the recipe-list tooltip marked notPortable in the hand-written plan.
+    expectError(errors, `obligation "row-details" of unit "recipe-list" uses 'Sastojci', which the same unit marks notPortable`)
+  })
+
+  it("does not read gesture words inside quoted screen texts", () => {
+    const errors = check((p) => {
+      unit(p, "shopping-list").obligations.push({ id: "odd-labels", description: "Tapping 'Drag me' shows 'Hover over here' and \"Double click\"." })
+    })
+    expect(errors).toEqual([])
+  })
+
   it("obligation problems", () => {
     const errors = check((p) => {
       unit(p, "categories").obligations = []

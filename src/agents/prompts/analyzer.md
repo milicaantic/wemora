@@ -75,6 +75,8 @@ An obligation is a behavior a user can observe on the screen, written so that a 
 - Describe what the user does and what they then see: "typing 'Sarma' in 'Pretraga' shows only Sarma", "after adding 'Mleko' the list shows 'Kupljeno: 0 od 1'".
 - Do not describe implementation ("calls getRecipes", "uses useState"). Do not describe styling.
 - Use only elements that have a name. If a control has no name, describe the behavior through a named control with the same result.
+- A test runs on this web screen with only these steps: open a path, tap a named button or link, fill a named field, type into a field and press Enter, and check that a text is or is not shown. Suggest only behaviors doable that way: no hover, double click, long press, drag or right click (put those in `mobileIssues` instead).
+- When a behavior needs a starting state, say how to reach it with named elements ("add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': 'Active' shows only 'Walk the dog'").
 - Prefer behaviors that only this screen has over things every screen shows (like the app header).
 
 # Output

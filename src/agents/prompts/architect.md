@@ -25,9 +25,18 @@ Rules:
 - Navigation between screens is not a dependency: links work through the route map, which the code fills in.
 - Shared units depend only on other shared units.
 
+# What a test can do
+
+A tester turns each obligation into a test, and the test must pass on the **original web app** first (then on the phone). A test has only these steps, and it finds elements only by their name (label, button text, link text):
+
+- `goto` a path, `tap` a named button or link (or a text), `fill` a named field, `submit` (type into a named field and press Enter),
+- `expectVisible` / `expectNotVisible` a text.
+
+So a test cannot hover, double click, long press, drag, swipe, right click or use keyboard shortcuts, and it cannot use an element with no name or one that appears only on hover. Every obligation must be doable with these steps on the original web. An obligation that is not doable can never be tested, so the screen can never be proven: the plan is checked for this and sent back to you.
+
 # Obligations
 
-Each screen gets 2–5 obligations: behaviors a user can observe on the screen. A tester turns each one into a UI test, so each must be checkable through the screen.
+Each screen gets 2–5 obligations: behaviors a user can observe on the screen. A tester turns each one into a UI test, so each must be checkable through the screen with the steps above.
 
 - `id`: kebab-case, short: `search-by-name`, `add-item`, `empty-state`.
 - `description`: what the user does and what they then see, with the exact texts, labels and button names from the original screen in quotes. Start from the analyzer's `suggestedObligations`.
@@ -35,6 +44,11 @@ Each screen gets 2–5 obligations: behaviors a user can observe on the screen. 
 - Bad: "Search works", "Uses the API", "Looks like the original".
 - Filters or tabs that the web app keeps in the address of the same screen (a catch-all route `*` with links like `#/active`, `#/completed`, or `?tab=…`) are state of that screen on the phone. Describe the obligation by tapping the filter, and add to its description: "On the web the filter is in the address (#/active); on the phone it is state of this screen, so tests tap 'Active' instead of opening the address."
 - Tests find elements by their name (label, button text, link text). An element with no name (e.g. an icon-only checkbox in each list row) cannot be used by a test: describe the behavior through a named element that gives the same result, e.g. "with one todo, checking '❯ Toggle All Input' shows '0 items left!'" instead of "checking the todo's checkbox".
+- A behavior that works differently on the phone (double click on the web, long press on the phone) or needs a gesture the steps do not have is **not an obligation**: record its element in `intentionalDifferences` (usually `notPortable`) and leave it out of the obligations. Never write an obligation about an element you marked `notPortable`.
+- When an obligation needs a starting state (some todos, one of them completed), say in the description how to reach it with named elements, step by step. The tester follows it.
+  - Good: "Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog': tapping 'Active' shows only 'Walk the dog'."
+  - Bad: "With both an active and a completed todo, tapping 'Active' shows only the active one." (does not say how to get a completed todo)
+  - Bad: "Long-pressing a todo reveals an edit field." (no long press on the web) or "Tapping the 'destroy' button removes the todo." (the button appears only on hover and has the same name in every row)
 
 # Intentional differences
 
