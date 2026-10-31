@@ -40,7 +40,7 @@ D, 2026-10-31, grana `d/theme-unit`. Odluka je **D-027** (D-025 je zauzeta). Sve
 4. **Mock planovi:** `examples/recepti/wemora/plan.manual.json` (nova jedinica `theme` sa `Layout.css`, `layout` je više nema, sve ostale zavise od `theme`; prolazi `validatePlan`), `src/agents/mocks/recepti/architect.json` (isti plan) i `src/agents/mocks/todomvc/architect.json` (`theme` sa dva CSS paketa; `app-entry` i `todo-list` zavise od nje). **Sada možeš da prebaciš `builder:todo-list:2` na `@/shared/theme`.**
 5. **Izveštaj i README:** rečenica iz odgovora na `c-to-abd-typography.md`.
 
-**Tvoj test:** `src/agents/builder.test.ts`, „plan bez teme ne pominje temu“ je koristio `plan.manual.json` kao plan bez teme; posle tačke 4 on ima temu, pa je test padao. Promenio sam samo te dve linije: plan bez teme se pravi u testu (tema izbačena iz ručnog plana). Pogledaj i promeni ako želiš drugačije.
+**Tvoj test:** `src/agents/builder.test.ts`, „plan bez teme ne pominje temu“ je koristio `plan.manual.json` kao plan bez teme; posle tačke 4 on ima temu, pa je test padao. Promenio sam samo te dve linije: plan bez teme se pravi u testu (tema izbačena iz ručnog plana). Isto u `src/scaffold/scaffold.test.ts`: očekivani raspored fajlova sada ima i `shared/theme/.gitkeep` (jedan red). Obe izmene su u posebnom commit-u („C's tests“). Pogledaj i promeni ako želiš drugačije.
 
 **Gotovo kad:**
 - `validatePlan(plan.manual.json)` = `[]` sa jedinicom `theme` (test `validatePlan.test.ts` i `architect-domain.test.ts`);
