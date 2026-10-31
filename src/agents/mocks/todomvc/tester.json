@@ -28,7 +28,92 @@
       }
     },
     {
-      "text": "Saved todo-list-empty-state. add-todo, complete-todo, filter-todos and clear-completed are not covered: a todo is added only with the Enter key, and the test steps have no key press."
+      "call": {
+        "name": "save_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-add-todo",
+            "unitId": "todo-list",
+            "obligation": "add-todo",
+            "steps": [
+              { "goto": "/" },
+              { "submit": { "label": "New Todo Input", "value": "Buy milk" } },
+              { "expectVisible": { "text": "Buy milk" } },
+              { "expectVisible": { "text": "1 item left!" } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "save_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-complete-todo",
+            "unitId": "todo-list",
+            "obligation": "complete-todo",
+            "steps": [
+              { "goto": "/" },
+              { "submit": { "label": "New Todo Input", "value": "Buy milk" } },
+              { "tap": { "role": "checkbox", "name": "❯ Toggle All Input" } },
+              { "expectVisible": { "text": "0 items left!" } },
+              { "expectVisible": { "text": "Clear completed" } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "save_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-filter-todos",
+            "unitId": "todo-list",
+            "obligation": "filter-todos",
+            "steps": [
+              { "goto": "/" },
+              { "submit": { "label": "New Todo Input", "value": "Buy milk" } },
+              { "tap": { "role": "checkbox", "name": "❯ Toggle All Input" } },
+              { "submit": { "label": "New Todo Input", "value": "Walk the dog" } },
+              { "tap": { "role": "link", "name": "Active" } },
+              { "expectVisible": { "text": "Walk the dog" } },
+              { "expectNotVisible": { "text": "Buy milk" } },
+              { "tap": { "role": "link", "name": "Completed" } },
+              { "expectVisible": { "text": "Buy milk" } },
+              { "expectNotVisible": { "text": "Walk the dog" } },
+              { "tap": { "role": "link", "name": "All" } },
+              { "expectVisible": { "text": "Buy milk" } },
+              { "expectVisible": { "text": "Walk the dog" } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "save_scenario",
+        "args": {
+          "scenario": {
+            "id": "todo-list-clear-completed",
+            "unitId": "todo-list",
+            "obligation": "clear-completed",
+            "steps": [
+              { "goto": "/" },
+              { "submit": { "label": "New Todo Input", "value": "Buy milk" } },
+              { "tap": { "role": "checkbox", "name": "❯ Toggle All Input" } },
+              { "submit": { "label": "New Todo Input", "value": "Walk the dog" } },
+              { "tap": { "role": "button", "name": "Clear completed" } },
+              { "expectNotVisible": { "text": "Buy milk" } },
+              { "expectVisible": { "text": "Walk the dog" } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "text": "Saved one scenario for each of the 5 obligations. The checkbox of a single todo has no name, so completing goes through '❯ Toggle All Input'."
     }
   ]
 }

@@ -2,14 +2,14 @@ import { ScenarioSchema, type RunScenarios, type Scenario, type ScenarioResult, 
 import { runScenarios } from "./run"
 import { DESKTOP, MOBILE } from "./viewports"
 
-const isAction = (s: Step) => "tap" in s || "fill" in s
+const isAction = (s: Step) => "tap" in s || "fill" in s || "submit" in s
 const isExpect = (s: Step) => "expectVisible" in s || "expectNotVisible" in s
 
 /**
  * A scenario becomes evidence only if (architecture.md §11):
  * 1. it passes on the original twice in a row;
  * 2. its steps fail on the blank screen (setup is skipped there, mobile viewport, no reveal);
- * 3. every action (tap/fill) followed by checks changes something: at least one of those checks
+ * 3. every action (tap/fill/submit) followed by checks changes something: at least one of those checks
  *    fails when run before the action.
  * Reasons are written for the tester model, so it can fix the scenario.
  */

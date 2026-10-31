@@ -83,7 +83,7 @@ export function testerBrief(unit: Unit, interactive: InteractiveElement[], saved
   ]
   if (interactive.length > 0) {
     lines.push(
-      "Interactive elements of this screen. Use each one in a tap or fill step of at least one scenario:",
+      "Interactive elements of this screen. Use each one in a tap, fill or submit step of at least one scenario:",
       ...interactive.map((e) => `- ${e.role} "${e.name}"`),
       "",
     )

@@ -58,6 +58,13 @@ describe("ScenarioSchema", () => {
     const bad = { ...exampleScenario, steps: [{ goto: "/narudzbine", tap: { text: "Sačuvaj" } }] }
     expect(ScenarioSchema.safeParse(bad).success).toBe(false)
   })
+
+  it("accepts submit (type and press Enter, D-017) with a label and a value only", () => {
+    const addTodo = { ...exampleScenario, steps: [{ goto: "/" }, { submit: { label: "New Todo Input", value: "Buy milk" } }] }
+    expect(ScenarioSchema.safeParse(addTodo).success).toBe(true)
+    const extra = { ...exampleScenario, steps: [{ submit: { label: "New Todo Input", value: "x", key: "Enter" } }] }
+    expect(ScenarioSchema.safeParse(extra).success).toBe(false)
+  })
 })
 
 describe("PlanSchema", () => {

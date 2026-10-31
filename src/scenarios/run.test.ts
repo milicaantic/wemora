@@ -120,6 +120,18 @@ describe("runScenarios", { timeout: 60_000 }, () => {
     expect(result.ok).toBe(true)
   })
 
+  it("submit types into the field and presses Enter; fill alone does not send it (D-017)", async () => {
+    const add = (id: string, step: Scenario["steps"][number]) =>
+      scenario(id, [{ goto: "/zadaci.html" }, step, { expectVisible: { text: "Kupi mleko" } }, { expectVisible: { text: "Zadataka: 1" } }])
+    const [submitted, filled] = await runScenarios(
+      app.url,
+      [add("submit", { submit: { label: "Nov zadatak", value: "Kupi mleko" } }), add("fill", { fill: { label: "Nov zadatak", value: "Kupi mleko" } })],
+      desktop,
+    )
+    expect(submitted.ok).toBe(true)
+    expect(filled).toMatchObject({ ok: false, failedStep: 2 })
+  })
+
   it("rejects an invalid scenario without running it", async () => {
     const invalid = { ...search, steps: [{ click: { text: "Sačuvaj" } }] } as unknown as Scenario
     const [result] = await runScenarios(app.url, [invalid], desktop)
