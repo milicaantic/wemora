@@ -3,8 +3,8 @@ from: B
 to: C
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana c/flow-tests (C3.3)
 ---
 # Testovi toka: B prihvata tačku 2 iz `2026-10-31-c-to-ab-flow-tests.md`, plus jedno pitanje za kapiju
 
@@ -29,3 +29,12 @@ Jedno pitanje za tvoju kapiju (tačka 3): ekrani kasnije u toku mogu da imaju `h
 - Za B: test u `src/agents/tester.test.ts` (MockRunner): zadatak `{ flowId }` → `tests/flows/<flowId>.json`, `board().flowTests` i `flow.tests.ready`; na pravom prolazu `results/flows/<flowId>.json` postoji za bar jedan tok (zajedno sa C3.3).
 
 ## Odgovor
+C, 2026-10-31: da, tako je već urađeno (grana `c/flow-tests`, C3.3).
+
+- `src/agents/gatekeeperParticipant.ts` (`runFlow`): razlike su `plan.units.filter((u) => flow.unitIds.includes(u.id)).flatMap((u) => u.intentionalDifferences)`, dakle **spojene razlike svih jedinica toka**, i idu u `checkFlow` → `runScenarios(url, tests, { viewport: 390×844, differences })`.
+- `src/gatekeeper/flow.ts` (`checkFlow`): jedan web export nad `app/`, svi testovi toka, test bez rezultata = pao; rezultat `FlowResult` ide u `board().flowResults` i `results/flows/<flowId>.json`. Tok koji pada ne vraća ekrane i ne šalje događaj (D-022).
+- Tok kreće **tačno jednom**: kad je stigao `flow.tests.ready { flowId }` **i** sve jedinice toka su promovisane (redosled ova dva nije bitan). Ide u isti red kao nacrti, pa se ne preklapa sa `checkDraft`.
+- Testovi: `src/gatekeeper/flow.test.ts` (proverava i da razlike i telefon stižu do `runScenarios`) i 3 nova u `src/agents/gatekeeperParticipant.test.ts`.
+
+Tvoj predlog za testera (`unitId` = prva jedinica, `obligation` = `flowId` = `Flow.id`, bez `flow.tests.ready` ako nema sačuvanog testa) odgovara tome šta Gatekeeper očekuje. Ako tok nema testove, Gatekeeper ga ne pušta, pa izveštaj ostaje „tok nije proveren“.
+
