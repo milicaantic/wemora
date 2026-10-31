@@ -11,6 +11,7 @@ import {
 } from "@mozaik-ai/core"
 import { beforeAll, describe, expect, it } from "vitest"
 import { PlanSchema, ScenarioSchema, type Plan, type RunConfig } from "../contracts"
+import { modelForRound } from "../core/config"
 import { initLog } from "../core/log"
 import { MockFixtureSchema, MockRunner, type MockFixture } from "../core/runner"
 import { board, initializeRuntime, join } from "../core/runtime"
@@ -181,7 +182,7 @@ beforeAll(async () => {
 describe("builder agent", () => {
   it("čita original i app, piše nacrt u svoj staging i šalje draft.submitted", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "shopping-list", round: 1, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "shopping-list", round: 1, model: modelForRound(1), lastError: null })
     expect(builder.isBusy()).toBe(true)
     await waitForSubmit("shopping-list", 1)
 
@@ -195,14 +196,14 @@ describe("builder agent", () => {
     expect(readFileSync(path.join(runDir, "app/src/screens/shopping-list/index.tsx"), "utf8")).not.toContain("Namirnica")
 
     // druga runda istog buildera vidi svoj nacrt
-    builder.assign({ unitId: "shopping-list", round: 2, model: "claude-haiku-5-5", lastError: "labels: nema ..." })
+    builder.assign({ unitId: "shopping-list", round: 2, model: modelForRound(2), lastError: "labels: nema ..." })
     await waitForSubmit("shopping-list", 2)
     expect(runner.toolOutputs.filter((o) => o === GOOD_SCREEN).length).toBeGreaterThan(0)
   })
 
   it("upis van staging/<builderId>/<unitId>/ je odbijen (OwnershipGuard)", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "favorites", round: 1, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "favorites", round: 1, model: modelForRound(1), lastError: null })
     await waitForSubmit("favorites", 1)
 
     // sva tri pokušaja dobijaju istu poruku (runner pamti samo različite izlaze)
@@ -215,7 +216,7 @@ describe("builder agent", () => {
 
   it("builder ne može da pročita tests/ ni fajlove koji nisu njegov izvor", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "categories", round: 1, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "categories", round: 1, model: modelForRound(1), lastError: null })
     await waitForSubmit("categories", 1)
 
     expect(runner.toolOutputs.some((o) => o.includes(SECRET))).toBe(false)
@@ -225,14 +226,14 @@ describe("builder agent", () => {
 
   it("kad model zaboravi submit_draft, nacrt se ipak predaje (da prolaz ne visi)", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "recipe-detail", round: 1, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "recipe-detail", round: 1, model: modelForRound(1), lastError: null })
     await waitForSubmit("recipe-detail", 1)
     expect(builder.isBusy()).toBe(false)
   })
 
   it("prekinuta runda ne šalje draft.submitted (D-016)", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "recipe-detail", round: 2, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "recipe-detail", round: 2, model: modelForRound(2), lastError: null })
     builder.cancel("builder round timeout")
     const started = Date.now()
     while (builder.isBusy() && Date.now() - started < 5_000) await new Promise((r) => setTimeout(r, 10))
@@ -243,8 +244,8 @@ describe("builder agent", () => {
 
   it("zauzet builder ignoriše drugi zadatak", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "recipe-list", round: 1, model: "claude-haiku-5-5", lastError: null })
-    builder.assign({ unitId: "categories", round: 2, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "recipe-list", round: 1, model: modelForRound(1), lastError: null })
+    builder.assign({ unitId: "categories", round: 2, model: modelForRound(2), lastError: null })
     await waitForSubmit("recipe-list", 1)
     expect(builder.isBusy()).toBe(false)
     expect(submitted.some((s) => s.unitId === "categories" && s.round === 2)).toBe(false)
@@ -252,7 +253,7 @@ describe("builder agent", () => {
 
   it.skipIf(!hasTemplateModules)("check_draft pušta kapije 1–4 i vraća poruku koju builder razume", async () => {
     const builder = newBuilder()
-    builder.assign({ unitId: "shopping-list", round: 3, model: "claude-haiku-5-5", lastError: null })
+    builder.assign({ unitId: "shopping-list", round: 3, model: modelForRound(3), lastError: null })
     await waitForSubmit("shopping-list", 3)
 
     expect(runner.toolOutputs).toContain("All checks passed (parse, forbiddenApis, tsc, labels). Now call submit_draft.")
