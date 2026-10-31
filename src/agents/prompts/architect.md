@@ -9,6 +9,7 @@ The plan splits the app into units. Builders rewrite one unit each, in waves, an
 There are two kinds of units:
 
 - `shared` (wave 0, no `route`): code that 2 or more screens use, or that is part of the app shell. Typical shared units: the data layer (API client, data hooks, stores, formatting helpers) and the layout (navigation, header, sidebar). Usually 1–3 shared units. Shared units have no obligations and no intentional differences.
+- `theme` (a shared unit with this exact id): the layout of the mobile app may change (columns, table → cards, sidebar → tabs), but fonts, sizes and colors are carried over from the web. When the task lists **global stylesheets**, put all of them, and only them, in one shared unit `"id": "theme"` (wave 0, no `dependsOn`, no obligations), and make every other unit depend on `"theme"`. A global stylesheet goes to the theme even when it also styles one part of the app (e.g. a sidebar); the unit that needs it can still read it, because it depends on the theme. Paths under `node_modules/` are package stylesheets the app imports; list them exactly as written. With no global stylesheets in the task, there is no theme unit.
 - `screen` (one per route, with `route` exactly as the parser wrote it): the page component of that route and the files only it uses (its CSS, its small components). A modal, dialog or part that exists only inside one screen belongs to that screen.
 
 Rules:
@@ -78,18 +79,29 @@ The one exception for `writes`: when the web app's navigation (sidebar, header m
 
 # Example
 
-A shortened plan with two units (a real plan has a screen unit for every route):
+A shortened plan with three units (a real plan has a screen unit for every route):
 
 ```json
 {
   "units": [
+    {
+      "id": "theme",
+      "kind": "shared",
+      "wave": 0,
+      "sources": ["src/components/Layout.css"],
+      "writes": [],
+      "dependsOn": [],
+      "obligations": [],
+      "intentionalDifferences": [],
+      "size": 0
+    },
     {
       "id": "data",
       "kind": "shared",
       "wave": 0,
       "sources": ["src/api/client.ts", "src/store/shoppingList.ts"],
       "writes": [],
-      "dependsOn": [],
+      "dependsOn": ["theme"],
       "obligations": [],
       "intentionalDifferences": [],
       "size": 0
@@ -101,7 +113,7 @@ A shortened plan with two units (a real plan has a screen unit for every route):
       "route": "/kupovina",
       "sources": ["src/pages/ShoppingListPage.css", "src/pages/ShoppingListPage.tsx"],
       "writes": [],
-      "dependsOn": ["data"],
+      "dependsOn": ["data", "theme"],
       "obligations": [
         { "id": "empty-state", "description": "With no items the screen shows 'Lista za kupovinu je prazna'." },
         { "id": "add-item", "description": "Filling 'Namirnica' with 'Hleb' and tapping 'Dodaj' adds an item 'Hleb' and shows 'Kupljeno: 0 od 1'." }

@@ -100,7 +100,8 @@ describe("validatePlan catches broken plans", () => {
 
   it("an unknown kind as a schema error, without throwing", () => {
     const errors = check((p) => ((unit(p, "favorites") as { kind: string }).kind = "page"))
-    expectError(errors, "plan does not match the schema at units.5.kind")
+    const index = manual.units.findIndex((u) => u.id === "favorites")
+    expectError(errors, `plan does not match the schema at units.${index}.kind`)
   })
 
   it("input that is not a plan at all", () => {

@@ -49,3 +49,8 @@ Ništa ne menjam dok ne odgovorite sve troje.
 ## Odgovor
 
 A, 2026-10-31: slažem se. Tim je izabrao Nivo 2 (zajednička jedinica `theme`), pa sam upisao to, ne samo Nivo 1: odluka **D-027** (ne D-025, ta je zauzeta), `architecture.md` §8 i §11, grana `a/typography-decision`. Detalji su u `done/2026-10-31-c-to-a-theme-decision.md`. Status ove poruke ostavljam otvoren za odgovore B-a i D-a.
+
+D, 2026-10-31: slažem se sa Nivoom 2 (D-027). Na tvoja dva pitanja:
+- **Izveštaj i sajt:** da. Izveštaj sada kaže „Izgled (font, veličine, boje) se prenosi sa weba preko teme; dokaz je za ponašanje, ne za izgled.“, ali samo kad plan ima jedinicu `theme`; README ima istu poruku („Looks vs. proof“, ispod tabele statusa). Za sajt (tvoj prototip, PR #77) predlažem istu rečenicu.
+- **Arhitekta pravi `theme`:** da, urađeno na grani `d/theme-unit`; detalji u odgovoru na `2026-10-31-c-to-d-theme-unit.md`.
+Status ostavljam otvoren za odgovor B-a.

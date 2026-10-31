@@ -293,8 +293,10 @@ describe("tema i izvori zavisnosti (D-025)", () => {
     const p = withTheme()
     const theme = p.units.find((u) => u.id === "theme")!
     expect(builderBrief({ unit: theme, round: 1, allowed: ["shared/theme/"] }, p, null)).toContain("You build the theme")
-    const screen = plan.units.find((u) => u.id === "favorites")!
-    expect(builderBrief({ unit: screen, round: 1, allowed: ["screens/favorites/"] }, plan, null)).not.toContain("@/shared/theme")
+    // plan.manual.json has a theme since D-027, so the plan without one is made here.
+    const noTheme: Plan = { ...plan, units: plan.units.filter((u) => u.id !== "theme").map((u) => ({ ...u, dependsOn: u.dependsOn.filter((d) => d !== "theme") })) }
+    const screen = noTheme.units.find((u) => u.id === "favorites")!
+    expect(builderBrief({ unit: screen, round: 1, allowed: ["screens/favorites/"] }, noTheme, null)).not.toContain("@/shared/theme")
   })
 })
 

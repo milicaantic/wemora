@@ -23,3 +23,5 @@ export {
 export { expoRouteFor } from "./expoRoute"
 export { ArchitectOutputSchema, normalizePlan, type ArchitectOutput } from "./normalizePlan"
 export { architectBrief, architectRetryMessage } from "./architectBrief"
+export { THEME_UNIT } from "./normalizePlan"
+export { globalStylesheets, hasGlobalRules, knownSourceFiles, packageStylesheets } from "./styles"

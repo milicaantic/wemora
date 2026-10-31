@@ -68,6 +68,8 @@ flowchart LR
 | **unproven** | no validated tests; **a screen with zero tests is never proven** |
 | **failed** | tests exist and the screen still fails them after the last round |
 
+**Looks vs. proof.** The layout may change on a phone (columns, a table becomes cards, a sidebar becomes tabs), but fonts, sizes and colors are carried over from the web: the architect puts the app's global stylesheets into a shared `theme` unit, built first, and every screen uses it. The proof is about behavior: *proven* means the screen does what the original does, not that it looks the same.
+
 The report (Serbian) also shows a timeline of all agents, the speed-up from running them in parallel, the agent count over time, the cost per agent, and the rounds and models per unit. Full architecture (Serbian): [`docs/architecture.md`](docs/architecture.md).
 
 ![Timeline in the report: one row per agent, the tester writes tests while the builder's rounds run](docs/img/report-timeline.png)

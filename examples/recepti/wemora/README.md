@@ -7,25 +7,27 @@
 - **očekivanje za D:** test za `validatePlan` (D8) i poređenje sa planom arhitekte (D16);
 - **primer** za prompt arhitekte.
 
-Prolazi `PlanSchema`. Kad stigne `validatePlan`, proverava se i nad pravim `parseApp("examples/recepti")`.
+Prolazi `PlanSchema` i `validatePlan` nad pravim `parseApp("examples/recepti")` (test u `src/analysis/validatePlan.test.ts`).
 
 ## Jedinice
 
 | Jedinica | Vrsta | Talas | Ruta | Zavisi od | Izvorni fajlovi | Tokeni |
 |---|---|---|---|---|---|---|
-| `data` | shared | 0 | — | — | `src/api/*`, `src/store/*`, `src/format.ts` | 1445 |
-| `layout` | shared | 0 | — | `data` | `src/App.tsx`, `src/main.tsx`, `src/components/*` | 1194 |
-| `recipe-list` | screen | 1 | `/` | `data`, `layout` | `src/pages/RecipeListPage.*` | 1390 |
-| `recipe-detail` | screen | 1 | `/recepti/:id` | `data`, `layout` | `src/pages/RecipeDetailPage.*` | 1043 |
-| `categories` | screen | 1 | `/kategorije` | `data`, `layout` | `src/pages/CategoriesPage.*` | 812 |
-| `favorites` | screen | 1 | `/omiljeni` | `data`, `layout` | `src/pages/FavoritesPage.*` | 453 |
-| `shopping-list` | screen | 1 | `/kupovina` | `data` | `src/pages/ShoppingListPage.*` | 758 |
+| `theme` | shared | 0 | — | — | `src/components/Layout.css` (globalna pravila: `*`, `body`, `a`, `button`) | 305 |
+| `data` | shared | 0 | — | `theme` | `src/api/*`, `src/store/*`, `src/format.ts` | 1445 |
+| `layout` | shared | 0 | — | `data`, `theme` | `src/App.tsx`, `src/main.tsx`, `src/components/*` osim `Layout.css` | 889 |
+| `recipe-list` | screen | 1 | `/` | `data`, `layout`, `theme` | `src/pages/RecipeListPage.*` | 1390 |
+| `recipe-detail` | screen | 1 | `/recepti/:id` | `data`, `layout`, `theme` | `src/pages/RecipeDetailPage.*` | 1043 |
+| `categories` | screen | 1 | `/kategorije` | `data`, `layout`, `theme` | `src/pages/CategoriesPage.*` | 812 |
+| `favorites` | screen | 1 | `/omiljeni` | `data`, `layout`, `theme` | `src/pages/FavoritesPage.*` | 453 |
+| `shopping-list` | screen | 1 | `/kupovina` | `data`, `theme` | `src/pages/ShoppingListPage.*` | 758 |
 
 - Svaki od 23 fajla u `src/` pripada tačno jednoj jedinici.
 - `size` je `ceil(znakovi / 4)` po fajlu, sa krajevima linija normalizovanim na `\n` (isto pravilo koristi parser).
 - `writes` su relativne u odnosu na `app/`: `src/screens/<id>/` za ekrane, `src/shared/<id>/` za zajedničke jedinice (raspored iz C-ovog šablona).
-- `layout` zavisi od `data`, jer `FavoriteButton` koristi skladište omiljenih. Obe su u talasu 0; red zadataka ih radi redom po `dependsOn`.
-- `shopping-list` ne koristi nijednu komponentu, pa zavisi samo od `data`.
+- `theme` (D-027) prenosi font, veličine i boje sa weba: dobija globalni CSS (`Layout.css` ima pravila za `*`, `body`, `a`, `button`; u njemu je i bočni meni, ali fajl pripada temi, a builder `layout`-a ga i dalje može čitati jer zavisi od teme). Sve ostale jedinice zavise od `theme`; `normalizePlan` to dodaje sam kad tema postoji.
+- `layout` zavisi od `data`, jer `FavoriteButton` koristi skladište omiljenih. Sve tri zajedničke jedinice su u talasu 0; red zadataka ih radi redom po `dependsOn` (`theme`, pa `data`, pa `layout`).
+- `shopping-list` ne koristi nijednu komponentu, pa zavisi samo od `data` (i od `theme`, kao svi).
 
 ## Obaveze (ID-jevi za `Scenario.obligation`)
 

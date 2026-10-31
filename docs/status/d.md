@@ -133,11 +133,18 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
   4. licenca (nema `LICENSE`, `package.json` kaže ISC, što je npm podrazumevano), i puna imena tima ako ih tim želi umesto GitHub imena;
   5. završni prolaz: neko ko nije pisao README ga prati na čistom klonu; komande i izlaz prekopirati iz terminala.
 
+## Gotovo, čeka spajanje (grana `d/theme-unit`)
+- Zajednička jedinica `theme` (D-027, inbox C → D): `src/analysis/styles.ts` (`globalStylesheets`, `packageStylesheets` iz `import "x.css"`, `knownSourceFiles`); `validatePlan` prihvata CSS iz paketa (`node_modules/…`) kao izvor; `normalizePlan` dodaje `"theme"` u `dependsOn` svih ostalih jedinica kad tema postoji; `architectBrief` navodi globalne stilove; prompt arhitekte i njegov primer imaju temu.
+- `plan.manual.json` (i `examples/recepti/wemora/README.md`, mock za Recepte): nova jedinica `theme` sa `Layout.css`; TodoMVC mock plan: `theme` sa dva CSS paketa.
+- Izveštaj i README: „izgled se prenosi preko teme; dokaz je za ponašanje“ (u izveštaju samo kad plan ima temu).
+- C-ov `builder.test.ts`: dve linije („plan bez teme“ se pravi u testu), jer `plan.manual.json` sada ima temu; javljeno C-u u odgovoru.
+- `migrate:mock` nad TodoMVC-om: `theme` promovisan, `todo-list` proven. 6 novih testova.
+
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/readme` (D19, delimično)
+- PR `d/theme-unit`
 - D19 do kraja kad stignu stavke iz liste „Šta fali u README-u“
 - kad A pusti pravi prolaz: arhivirati ga u `runs/` i pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
 
