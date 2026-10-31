@@ -264,7 +264,7 @@ describe("builder agent", () => {
   }, 120_000)
 })
 
-describe("tema i izvori zavisnosti (D-025)", () => {
+describe("tema i izvori zavisnosti (D-027)", () => {
   const withTheme = (): Plan => {
     const theme = { ...plan.units.find((u) => u.id === "data")!, id: "theme", sources: ["src/components/Layout.css"], writes: ["src/shared/theme/"], dependsOn: [] }
     const units = plan.units.map((u) => (u.id === "theme" ? u : { ...u, dependsOn: [...u.dependsOn, "theme"], sources: u.sources.filter((s) => s !== "src/components/Layout.css") }))
@@ -293,8 +293,10 @@ describe("tema i izvori zavisnosti (D-025)", () => {
     const p = withTheme()
     const theme = p.units.find((u) => u.id === "theme")!
     expect(builderBrief({ unit: theme, round: 1, allowed: ["shared/theme/"] }, p, null)).toContain("You build the theme")
-    const screen = plan.units.find((u) => u.id === "favorites")!
-    expect(builderBrief({ unit: screen, round: 1, allowed: ["screens/favorites/"] }, plan, null)).not.toContain("@/shared/theme")
+    // plan.manual.json has a theme since D-027, so the plan without one is made here.
+    const noTheme: Plan = { ...plan, units: plan.units.filter((u) => u.id !== "theme").map((u) => ({ ...u, dependsOn: u.dependsOn.filter((d) => d !== "theme") })) }
+    const screen = noTheme.units.find((u) => u.id === "favorites")!
+    expect(builderBrief({ unit: screen, round: 1, allowed: ["screens/favorites/"] }, noTheme, null)).not.toContain("@/shared/theme")
   })
 })
 
@@ -360,7 +362,12 @@ describe("MockRunner primeri za TodoMVC (za A12)", () => {
     expect(results.every((r) => r.ok)).toBe(true)
   }, 120_000)
 
-  it.skipIf(!hasTemplateModules)("nacrt iz runde 2 prolazi kapije 1–4", async () => {
+  it.skipIf(!hasTemplateModules)("nacrt iz runde 2 koristi temu i prolazi kapije 1–4 (tema je već u aplikaciji)", async () => {
+    const screen = written("builder:todo-list:2")[0]!
+    expect(screen).toContain('from "@/shared/theme"')
+    // tema je talas 0: Gatekeeper ju je već ubacio u app/ pre ekrana
+    mkdirSync(path.join(runDir, "app/src/shared/theme"), { recursive: true })
+    writeFileSync(path.join(runDir, "app/src/shared/theme/index.tsx"), written("builder:theme:1")[0]!)
     const draftDir = path.join(runDir, "staging", "mock-check", "todo-list")
     mkdirSync(path.join(draftDir, "screens/todo-list"), { recursive: true })
     writeFileSync(path.join(draftDir, "screens/todo-list/index.tsx"), written("builder:todo-list:2")[0]!)

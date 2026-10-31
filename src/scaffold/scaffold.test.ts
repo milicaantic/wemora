@@ -52,6 +52,7 @@ describe("scaffold nad planom za Recepte", () => {
       "shared/config.ts",
       "shared/data/.gitkeep",
       "shared/layout/.gitkeep",
+      "shared/theme/.gitkeep", // plan.manual.json has the theme unit since D-027
     ])
   })
 

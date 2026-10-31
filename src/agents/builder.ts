@@ -33,7 +33,7 @@ export type BuildJob = {
   webDir: string
   /** Paths relative to app/src/ the unit may write, from Unit.writes (e.g. "screens/recipe-list/"). */
   allowed: string[]
-  /** Web files read_source may open: the unit's sources plus those of the units it depends on (D-025). */
+  /** Web files read_source may open: the unit's sources plus those of the units it depends on (D-027). */
   readable: string[]
   submitted: boolean
 }

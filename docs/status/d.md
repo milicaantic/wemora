@@ -115,30 +115,23 @@ Prvi put (na `8fae0cf`) je pala stavka C: aplikacija iz `scaffold()` je davala �
 - Inbox B → D (README pre `verify`): urađeno u `README.md` i `runs/README.md`, poruka u `docs/inbox/done/`.
 - Inbox D → A (nova): skripta `npm run archive` / `wemora archive` (A-ov `package.json` i `cli.ts`).
 
-## Delimično gotovo, čeka spajanje (grana `d/readme`)
-- D19, sve što može danas (README ceo na engleskom, bez srpskog rezimea, po želji tima; izveštaj ostaje na srpskom):
-  1. jedna rečenica + snimak izveštaja (`docs/img/report-summary.png`, iz `runs/todomvc-mock-…`); u „How it works“ i snimak vremenske ose (`docs/img/report-timeline.png`);
-  2. problem i rešenje (wrapper vs. AI generator; „proizvod je dokaz, ne kod“);
-  3. mermaid dijagram toka + tabela statusa;
-  4. Mozaik: paralelni agenti, `join`/`leave` po formulama (A14), tabla `MigrationState`, događaji sa ID-jevima, `OwnershipGuard`/`CancelGuard`, structured output, `BudgetedRunner`/`MockRunner`, `eventLogger`; svaka tvrdnja sa linkom na fajl; tabela agenata, modela i alata;
-  5. brzi start bez ključa: `npm ci`, Playwright, `npm ci` u `templates/expo`, build, test, `verify` nad `runs/todomvc-mock-…`, pa `sabotage` nad kopijom u `output/` i `verify` koji pada (1/5, exit 1); dok A18 ne stigne, preko `npx tsx -e`; izlaz obe komande je prekopiran iz terminala (čist klon);
-  6. pun prolaz: `--mock` nad TodoMVC-om sa `--original-url` (pušteno, ~3 min, `finished`) i pravi prolaz nad Receptima (`.env`, gateway, mock-api, original, podrazumevani budžet $5);
-  7. stablo `output/<run-id>/`; 8. ograničenja i van obima (arch §15, ulazni profil, testovi na Expo webu, Android još nije kapija); 9. tim: tabela ko je vlasnik čega (JavorFaks = A, Vujic04 = B, Milica Antić = C, Kuzma04 = D, po autorima commit-a u tim folderima) i linkovi na `docs/`.
-  - Svaka tvrdnja proverena u kodu (modeli po D-023, runde 3–4 na jačem modelu po A15, Android kapija ne postoji, budžet gasi jedinice koje čekaju); svi linkovi vode na postojeće fajlove.
-- Usput: izveštaj je prikazivao „— nije pušten“ za sve testove dokazanog ekrana, jer Gatekeeper upisuje `results/<unit>.json` sa praznim `scenarios`. Izveštaj sada, kad nema pojedinačnih rezultata, a kapija `scenarios` poslednje runde je prošla, prikazuje testove kao prolazne (2 testa). Inbox D → C: da Gatekeeper popunjava `scenarios`.
-- **Šta fali u README-u** (isto je u HTML komentarima `TODO(D19)` u samom README-u, nevidljivo na GitHub-u):
-  1. prolaz za Recepte u `runs/recepti-<vreme>`: treba pravi prolaz (A, ključ) ili mock odgovori testera i buildera za Recepte (B, C); onda snimak njegovog izveštaja i primer u brzom startu;
-  2. `npm run verify` i `npm run sabotage` u CLI-ju (A18): zameniti `npx tsx -e …` komande u brzom startu tim komandama i prekopirati izlaz;
-  3. pravi prolaz (ne `--mock`) arhiviran u `runs/`, sa troškom i ubrzanjem iz izveštaja;
-  4. licenca (nema `LICENSE`, `package.json` kaže ISC, što je npm podrazumevano), i puna imena tima ako ih tim želi umesto GitHub imena;
-  5. završni prolaz: neko ko nije pisao README ga prati na čistom klonu; komande i izlaz prekopirati iz terminala.
+## Spojeno u main: D19 prva verzija (PR #76, #79, #80) i tema (PR #90)
+- README prva verzija i tema `theme` (D-027) su u `main`-u; detalji su u istoriji ovog fajla.
+
+## Gotovo, čeka spajanje (grana `d/readme-final`)
+- D19 do kraja: README napisan iz ugla žirija (šta je projekat, zašto, provera bez ključa u 4 koraka, pravi prolaz, kako radi, Mozaik, izlaz, ograničenja, tim, licenca), bez internih oznaka i TODO komentara.
+  - Pušteno na **čistom klonu** te grane, korak po korak, tačno kao u README-u: `npm ci`, Playwright, `npm ci` u `templates/expo` → `npm run verify -- runs/todomvc-mock-…` (5/5, OK, exit 0, 22 s) → `npm run sabotage` + `verify` (1/5, FAILED, exit 1) → `git checkout -- runs/` (čisto) → `npm ci` u `examples/todomvc` + `npm run migrate:mock -- examples/todomvc` (`finished`, `theme`/`app-entry`/`todo-list` promovisani, `todo-list` proven, 158 s). Izlazi u README-u su iz tog terminala.
+  - Pravi prolaz nad Receptima je opisan, ali nije pušten (nema ključa); komande su proverene (mock-api `npm start`, `migrate` sam build-uje i servira original, D-025).
+- MIT licenca: `LICENSE` i `"license": "MIT"` u `package.json` (A-ov fajl, jedan red, po odluci tima).
+- `runs/README.md`: prave `npm run verify` / `npm run archive` komande.
+- Inbox D → A: dva testa Conductor-a (`conductor.test.ts`, A17 i „late draft“) padaju u punom `npm test` kad je `templates/expo` instaliran (zavise od vremena dok rade Expo exporti); sami prolaze. Zato README ne traži `npm test`.
+- Šta README i dalje nema, jer ne postoji: prolaz za Recepte i prolaz sa pravim modelom u `runs/`. Kad A pusti pravi prolaz: `npm run archive -- output/<run-id>`, red u tabeli `runs/README.md` i, ako je bolji primer, zameniti TodoMVC u README-u.
 
 ## U radu
 - ništa
 
 ## Sledeće
-- PR `d/readme` (D19, delimično)
-- D19 do kraja kad stignu stavke iz liste „Šta fali u README-u“
+- PR `d/readme-final`
 - kad A pusti pravi prolaz: arhivirati ga u `runs/` i pogledati izveštaj v2 nad pravim podacima (trošak, ubrzanje)
 
 ## Odgovori D (2026-10-31)

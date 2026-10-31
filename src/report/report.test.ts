@@ -8,6 +8,7 @@ import { escapeHtml } from "./html"
 import { loadRun } from "./load"
 import { usdText } from "./costs"
 import { describeDifference, toReportModel } from "./model"
+import { renderReport } from "./render"
 import { buildTimeline, peakTeam, speedupText } from "./timeline"
 
 const fixture = fileURLToPath(new URL("./mocks/run", import.meta.url))
@@ -305,5 +306,16 @@ describe("helpers", () => {
     expect(describeDifference({ kind: "hiddenBehind", element: { label: "Status" }, reveal: { text: "Filteri" } })).toBe("'Status' je na telefonu iza 'Filteri'")
     expect(describeDifference({ kind: "movedTo", what: "email kupca", toUnit: "order-detail" })).toBe("email kupca je prebačeno na ekran order-detail")
     expect(describeDifference({ kind: "notPortable", element: { role: "button", name: "Info" }, reason: "samo hover" })).toBe("button 'Info' nije prenosivo: samo hover")
+  })
+})
+
+describe("theme note (D-027)", () => {
+  it("says that looks come from the theme and the proof is about behavior, only when the plan has a theme", () => {
+    const sentence = "Izgled (font, veličine, boje) se prenosi sa weba preko teme; dokaz je za ponašanje, ne za izgled."
+    const data = loadRun(fixture)
+    expect(renderReport(toReportModel(data))).not.toContain(sentence)
+    const theme = { ...data.plan!.units.find((u) => u.id === "data")!, id: "theme", sources: [], writes: ["src/shared/theme/"], dependsOn: [] }
+    data.plan = { ...data.plan!, units: [theme, ...data.plan!.units] }
+    expect(renderReport(toReportModel(data))).toContain(sentence)
   })
 })

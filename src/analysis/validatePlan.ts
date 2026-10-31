@@ -1,4 +1,5 @@
 import { PlanSchema, type Plan, type Unit, type ValidatePlan } from "../contracts"
+import { knownSourceFiles } from "./styles"
 
 // Checks a plan against the parser's view of the app (docs/architecture.md §8).
 // Messages are in English and name the exact unit, file or route, because the architect
@@ -100,7 +101,8 @@ export const validatePlan: ValidatePlan = (input, parsed) => {
   }
 
   // 5. Sources exist and belong to at most one unit.
-  const knownFiles = new Set([...parsed.sharedFiles, ...parsed.routes.flatMap((r) => r.files)])
+  // Package stylesheets imported by shared code count too: they belong to the theme unit (D-027).
+  const knownFiles = knownSourceFiles(parsed)
   const ownerOf = new Map<string, string[]>()
   for (const unit of units) {
     for (const file of new Set(unit.sources)) {

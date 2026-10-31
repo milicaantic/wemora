@@ -1,7 +1,10 @@
 import { PlanSchema, type Obligation, type ParsedApp, type Plan, type Unit } from "../contracts"
 import { expoRouteFor } from "./expoRoute"
 import { normalizeRequestedPath } from "./fileAccess"
-import { estimateTokens, readText } from "./source"
+import { knownSourceFiles, sourceTokens } from "./styles"
+
+/** ID of the shared unit that carries fonts, sizes and colors from the web app (D-027). */
+export const THEME_UNIT = "theme"
 
 /** What the architect model returns: a plan without routeMap, which the code computes. */
 export const ArchitectOutputSchema = PlanSchema.omit({ routeMap: true })
@@ -46,20 +49,23 @@ function computeWaves(units: Unit[]): Map<string, number> {
  * Problems it cannot fix (a route without a screen, a file in two units, a cycle) stay for validatePlan.
  */
 export function normalizePlan(input: ArchitectOutput, parsed: ParsedApp): Plan {
-  const known = new Set([...parsed.sharedFiles, ...parsed.routes.flatMap((r) => r.files)])
+  const known = knownSourceFiles(parsed)
   const tokenCache = new Map<string, number>()
   const tokensOf = (file: string) => {
-    if (!tokenCache.has(file)) tokenCache.set(file, estimateTokens(readText(parsed.webDir, file)))
+    if (!tokenCache.has(file)) tokenCache.set(file, sourceTokens(parsed, file))
     return tokenCache.get(file)!
   }
+  // With a shared "theme" unit (D-027), every other unit uses its fonts and colors, so it depends on it.
+  const hasTheme = input.units.some((u) => u.id === THEME_UNIT && u.kind === "shared")
 
   const units: Unit[] = input.units.map((unit) => {
     const sources = [...new Set(unit.sources.map(normalizeRequestedPath).filter((f): f is string => f !== null && known.has(f)))].sort()
+    const dependsOn = hasTheme && unit.id !== THEME_UNIT ? [...unit.dependsOn, THEME_UNIT] : unit.dependsOn
     return {
       ...unit,
       sources,
       writes: unit.writes.length > 0 ? [...new Set(unit.writes)] : [ownPrefix(unit)],
-      dependsOn: [...new Set(unit.dependsOn)].sort(),
+      dependsOn: [...new Set(dependsOn)].sort(),
       obligations: [...unit.obligations].sort((a: Obligation, b: Obligation) => a.id.localeCompare(b.id)),
       size: sources.reduce((sum, f) => sum + tokensOf(f), 0),
     }
