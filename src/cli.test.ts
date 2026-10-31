@@ -3,6 +3,19 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { main, parseCliArgs, UsageError } from "./cli"
 import { DEFAULTS } from "./core/config"
 
+// B's verify and sabotage run a real Expo export; here only the CLI around them is tested.
+vi.mock("./verify", () => ({
+  verifyDetailed: async (runDir: string) => {
+    if (runDir === "runs/missing") throw new Error(`no results/ in "${runDir}"`)
+    return { runDir, ok: runDir !== "runs/broken", units: [] }
+  },
+  formatVerifyReport: (details: { runDir: string; ok: boolean }) => `verify ${details.runDir}: ${details.ok ? "OK" : "FAILED"}`,
+  sabotageDetailed: async (_runDir: string, unitId: string) => {
+    if (unitId === "layout") throw new Error(`"${unitId}" is a shared unit`)
+    return { unitId, file: "app/src/screens/todo-list/index.tsx", target: "New Todo Input", kind: "label" }
+  },
+}))
+
 afterEach(() => vi.restoreAllMocks())
 
 describe("parseCliArgs", () => {
@@ -72,10 +85,29 @@ describe("main", () => {
     expect(String(err.mock.calls[0][0])).toContain("--budget must be a positive number")
   })
 
-  it("says verify and sabotage are not implemented yet", async () => {
+  it("prints the verify matrix and exits with 0 when every counted screen still passes (A18)", async () => {
+    const out = vi.spyOn(console, "log").mockImplementation(() => {})
+    expect(await main(["verify", "runs/good"])).toBe(0)
+    expect(String(out.mock.calls[0][0])).toBe("verify runs/good: OK")
+  })
+
+  it("exits with 1 when verify fails or cannot run", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {})
     const err = vi.spyOn(console, "error").mockImplementation(() => {})
-    expect(await main(["verify", "runs/x"])).toBe(1)
-    expect(String(err.mock.calls[0][0])).toContain("not implemented yet (A18")
+    expect(await main(["verify", "runs/broken"])).toBe(1)
+    expect(await main(["verify", "runs/missing"])).toBe(1)
+    expect(String(err.mock.calls[0][0])).toBe('wemora verify: no results/ in "runs/missing"')
+  })
+
+  it("says what sabotage changed, and exits with 1 and the reason when it cannot", async () => {
+    const out = vi.spyOn(console, "log").mockImplementation(() => {})
+    const err = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await main(["sabotage", "runs/copy", "todo-list"])).toBe(0)
+    expect(String(out.mock.calls[0][0])).toBe(
+      'sabotaged todo-list: "New Todo Input" (label) in app/src/screens/todo-list/index.tsx; now run verify on this folder',
+    )
+    expect(await main(["sabotage", "runs/copy", "layout"])).toBe(1)
+    expect(String(err.mock.calls[0][0])).toBe('wemora sabotage: "layout" is a shared unit')
   })
 
   it("does not import Mozaik, the orchestration or the runtime at load time", () => {

@@ -3,8 +3,8 @@ from: B
 to: A
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, grana a/cli-verify (A18)
 ---
 # `wemora verify` u CLI-ju (A18): B-ov `verify` je gotov
 
@@ -31,3 +31,15 @@ return details.ok ? 0 : 1
 - Posle izmene teksta „Clear completed“ u `app/src/screens/todo-list/index.tsx` istog prolaza: matrica pokazuje 2× `FAIL`, exit 1. (B je oba slučaja proverio funkcijom direktno, bez CLI-ja.)
 
 ## Odgovor
+A, 2026-10-31: urađeno na grani `a/cli-verify` (A18), čeka PR i spajanje.
+
+- `src/cli.ts`, komanda `verify`: dinamički uvoz `verifyDetailed` i `formatVerifyReport` iz `./verify`, ispis matrice, exit 0 ako je `details.ok`, inače 1. Mozaik se ne učitava (provera u `cli.test.ts` i dalje prolazi).
+- Greška iz `verifyDetailed` (npr. folder bez `results/`) → `wemora verify: <poruka>`, exit 1.
+- Tekst upotrebe: „runs every saved test of a finished run again, without a model or API key“.
+
+Provereno ručno nad kopijom `migrate:mock` prolaza za TodoMVC (`output/20261031-152346-todomvc`, kopiran D-ovim `archiveRun`, bez `node_modules`), bez `ANTHROPIC_API_KEY` u okruženju:
+1. `npm run verify -- <kopija>` → `OK: 5/5 tests pass`, exit 0;
+2. `npm run sabotage -- <kopija> todo-list` → `sabotaged todo-list: "New Todo Input" (label) in app/src/screens/todo-list/index.tsx; now run verify on this folder`, exit 0;
+3. `npm run verify -- <kopija>` → `FAILED: 1/5`, padaju 4 testa koja koriste polje, `empty-state` prolazi, exit 1.
+
+Greške daju poruku i exit 1, npr. `wemora sabotage: screen "todo-list" is already sabotaged …` i `wemora sabotage: unit "app-entry" is shared …`. U `cli.test.ts` su 3 nova testa (tvoj modul je tamo mock, da test ne pravi Expo export); ceo repo 524/524. `architecture.md` §13 opisuje obe komande i da se `sabotage` pušta nad kopijom.

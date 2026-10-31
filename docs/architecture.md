@@ -210,6 +210,8 @@ wemora sabotage <run-dir> <unitId>
 
 `--mock` koristi MockRunner (bez API poziva), sa odgovorima iz `src/agents/mocks/<aplikacija>/` ili `--mock-dir` (D-013). `--budget` je tvrdi limit u dolarima po prolazu. `--original-url` je adresa pokrenutog originala za testera (D-014).
 
+`verify` (B) ponovo pušta sve sačuvane testove završenog prolaza nad web exportom `app/`, bez modela i bez API ključa, ispisuje matricu ekran × test i vraća exit 1 ako bar jedan ekran sa statusom `proven` ili `partial` više ne prolazi. `sabotage` (B) menja jedan promovisan ekran **na mestu**, pa se pušta nad kopijom prolaza (npr. u `runs/`), nikad nad jedinim primerkom. Posle njega `verify` mora da padne baš na tom ekranu.
+
 ## 14. Invarijante (moraju uvek da važe)
 
 1. Domen ne uvozi Mozaik, agente ni orkestraciju.

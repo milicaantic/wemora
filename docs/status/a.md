@@ -49,7 +49,10 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/scaling`)
+## Gotovo, čeka review i spajanje (grana `a/cli-verify`)
+- A18: `wemora verify <run-dir>` i `wemora sabotage <run-dir> <unitId>` u `src/cli.ts`, preko B-ovih `verifyDetailed`, `formatVerifyReport` i `sabotageDetailed` (dinamički uvoz, bez Mozaika). Greške: poruka i exit 1. Tekst upotrebe kaže da se `sabotage` pušta nad kopijom. 3 nova testa u `cli.test.ts` (B-ov `verify` je tamo mock), 524/524. Ručno nad kopijom `migrate:mock` prolaza za TodoMVC (`archiveRun` u scratchpad), bez `ANTHROPIC_API_KEY`: `verify` 5/5 OK exit 0 → `sabotage todo-list` („New Todo Input“, label) exit 0 → `verify` 1/5 FAILED exit 1 (`empty-state` prolazi). Kriterijumi iz obe B-ove poruke ispunjeni
+
+## Gotovo (spojeno u main), `a/scaling` (PR #73)
 - D-023: podrazumevani modeli su `claude-haiku-4-5` i `claude-sonnet-4-6` (oni koje gateway nudi), izbačene cene i registracija modela 5-5, `--budget` podrazumevano $5. Kod, testovi (506/506) i dokumentacija (`CLAUDE.md`, `mozaik.md`, `architecture.md`, `tasks/a.md`, `tim-plan.md`, `wemora-plan.md`)
 - A15: eskalacija modela. Jedinica ima `DEFAULTS.maxRounds` (4) runde umesto 2; runde 3–4 idu na `MODELS.strong` (`modelForRound`), isti builder, posle 4. neuspele runde `failed` (`unit.failed` „failed after 4 round(s)“). `FIXED_TEAM` obrisan (fiksni tim samo kroz `ConductorOptions.team`). Nov test eskalacije, 4 testa prešla na 4 runde, 509/509; `migrate:mock` nad TodoMVC-om prolazi
 

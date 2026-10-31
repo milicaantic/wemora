@@ -29,7 +29,10 @@ export const USAGE = `Usage:
 
   --original-url  the running original web app, for the tester (start it first, e.g. npm run serve in examples/todomvc)
   wemora verify <run-dir>
-  wemora sabotage <run-dir> <unitId>`
+  wemora sabotage <run-dir> <unitId>
+
+  verify          runs every saved test of a finished run again, without a model or API key
+  sabotage        breaks one promoted screen in place, so verify must fail on it: run it on a copy of a run`
 
 export function parseCliArgs(argv: string[]): CliCommand {
   let parsed
@@ -104,9 +107,29 @@ export async function main(argv: string[]): Promise<number> {
     }
     case "verify":
     case "sabotage":
-      console.error(`wemora ${command.cmd}: not implemented yet (A18, needs B's verify and sabotage)`)
-      return 1
+      try {
+        return await (command.cmd === "verify" ? runVerify(command.runDir) : runSabotage(command.runDir, command.unitId))
+      } catch (error) {
+        console.error(`wemora ${command.cmd}: ${error instanceof Error ? error.message : String(error)}`)
+        return 1
+      }
   }
+}
+
+// B's verify (B12): exit 1 when a proven or partial screen no longer passes its tests.
+async function runVerify(runDir: string): Promise<number> {
+  const { verifyDetailed, formatVerifyReport } = await import("./verify")
+  const details = await verifyDetailed(runDir)
+  console.log(formatVerifyReport(details))
+  return details.ok ? 0 : 1
+}
+
+// B's sabotage (B13) changes the run folder in place.
+async function runSabotage(runDir: string, unitId: string): Promise<number> {
+  const { sabotageDetailed } = await import("./verify")
+  const change = await sabotageDetailed(runDir, unitId)
+  console.log(`sabotaged ${change.unitId}: "${change.target}" (${change.kind}) in ${change.file}; now run verify on this folder`)
+  return 0
 }
 
 function positiveInt(raw: string | undefined, fallback: number, flag: string): number {
