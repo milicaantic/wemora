@@ -29,6 +29,8 @@ Faza: F3
 - C3.1 (PR #65) i popravke posle pravog prolaza (PR #61) su spojeni
 - G3: `verify` (B, PR #67) koristi moj `serveApp`
 
+- sajt projekta (prototip): `site/index.html`, jedna statička stranica bez build alata (grana `c/site`); folder `site/` nije ničiji po vlasništvu, tim treba da odluči ko ga vodi i da li ide na GitHub Pages
+
 ## Čeka druge (za G2)
 - A: spojiti `contracts/submit` (B) pa `c/submit-prompt` (C)
 - prolaz sa pravim modelom (`--budget 1`): treba `ANTHROPIC_API_KEY` (kod C ga nema)
