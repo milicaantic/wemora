@@ -97,7 +97,8 @@ describe("computeCoverage", () => {
 
     const coverage = computeCoverage(recipeList, [search], extracted)
     expect(coverage.obligations.covered).toEqual(["search-by-name"])
-    expect(coverage.obligations.missing).toHaveLength(5)
+    // 5 obligations in the plan since sort-by-time left it (an order cannot be tested, A's G3 message).
+    expect(coverage.obligations.missing).toHaveLength(4)
     expect(coverage.elements.covered).toEqual([{ role: "searchbox", name: "Pretraga" }])
     const { covered, missing, notPortable } = coverage.elements
     expect(covered.length + missing.length + notPortable.length).toBe(extracted.length)
