@@ -108,11 +108,23 @@ describe("Conductor", () => {
   it("fails a unit after the last round and blocks everything that depends on it", async () => {
     const { summary, calls, logLines } = await runWith({ failRounds: { detail: Infinity } })
 
-    expect(calls.builder.filter((t) => t.unitId === "detail").map((t) => t.round)).toEqual([1, 2])
+    expect(calls.builder.filter((t) => t.unitId === "detail").map((t) => t.round)).toEqual([1, 2, 3, 4])
     expect(calls.builder.some((t) => t.unitId === "edit")).toBe(false)
     expect(summary.units).toMatchObject({ detail: "failed", edit: "failed", list: "promoted" })
     expect(summary.outcome).toBe("finished")
     expect(logLines.some((l) => l.event === "unit.blocked" && l.data?.unitId === "edit")).toBe(true)
+  })
+
+  it("escalates rounds 3 and 4 to the strong model, on the same builder, then frees it (A15)", async () => {
+    const { summary, calls, logLines } = await runWith({ failRounds: { detail: Infinity } })
+
+    const rounds = calls.builder.filter((t) => t.unitId === "detail")
+    expect(rounds.map((t) => t.model)).toEqual([MODELS.default, MODELS.default, MODELS.strong, MODELS.strong])
+    expect(new Set(rounds.map((t) => t.builderId)).size).toBe(1)
+    expect(board().units.detail).toMatchObject({ status: "failed", round: 4, model: MODELS.strong })
+    expect(board().agents[rounds[0].builderId].busyWith).toBeNull()
+    expect(summary.units.detail).toBe("failed")
+    expect(logLines.find((l) => l.event === "unit.failed")?.data).toEqual({ unitId: "detail", reason: "failed after 4 round(s)" })
   })
 
   it("ends the run with a report when the architect gives up", async () => {
@@ -186,6 +198,13 @@ describe("Conductor timeouts", () => {
     return { clock, calls, running }
   }
   const testedUnits = (calls: { tester: { unitId: string }[] }) => calls.tester.map((t) => t.unitId)
+  // A builder that never submits: every round times out, until the last one fails the unit.
+  async function timeOutRounds(clock: ReturnType<typeof manualClock>, calls: { builder: { unitId: string }[] }, unitId: string) {
+    for (let round = 1; round <= DEFAULTS.maxRounds; round++) {
+      await vi.waitFor(() => expect(calls.builder.filter((t) => t.unitId === unitId)).toHaveLength(round))
+      clock.advance(BUILD_ROUND)
+    }
+  }
   const logEvents = () =>
     readFileSync(path.join(logDir, "run.jsonl"), "utf8")
       .trim()
@@ -241,11 +260,10 @@ describe("Conductor timeouts", () => {
   it("fails a unit whose builder never submits, after the last round", async () => {
     const { clock, calls, running } = startRun({ silentRounds: { list: Infinity } })
     await vi.waitFor(() => expect(board().units.edit?.status).toBe("promoted"))
-    clock.advance(BUILD_ROUND)
-    await vi.waitFor(() => expect(calls.builder.filter((t) => t.unitId === "list")).toHaveLength(2))
-    clock.advance(BUILD_ROUND)
+    await timeOutRounds(clock, calls, "list")
 
     const summary = await running
+    expect(calls.builder.filter((t) => t.unitId === "list").map((t) => t.round)).toEqual([1, 2, 3, 4])
     expect(summary).toMatchObject({ outcome: "finished", units: { list: "failed", detail: "promoted" } })
   })
 
@@ -300,11 +318,9 @@ describe("Conductor timeouts", () => {
     expect(stopped?.data?.id).not.toBe(busyBuilder)
     expect(logEvents().filter((e) => e.event === "agents.rescaled").at(-1)?.data).toMatchObject({ builders: 1, from: { builders: 2 } })
 
-    clock.advance(BUILD_ROUND)
-    await vi.waitFor(() => expect(calls.builder.filter((t) => t.unitId === "list")).toHaveLength(2))
-    clock.advance(BUILD_ROUND)
+    await timeOutRounds(clock, calls, "list")
     const summary = await running
-    expect(calls.builder.filter((t) => t.unitId === "list").map((t) => t.builderId)).toEqual([busyBuilder, busyBuilder])
+    expect(new Set(calls.builder.filter((t) => t.unitId === "list").map((t) => t.builderId))).toEqual(new Set([busyBuilder]))
     expect(summary).toMatchObject({ outcome: "finished", units: { list: "failed" } })
   })
 

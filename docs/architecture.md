@@ -136,7 +136,7 @@ Staging folder ima isti raspored kao `app/src/`, pa je promocija kopiranje. Owne
 
 Testeri uzimaju jedinice istim redom.
 
-**Runde i eskalacija:** runde 1–2 na `claude-haiku-5-5`, runde 3–4 na `claude-sonnet-5-5`. Posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde jedne jedinice, svaku sa svežim kontekstom (prompt + izvor + trenutni kod + poslednja greška).
+**Runde i eskalacija:** runde 1–2 na `MODELS.default` (`claude-haiku-4-5`), runde 3–4 na `MODELS.strong` (`claude-sonnet-4-6`); preko gateway-a hakatona to su modeli iz `.env` (D-018). Posle 4. neuspele runde jedinica je `failed`. Isti builder radi sve runde jedne jedinice, svaku sa svežim kontekstom (prompt + izvor + trenutni kod + poslednja greška).
 
 **Timeouti (podrazumevano):** builder 10 min po rundi, tester 8 min po jedinici. Gatekeeper čeka testove 10 min, zatim Conductor dodeljuje jedinicu drugom testeru. Posle drugog isteka ekran se promoviše kao `nedokazan`. Tačno ponašanje je u D-016: Conductor prekida agenta (`cancel`); istek buildera je neuspela runda; posle drugog isteka testova Conductor šalje `tests.missing`; događaji iz ranije runde se ignorišu.
 
