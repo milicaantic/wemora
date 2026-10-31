@@ -32,6 +32,63 @@ Use this table for every element. Imports: `View`, `Text`, `TextInput`, `Pressab
 
 Text must always be inside `<Text>`. A raw string directly inside `View` or `Pressable` crashes the app.
 
+## CSS → StyleSheet
+
+React Native has no CSS files, no cascade and no inheritance, except that a `Text` inside a `Text` inherits its text style. Translate each rule the screen needs into `StyleSheet.create`, with these conversions:
+
+| CSS | React Native |
+|---|---|
+| `font: 14px 'Helvetica Neue', Arial` | split it: `fontSize: 14`, family through `fonts.body` from the theme |
+| `font-family: "Segoe UI", Arial, sans-serif` | `fontFamily: Platform.select({ web: '"Segoe UI", Arial, sans-serif', default: undefined })` (the theme already has it) |
+| `font-weight: bold` / `200` | `fontWeight: "700"` / `"200"` (a string) |
+| `font-size: 1.5rem`, `1.2em` | px numbers: `24`, `1.2 ×` the parent size |
+| `line-height: 1.4em` (at 14px) | `lineHeight: 20` (px, rounded) |
+| `letter-spacing: .1em` (at 12px) | `letterSpacing: 1.2` |
+| `text-transform: uppercase` | `textTransform: "uppercase"` |
+| `color`, `background(-color)` | `color`, `backgroundColor` (on a `View` for backgrounds) |
+| `padding: 6px 12px` | `paddingVertical: 6, paddingHorizontal: 12` |
+| `border: 1px solid #c9b8a3`, `border-radius: 4px` | `borderWidth: 1, borderColor: "#c9b8a3", borderRadius: 4` |
+| `display: flex; flex-direction: row`, `gap` | `flexDirection: "row"`, `gap` (a `View` is already flex, column by default) |
+| `box-shadow` | `boxShadow` (same syntax in this React Native version) |
+| `:hover`, `cursor`, `transition`, `-webkit-*` | leave out |
+
+Text style goes on `Text`, box style (background, border, padding) on the `View` or `Pressable` around it.
+
+## The theme (`shared/theme/index.tsx`)
+
+Example for a web app whose global CSS is `body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.4em; color: #111111; background: #f5f5f5 }` and `h1 { font-size: 80px; font-weight: 200; color: #b83f45 }`:
+
+```tsx
+import { Platform, StyleSheet, Text as RNText, type TextProps } from "react-native"
+
+export const fonts = {
+  body: Platform.select({ web: "'Helvetica Neue', Helvetica, Arial, sans-serif", default: undefined }),
+}
+export const fontSizes = { body: 14, h1: 80 }
+export const fontWeights = { body: "400", h1: "200" } as const
+export const lineHeights = { body: 20 }
+export const colors = { text: "#111111", background: "#f5f5f5", heading: "#b83f45" }
+
+export function Text({ style, ...props }: TextProps) {
+  return <RNText {...props} style={[styles.body, style]} />
+}
+
+const styles = StyleSheet.create({
+  body: { fontFamily: fonts.body, fontSize: fontSizes.body, lineHeight: lineHeights.body, color: colors.text },
+})
+```
+
+A screen then uses it like this:
+
+```tsx
+import { View } from "react-native"
+import { Text, colors, fontSizes, fontWeights } from "@/shared/theme"
+
+<View style={{ backgroundColor: colors.background }}>
+  <Text role="heading" style={{ fontSize: fontSizes.h1, fontWeight: fontWeights.h1, color: colors.heading }}>todos</Text>
+</View>
+```
+
 ## Navigation (React Router → Expo Router)
 
 | Web | Expo Router |

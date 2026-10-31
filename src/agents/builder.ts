@@ -33,7 +33,15 @@ export type BuildJob = {
   webDir: string
   /** Paths relative to app/src/ the unit may write, from Unit.writes (e.g. "screens/recipe-list/"). */
   allowed: string[]
+  /** Web files read_source may open: the unit's sources plus those of the units it depends on (D-025). */
+  readable: string[]
   submitted: boolean
+}
+
+/** Own sources first, then the sources of `dependsOn` units (read only), e.g. the global CSS of `theme`. */
+export function readableSources(unit: Unit, plan: Plan): string[] {
+  const deps = plan.units.filter((u) => unit.dependsOn.includes(u.id)).flatMap((u) => u.sources)
+  return [...new Set([...unit.sources, ...deps].map(posix))]
 }
 
 /** Unit.writes is relative to app/ ("src/screens/x/"); the model writes relative to app/src/ ("screens/x/"). */
@@ -55,12 +63,21 @@ export function builderBrief(job: Pick<BuildJob, "unit" | "round" | "allowed">, 
     lines.push("", "Mobile routes of the app (link and navigate only to these; you never create routes):", ...routes.map((r) => `- ${r}`))
   }
   lines.push("", "Sources (read them with read_source):", ...unit.sources.map((s) => `- ${s}`))
+  const fromDeps = readableSources(unit, plan).filter((s) => !unit.sources.map(posix).includes(s))
+  if (fromDeps.length) {
+    lines.push("", "Also readable with read_source (sources of the units you depend on, e.g. the global CSS):", ...fromDeps.map((s) => `- ${s}`))
+  }
   lines.push("", "You may write (paths relative to app/src/):", ...allowed.map((a) => `- ${a}`))
   lines.push("", "Obligations:", ...(unit.obligations.length ? unit.obligations.map((o) => `- ${o.id}: ${o.description}`) : ["- none"]))
   lines.push("", "Intentional differences:")
   lines.push(...(unit.intentionalDifferences.length ? unit.intentionalDifferences.map((d) => `- ${JSON.stringify(d)}`) : ["- none"]))
   const shared = plan.units.filter((u) => u.kind === "shared" && u.id !== unit.id).map((u) => u.id)
   if (shared.length) lines.push("", `Shared units (read them with read_app, import as @/shared/<id>): ${shared.join(", ")}`)
+  if (unit.id === "theme") {
+    lines.push("", "You build the theme: fonts, font sizes, weights and colors from the global CSS, plus a Text component that applies them (see the Theme section of your instructions).")
+  } else if (plan.units.some((u) => u.id === "theme")) {
+    lines.push("", 'Theme: import { Text, colors, fonts, fontSizes } from "@/shared/theme". Use that Text for every text, and its tokens for colors and sizes the CSS shares with it.')
+  }
   lines.push("", `Round: ${round}`)
   if (round > 1) {
     lines.push(
@@ -100,13 +117,13 @@ export function builderTools(current: () => BuildJob | null): Tool[] {
   return [
     defineTool({
       name: "read_source",
-      description: "Read one web source file of your unit, e.g. src/pages/RecipeListPage.tsx. Only the files listed under Sources.",
+      description: "Read one web source file, e.g. src/pages/RecipeListPage.tsx: your unit's sources, or the sources of a unit you depend on (listed in the task).",
       args: z.strictObject({ path: z.string() }),
       invoke: async ({ path: file }) => {
         const j = job()
         const wanted = posix(file)
-        if (!j.unit.sources.map(posix).includes(wanted)) {
-          throw new Error(`"${file}" is not a source of this unit. Sources: ${j.unit.sources.join(", ")}`)
+        if (!j.readable.includes(wanted)) {
+          throw new Error(`"${file}" is not a source of this unit or of a unit it depends on. Readable: ${j.readable.join(", ")}`)
         }
         return readFileSync(inside(j.webDir, wanted), "utf8")
       },
@@ -201,6 +218,7 @@ export function createBuilder(id: string): AgentHandle<BuildTask> {
       appDir: path.join(runDir, "app"),
       webDir,
       allowed: allowedPaths(unit),
+      readable: readableSources(unit, plan),
       submitted: false,
     }
     return { job: j, brief: builderBrief(j, plan, task.lastError) }

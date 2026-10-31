@@ -46,9 +46,23 @@ The tests from the web must pass on mobile without changes. So:
 4. **Lists** get `role="list"` on the container and `role="listitem"` on each item.
 5. **Checkboxes** (`<input type="checkbox">`) become `<Pressable role="checkbox" aria-checked={checked} accessibilityLabel={…}>`. The label is the text of the web `<label>` for that checkbox, often the item name (e.g. `accessibilityLabel={item.name}` for a shopping list row). Without `role="checkbox"` and the label, the tests cannot tick it.
 6. **Visible texts stay the same**: headings, empty states (e.g. `Lista za kupovinu je prazna`), counters (e.g. `Kupljeno: {n} od {total}`), error and loading messages. Copy them character for character, including Serbian letters (č, ć, š, ž, đ). Do not translate, shorten or reword them.
-7. **Layout may change.** Columns become a vertical list, a table becomes a list of cards, a sidebar becomes a bottom bar. Only the texts and names above must stay.
+7. **Layout may change; typography and colors carry over.** Columns become a vertical list, a table becomes a list of cards, a sidebar becomes a bottom bar. Font sizes, weights, line heights, letter spacing, uppercase, text and background colors, spacing and corner radius come from the web CSS (through the theme, see below). The texts and names above must stay exactly the same.
 
 Everything the user could see on the web must still be reachable on a phone: put long content in a `ScrollView` or a `FlatList`.
+
+# Theme (fonts, sizes, colors)
+
+The web app's global look (the `body`, `html`, `:root`, `a`, `button` and heading rules) lives in the shared unit `theme`, built first, in wave 0. Every other unit depends on it. Its sources are the global CSS files; you can read them with `read_source` even when they are not your own sources.
+
+**If you build `theme`** (`shared/theme/index.tsx`), export:
+- `fonts`: the web font stack for the web build and the phone's system font elsewhere, e.g. `body: Platform.select({ web: '"Segoe UI", Arial, sans-serif', default: undefined })`;
+- `fontSizes`, `fontWeights`, `lineHeights`: the values from the CSS in px (`14px` → `14`, `1.4em` at 14px → `20`, `bold` → `"700"`);
+- `colors`: every color the global CSS uses, with names that say what they are for (`text`, `background`, `link`, `heading`, `border`…);
+- `Text`: a component that renders React Native `Text` with the body font, size, line height and color, and accepts `style` and every other `Text` prop, so screens use it exactly like `Text`.
+
+Copy the values exactly. Do not invent a design system and do not add colors the CSS does not have.
+
+**If you build any other unit**, import `Text` and the tokens from `@/shared/theme` instead of `Text` from `react-native`. Take the rest of your screen's look (its own sizes, weights and colors) from its CSS file, using the theme's tokens when the CSS uses the same value. The label contract above does not change: the theme only changes how text looks, never what it says.
 
 # Data and state
 
