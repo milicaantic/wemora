@@ -12,6 +12,8 @@ export const StepSchema = z.union([
   z.strictObject({ goto: z.string().min(1) }),
   z.strictObject({ tap: TapTargetSchema }),
   z.strictObject({ fill: z.strictObject({ label: z.string().min(1), value: z.string() }) }),
+  // Type into the field and press Enter (D-017); on mobile this is TextInput onSubmitEditing.
+  z.strictObject({ submit: z.strictObject({ label: z.string().min(1), value: z.string() }) }),
   z.strictObject({ expectVisible: z.strictObject({ text: z.string().min(1) }) }),
   z.strictObject({ expectNotVisible: z.strictObject({ text: z.string().min(1) }) }),
 ])

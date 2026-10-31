@@ -127,6 +127,13 @@ async function perform(page: Page, baseUrl: string, viewport: Viewport, settings
       await el.visible().fill(action.value)
       return
     }
+    case "submit": {
+      const el = locate(page, action.target)
+      await scrollUntilAttached(page, el, viewport, settings)
+      await el.visible().fill(action.value)
+      await el.visible().press("Enter")
+      return
+    }
     case "expectVisible": {
       const text = page.getByText(action.text)
       await scrollUntilAttached(page, text, viewport, settings)
@@ -147,7 +154,7 @@ async function perform(page: Page, baseUrl: string, viewport: Viewport, settings
   }
 }
 
-// Roles and names match exactly; tap/fill must resolve to a single visible element (Playwright strict mode).
+// Roles and names match exactly; tap/fill/submit must resolve to a single visible element (Playwright strict mode).
 function locate(page: Page, target: Target): Locator {
   if (target.by === "role") return page.getByRole(target.role as Parameters<Page["getByRole"]>[0], { name: target.name, exact: true })
   if (target.by === "text") return page.getByText(target.text, { exact: true })

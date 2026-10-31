@@ -66,6 +66,20 @@ describe("compileSteps", () => {
     expect(kinds([{ tap: { role: "link", name: "Izvezi" } }])).toEqual(["tap"])
   })
 
+  it("translates submit like fill, with a reveal before it and notPortable checked (D-017)", () => {
+    const hiddenField: IntentionalDifference = { ...filtersHidden, element: { label: "New Todo Input" } }
+    const steps: Step[] = [{ submit: { label: "New Todo Input", value: "Buy milk" } }]
+    expect(compileSteps(steps, [hiddenField])).toEqual({
+      ok: true,
+      actions: [
+        { step: 0, kind: "reveal", element: { by: "label", label: "New Todo Input" }, reveal: { by: "role", role: "button", name: "Filteri" } },
+        { step: 0, kind: "submit", target: { by: "label", label: "New Todo Input" }, value: "Buy milk" },
+      ],
+    })
+    const notPortable: IntentionalDifference = { kind: "notPortable", element: { role: "textbox", name: "New Todo Input" }, reason: "x" }
+    expect(compileSteps(steps, [notPortable]).ok).toBe(false)
+  })
+
   it("inserts nothing without differences (the original web app)", () => {
     const result = compileSteps([{ fill: { label: "Status", value: "Poslato" } }], [])
     expect(result.ok && result.actions).toHaveLength(1)

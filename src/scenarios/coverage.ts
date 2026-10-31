@@ -3,7 +3,7 @@ import { actedOn, sameElement, toTarget, type Target } from "./compile"
 
 /**
  * What the unit's validated scenarios cover (architecture.md §11): obligations from the plan, and the interactive
- * elements of the original used by at least one tap or fill (setup included). Elements marked notPortable in the
+ * elements of the original used by at least one tap, fill or submit (setup included). Elements marked notPortable in the
  * plan are listed apart and never count as missing. Every element lands in exactly one of the three lists.
  * Scenarios of other units are ignored; movedTo does not change coverage yet (docs/tasks/b.md Q6).
  */

@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- Test page for the submit step (D-017): like TodoMVC, a task is added only with the Enter key. -->
+<html lang="sr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zadaci</title>
+  </head>
+  <body>
+    <h1>Zadaci</h1>
+    <label for="new-task">Nov zadatak</label>
+    <input id="new-task" />
+    <ul id="tasks"></ul>
+    <p id="count">Zadataka: 0</p>
+
+    <script>
+      const input = document.getElementById("new-task")
+      const tasks = document.getElementById("tasks")
+      let count = 0
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || input.value.trim() === "") return
+        const item = document.createElement("li")
+        item.textContent = input.value.trim()
+        tasks.appendChild(item)
+        input.value = ""
+        document.getElementById("count").textContent = `Zadataka: ${++count}`
+      })
+    </script>
+  </body>
+</html>

@@ -11,6 +11,8 @@ export type Action = { step: number } & (
   | { kind: "goto"; path: string }
   | { kind: "tap"; target: Target }
   | { kind: "fill"; target: Target; value: string }
+  // Type into the field, then press Enter (D-017).
+  | { kind: "submit"; target: Target; value: string }
   | { kind: "expectVisible"; text: string }
   | { kind: "expectNotVisible"; text: string }
   // Inserted for a hiddenBehind difference: tap `reveal` only when `element` is not visible yet,
@@ -49,6 +51,8 @@ export function describeAction(action: Action): string {
       return `tap ${describeTarget(action.target)}`
     case "fill":
       return `fill ${describeTarget(action.target)}`
+    case "submit":
+      return `submit ${describeTarget(action.target)}`
     case "expectVisible":
       return `expectVisible "${action.text}"`
     case "expectNotVisible":
@@ -68,14 +72,19 @@ function toAction(s: Step, step: number): Action {
   if ("goto" in s) return { step, kind: "goto", path: s.goto }
   if ("tap" in s) return { step, kind: "tap", target: toTarget(s.tap) }
   if ("fill" in s) return { step, kind: "fill", target: toTarget({ label: s.fill.label }), value: s.fill.value }
+  if ("submit" in s) return { step, kind: "submit", target: toTarget({ label: s.submit.label }), value: s.submit.value }
   if ("expectVisible" in s) return { step, kind: "expectVisible", text: s.expectVisible.text }
-  return { step, kind: "expectNotVisible", text: s.expectNotVisible.text }
+  if ("expectNotVisible" in s) return { step, kind: "expectNotVisible", text: s.expectNotVisible.text }
+  // A step kind added to the contract but not here fails tsc instead of running as something else.
+  const unknown: never = s
+  throw new Error(`unknown step ${JSON.stringify(unknown)}`)
 }
 
 /** The element a step interacts with. Expectations only read the screen, so they never hit notPortable. */
 export function actedOn(s: Step): Target | null {
   if ("tap" in s) return toTarget(s.tap)
   if ("fill" in s) return toTarget({ label: s.fill.label })
+  if ("submit" in s) return toTarget({ label: s.submit.label })
   return null
 }
 

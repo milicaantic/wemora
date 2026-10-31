@@ -201,3 +201,11 @@ Novi zapis ide na kraj, sa sledećim brojem. Odluka važi tek kad je status „p
   5. Novi zadatak prekinutom agentu ide tek kad agent stvarno stane (`isBusy()` je `false`), uz proveru na svakih `idleCheckMs` (1 s).
 - Zašto: u F2 postoji samo jedan tester, pa bi jedan zaglavljen ekran zaustavio testiranje svih ostalih; bez timeouta buildera jedinica bi čekala zauvek. Mozaik ne može da prekine petlju spolja, pa se prekid radi kroz `CancelGuard` (A8).
 - Posledice: `src/contracts/events.ts` (`tests.missing`), `architecture.md` §5 i §9, `src/core/config.ts` (`maxTestAttempts`, `idleCheckMs`), `src/orchestration/` (A13). C-ov Gatekeeper-učesnik (C2.4) reaguje na `tests.missing` i ignoriše zakasnele nacrte.
+
+## D-017: Korak `submit` u DSL-u testova (upis u polje pa Enter)
+- Datum: 2026-10-31
+- Ko: B (izmena ugovora uz A-ovu dozvolu, grana `contracts/submit`; A pregleda i spaja)
+- Status: predlog (čeka A)
+- Odluka: `StepSchema` u `src/contracts/scenario.ts` dobija korak `{ submit: { label, value } }`: upiši `value` u polje sa labelom `label`, pa pritisni Enter u tom polju. Na telefonu je to `TextInput` sa `onSubmitEditing`. Za pokrivenost, `notPortable` i `reveal` `submit` se računa kao korišćenje tog polja (kao `fill`); za pravilo 3 (`architecture.md` §11) je radnja, kao `tap` i `fill`.
+- Zašto: u TodoMVC-u se zadatak dodaje samo Enter-om, a dugme ne postoji. Bez ovog koraka nijedan test ne može da doda zadatak, pa četiri od pet obaveza ekrana `todo-list` ne mogu da se pokriju i TodoMVC ne može biti `proven` (G2). Provereno: Enter u RN `TextInput` na Expo web exportu okida `onSubmitEditing` (telefonski ekran 390×844), a svih 5 scenarija za `todo-list` iz `src/agents/mocks/todomvc/tester.json` prolazi `validateScenario` nad pravim TodoMVC-om i placeholderom iz scaffolda.
+- Posledice: `src/contracts/scenario.ts` i test ugovora; B: `scenarios/compile.ts`, `run.ts`, `validate.ts`, `prompts/tester.md`, `mocks/todomvc/tester.json`; `architecture.md` §11 (tabela koraka) treba dopuniti (A); C: kapija 4 `labels` treba da proverava i `submit.label` (C je to najavio), a TodoMVC nacrt buildera mora da prođe nove testove.

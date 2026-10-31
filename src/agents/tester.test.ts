@@ -163,6 +163,9 @@ beforeAll(() => {
         obligations: [
           { id: "empty-state", description: "With no todos the screen shows the heading 'todos' and no 'items left!' counter." },
           { id: "add-todo", description: "Adding a todo shows it in the list" },
+          { id: "complete-todo", description: "Checking '❯ Toggle All Input' completes the single todo" },
+          { id: "filter-todos", description: "'Active', 'Completed' and 'All' filter the list" },
+          { id: "clear-completed", description: "'Clear completed' removes completed todos" },
         ],
         intentionalDifferences: [],
       }),
@@ -347,7 +350,13 @@ describe("tester agent", () => {
     const tester = newTester()
     tester.assign({ unitId: "todo-list" })
     await untilIdle(tester)
-    expect(readTests(runDir, "todo-list").map((s) => `${s.id} [${s.obligation}]`)).toEqual(["todo-list-empty-state [empty-state]"])
+    expect(readTests(runDir, "todo-list").map((s) => `${s.id} [${s.obligation}]`)).toEqual([
+      "todo-list-empty-state [empty-state]",
+      "todo-list-add-todo [add-todo]",
+      "todo-list-complete-todo [complete-todo]",
+      "todo-list-filter-todos [filter-todos]",
+      "todo-list-clear-completed [clear-completed]",
+    ])
     expect(ready).toContain("todo-list")
     // The catch-all route "*" is opened at "/": "/*" is a 404 on a plain static server.
     expect(extractedRoutes).toContain("/")

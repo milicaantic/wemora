@@ -62,6 +62,11 @@ describe("computeCoverage", () => {
     })
   })
 
+  it("counts a field used only through submit as covered (D-017)", () => {
+    const submitted = scenario("s5", "search", [{ goto: "/" }, { submit: { label: "Pretraga", value: "x" } }])
+    expect(computeCoverage(unit, [submitted], interactive).elements.covered).toEqual([{ role: "searchbox", name: "Pretraga" }])
+  })
+
   it("never counts a notPortable element as missing, even when no scenario exists", () => {
     const coverage = computeCoverage(unit, [], interactive)
     expect(coverage.obligations).toEqual({ covered: [], missing: ["search", "detail", "shopping"] })

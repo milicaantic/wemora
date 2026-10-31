@@ -86,6 +86,24 @@ describe("validateScenario", { timeout: 60_000 }, () => {
     expect(result.reason).toContain("(steps 2)")
   })
 
+  it("treats submit as an action for rule 3 (D-017)", async () => {
+    const adds = scenario("adds-task", [
+      { goto: "/zadaci.html" },
+      { submit: { label: "Nov zadatak", value: "Kupi mleko" } },
+      { expectVisible: { text: "Kupi mleko" } },
+    ])
+    expect(await validateScenario(original.url, blank.url, adds)).toEqual({ ok: true })
+
+    const noEffect = scenario("submit-no-effect", [
+      { goto: "/zadaci.html" },
+      { submit: { label: "Nov zadatak", value: "Kupi mleko" } },
+      { expectVisible: { text: "Zadaci" } },
+    ])
+    const result = await validateScenario(original.url, blank.url, noEffect)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toContain("The action at step 1")
+  })
+
   it("rejects an unstable scenario", async () => {
     // Serves "Prvi" on the first page load and "Drugi" afterwards.
     let loads = 0
