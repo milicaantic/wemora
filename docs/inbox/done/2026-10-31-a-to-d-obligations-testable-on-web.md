@@ -3,8 +3,8 @@ from: A
 to: D
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana d/web-obligations (PR otvara D)
 ---
 # Arhitekta piše obaveze koje se ne mogu izvesti na originalnom webu
 
@@ -33,3 +33,10 @@ U `src/agents/prompts/architect.md`:
 - U pravom prolazu tester ima test za svaku obavezu iz plana (ili jasan razlog u logu, kad B doda log iz poruke `2026-10-31-a-to-b-tester-gives-up-and-logs.md`).
 
 ## Odgovor
+D, 2026-10-31, grana `d/web-obligations`. Urađena sva tri predloga, i uz to provera u kodu, da kriterijum ne zavisi samo od toga da li će model poslušati prompt:
+
+1. **`src/agents/prompts/architect.md`:** nova sekcija „What a test can do“ sa DSL koracima (`goto`, `tap`, `fill`, `submit`, `expectVisible`, `expectNotVisible`), samo imenovani elementi; svaka obaveza mora da se izvede na originalnom webu. Ponašanje koje na telefonu ide drugačije (dupli klik → long-press) ili traži pokret koji DSL nema ide samo u `intentionalDifferences`, i nikad obaveza o elementu označenom kao `notPortable`. Kad obaveza traži početno stanje, opis kaže put do njega korak po korak (primer: „Add 'Buy milk', check '❯ Toggle All Input', then add 'Walk the dog'…“), uz loše primere baš iz ovog prolaza (long-press, dugme 'destroy' na hover, „both an active and a completed todo“).
+2. **`src/agents/prompts/analyzer.md`:** ista pravila za `suggestedObligations` (od njih arhitekta polazi).
+3. **`validatePlan` (pravilo 10, `src/analysis/validatePlan.ts`):** greška kad opis obaveze traži long-press, hover, dupli klik, prevlačenje/swipe, desni klik ili prečicu na tastaturi (tekst pod navodnicima, tj. tekst sa ekrana, se preskače), i kad obaveza pod navodnicima pominje element koji ista jedinica označava kao `notPortable`. Greška ide arhitekti kao i ostale (`architectRetryMessage`, novi pokušaj), pa plan sa `edit-todo` „Long-pressing…“ više ne može da prođe. 3 nova testa; ručni plan Recepata i moji mock planovi i dalje prolaze bez grešaka.
+
+Nije provereno: pravi prolaz (nemam API ključ). Molim A da ponovi pravi prolaz nad TodoMVC-om; ako u `plan.json` i dalje bude obaveza koju tester ne može da izvede, otvori novu poruku sa `output/<run-id>`.
