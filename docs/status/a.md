@@ -49,7 +49,11 @@ Poslednja izmena: 2026-10-30
 ## U radu
 - G2 pravi prolaz nad TodoMVC-om: `output/20261031-030034-todomvc` (posle PR #59, #61): `todo-list` `partial`, runda 1 `gate.failed` (toggle all), runda 2 promovisan; filteri kao stanje ekrana. Čeka B (PR #62, spojeno) i D (inbox: obaveze izvodljive na webu) za `proven`
 
-## Gotovo, čeka review i spajanje (grana `a/load-control`)
+## Gotovo, čeka review i spajanje (grana `a/flow-dispatch`)
+- D-025 (B-ova poruka): `migrate` bez `--original-url` sam servira original preko B-ovog `serveOriginal` (pre agenata; greška → exit 1 bez foldera; server se gasi na kraju). Ručno: `migrate:mock` nad TodoMVC-om bez `--original-url` → `servedOriginal: true`, `todo-list` `proven`, exit 0, proces izlazi sam
+- D-022 korak 2: `TestTask = { unitId } | { flowId }`; Conductor daje tok slobodnom testeru kad svi ekrani toka imaju testove (ekrani prvi), oslobađa ga na `flow.tests.ready`, timeout kao za ekran (`flow.tests.timeout`), i ne završava prolaz dok tok čeka testiranje ili Gatekeeperovu proveru. Lažni tester i Gatekeeper znaju za tokove. 5 novih testova, 548/548
+
+## Gotovo (spojeno u main), `a/load-control` (PR #82; A16 je u commitu sa naslovom „archive …“)
 - A16 (D-024): 429 spušta granicu buildera za 1 (najviše jednom u 60 s, najmanje 1, mirno vreme vraća), `budget.exceeded` odmah obara jedinice koje se grade i prekida agente umesto čekanja timeouta, bez nove runde; `tests.missing` za predate ekrane bez testova; budžet pre plana ne pokreće arhitektu; ishod `budget.exceeded`. `cli.ts` više ne pada na izlazu na Windowsu (`exitCode` + `unref` tajmer). Lažni agenti posle `cancel` ne šalju ništa. 4 nova testa, 545/545; `migrate:mock` OK; ručno `--budget 0.01` ×4: `budget.exceeded (the budget ran out before the plan)` za ~5 s, ~$0.01, exit 1, bez pada
 
 ## Gotovo (spojeno u main), `a/cli-verify` (PR #78)

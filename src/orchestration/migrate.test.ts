@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync }
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterAll, describe, expect, it, vi } from "vitest"
-import { runMigrate, type MigrateOptions } from "./migrate"
+import { runMigrate, type MigrateOptions, type MigrateServices } from "./migrate"
 
 // One real `migrate --mock` over examples/todomvc: D's parser, analyzer and architect, the real report,
 // no API calls. With no mock replies the architect gives up and sends plan.failed (D-012), so the run
@@ -20,6 +20,16 @@ const options = (extra: Partial<MigrateOptions> = {}): MigrateOptions => ({
   mock: true,
   ...extra,
 })
+
+// B's serveOriginal runs `npm run build` in the web app; here it only hands out an address.
+function fakeOriginal(fail?: string) {
+  const close = vi.fn(async () => {})
+  const serveOriginal = vi.fn(async () => {
+    if (fail) throw new Error(fail)
+    return { url: "http://127.0.0.1:7999", close }
+  })
+  return { services: { serveOriginal } as unknown as MigrateServices, serveOriginal, close }
+}
 
 describe("runMigrate", () => {
   it("refuses a real run without ANTHROPIC_API_KEY, before touching anything", async () => {
@@ -40,7 +50,9 @@ describe("runMigrate", () => {
     mkdirSync(mockDir)
     const out = vi.spyOn(console, "log").mockImplementation(() => {})
 
-    const code = await runMigrate(options({ mockDir }), {}, new Date(2026, 9, 30, 21, 45, 1))
+    const original = fakeOriginal()
+
+    const code = await runMigrate(options({ mockDir }), {}, new Date(2026, 9, 30, 21, 45, 1), original.services)
 
     const runDir = path.join(root, "output", "20261030-214501-todomvc")
     expect(code).toBe(1)
@@ -56,6 +68,23 @@ describe("runMigrate", () => {
     expect(events.filter((e) => e.event === "participant.left").map((e) => e.agent)).toEqual(
       expect.arrayContaining(["analyzer-1", "architect-1"]),
     )
-    expect(String(out.mock.calls[0][0])).toContain("outcome: plan.failed")
+    expect(out.mock.calls.map((c) => String(c[0])).join("\n")).toContain("outcome: plan.failed")
+    // Without --original-url the original was built and served for the run, then stopped (PD5).
+    expect(original.serveOriginal).toHaveBeenCalledWith(path.resolve("examples/todomvc"))
+    expect(events.find((e) => e.event === "migrate.started")?.data).toMatchObject({ originalUrl: "http://127.0.0.1:7999", servedOriginal: true })
+    expect(original.close).toHaveBeenCalledTimes(1)
+  })
+
+  it("stops with exit 1 and no run folder when the original web app cannot be served", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.spyOn(console, "log").mockImplementation(() => {})
+    const out = path.join(root, "unserved")
+    const original = fakeOriginal("examples/todomvc has dependencies but no node_modules: run npm ci there")
+
+    expect(await runMigrate(options({ out }), {}, new Date(), original.services)).toBe(1)
+    expect(existsSync(out)).toBe(false)
+    expect(String(err.mock.calls.at(-1)?.[0])).toBe(
+      "wemora migrate: the original web app could not be served: examples/todomvc has dependencies but no node_modules: run npm ci there",
+    )
   })
 })

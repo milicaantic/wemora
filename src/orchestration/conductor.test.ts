@@ -47,7 +47,7 @@ beforeAll(() => {
 
 // One runtime per process, so each test starts from an empty board and its own run.jsonl.
 beforeEach(() => {
-  Object.assign(board(), { parsed: null, reports: {}, plan: null, units: {}, tests: {}, results: {}, coverage: {}, statuses: {}, agents: {} })
+  Object.assign(board(), { parsed: null, reports: {}, plan: null, units: {}, tests: {}, results: {}, coverage: {}, statuses: {}, flowTests: {}, flowResults: {}, agents: {} })
   logDir = mkdtempSync(path.join(root, "log-"))
   initLog(logDir)
 })
@@ -125,6 +125,21 @@ describe("Conductor", () => {
     expect(board().agents[rounds[0].builderId].busyWith).toBeNull()
     expect(summary.units.detail).toBe("failed")
     expect(logLines.find((l) => l.event === "unit.failed")?.data).toEqual({ unitId: "detail", reason: "failed after 4 round(s)" })
+  })
+
+  it("gives a flow to a free tester once its screens have tests, and ends after the Gatekeeper checked it (D-022)", async () => {
+    // Like the real Gatekeeper, screens are promoted only after their tests, so the flow is ready before the end.
+    const { summary, calls, logLines } = await runWith({ waitForTests: true })
+
+    // The plan's flow "open" spans list and detail; screens go first, then the flow.
+    expect(calls.flowTester).toEqual(["open"])
+    const order = calls.order
+    expect(order.indexOf("flow-tester:open")).toBeGreaterThan(Math.max(order.indexOf("tester:list"), order.indexOf("tester:detail")))
+    expect(logLines.some((l) => l.event === "task.assigned" && JSON.stringify(l.data).includes('"flowId":"open"'))).toBe(true)
+    expect(calls.flowChecks).toEqual(["open"])
+    expect(board().flowResults.open).toMatchObject({ flowId: "open", ok: true })
+    expect(summary.outcome).toBe("finished")
+    expect(Object.values(board().agents).every((a) => a.busyWith === null)).toBe(true)
   })
 
   it("ends the run with a report when the architect gives up", async () => {
@@ -384,6 +399,24 @@ describe("Conductor timeouts", () => {
 
     await timeOutRounds(clock, calls, "list")
     expect((await running).units.list).toBe("failed")
+  })
+
+  it("times out a silent flow tester twice, then ends the run with the flow unchecked", async () => {
+    const { clock, calls, running } = startRun({ silentFlows: { open: Infinity } })
+    await vi.waitFor(() => expect(calls.flowTester).toEqual(["open"]))
+
+    clock.advance(TESTS_WAIT)
+    await vi.waitFor(() => expect(calls.flowTester).toEqual(["open", "open"]))
+    clock.advance(TESTS_WAIT)
+
+    const summary = await running
+    expect(summary.outcome).toBe("finished")
+    expect(calls.flowChecks).toEqual([])
+    const timeouts = logEvents().filter((e) => e.event === "flow.tests.timeout").map((e) => e.data)
+    expect(timeouts).toEqual([
+      expect.objectContaining({ flowId: "open", attempt: 1, gaveUp: false }),
+      expect.objectContaining({ flowId: "open", attempt: 2, gaveUp: true }),
+    ])
   })
 
   it("ignores a late draft from a round that already timed out", async () => {

@@ -30,12 +30,18 @@ export type FakeScript = {
   waitForTests?: boolean
   /** A cancelled builder still sends draft.submitted for the round it was cancelled in, one tick later. */
   lateDraftOnCancel?: boolean
+  /** Per flow: the tester's first N attempts send nothing (Infinity = always). */
+  silentFlows?: Record<string, number>
 }
 
 export type FakeCalls = {
   analyzer: AnalyzeTask[]
   architect: ArchitectTask[]
-  tester: TestTask[]
+  /** Screen tasks; flow tasks are in flowTester. */
+  tester: Array<{ unitId: string }>
+  flowTester: string[]
+  /** Flows the Gatekeeper checked, in order. */
+  flowChecks: string[]
   builder: Array<BuildTask & { builderId: string }>
   scaffold: number
   buildReport: number
@@ -89,12 +95,23 @@ function fakeHandle<T>(id: string, kind: AgentKind, act: Act<T>, onCancel: (reas
 
 class GatekeeperEvents extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
-    return event.type === "draft.submitted" || event.type === "tests.ready" || event.type === "tests.missing"
+    return ["draft.submitted", "tests.ready", "tests.missing", "flow.tests.ready"].includes(event.type)
   }
 }
 
 export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: FakeCalls } {
-  const calls: FakeCalls = { analyzer: [], architect: [], tester: [], builder: [], scaffold: 0, buildReport: 0, cancels: [], order: [] }
+  const calls: FakeCalls = {
+    analyzer: [],
+    architect: [],
+    tester: [],
+    flowTester: [],
+    flowChecks: [],
+    builder: [],
+    scaffold: 0,
+    buildReport: 0,
+    cancels: [],
+    order: [],
+  }
   const screens = script.plan.units.filter((u) => u.kind === "screen")
   const testerAttempts = new Map<string, number>()
   const onCancel = (entry: string) => calls.cancels.push(entry)
@@ -103,7 +120,20 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
   function fakeGatekeeper(id: string): Participant {
     const held = new Set<string>()
     const tested = new Set<string>()
+    const flowsWithTests = new Set<string>()
+    const promoted = new Set<string>()
+    // Like C's Gatekeeper: a flow is checked once it has tests and all its units are promoted. The result
+    // is on the board before the Conductor hears of the promotion or of the flow's tests.
+    const checkFlows = () => {
+      for (const flow of script.plan.flows) {
+        if (!flowsWithTests.has(flow.id) || board().flowResults[flow.id] || !flow.unitIds.every((u) => promoted.has(u))) continue
+        board().flowResults[flow.id] = { flowId: flow.id, ok: true, scenarios: [] }
+        calls.flowChecks.push(flow.id)
+      }
+    }
     const promote = (unitId: string) => {
+      promoted.add(unitId)
+      checkFlows()
       emit("unit.promoted", { unitId }, gatekeeper.getId())
       if (++promotions === script.budgetAfterPromotions) emit("budget.exceeded", {}, gatekeeper.getId())
     }
@@ -139,12 +169,17 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
         {
           specification: new GatekeeperEvents(),
           processor: {
-            apply: ({ event }) =>
+            apply: ({ event }) => {
+              if (event.type === "flow.tests.ready") {
+                flowsWithTests.add((event.payload as { flowId: string }).flowId)
+                return checkFlows()
+              }
               later(() => {
                 const { unitId, round } = event.payload as { unitId: string; round?: number }
                 if (event.type === "draft.submitted") onDraft(unitId, round ?? 0)
                 else onTests(unitId, event.type === "tests.missing")
-              }),
+              })
+            },
           },
         },
       ],
@@ -190,6 +225,18 @@ export function fakeWorld(script: FakeScript): { deps: ConductorDeps; calls: Fak
           id,
           "tester",
           (task, pid) => {
+            if ("flowId" in task) {
+              const { flowId } = task
+              calls.flowTester.push(flowId)
+              calls.order.push(`flow-tester:${flowId}`)
+              const attempt = (testerAttempts.get(`flow:${flowId}`) ?? 0) + 1
+              testerAttempts.set(`flow:${flowId}`, attempt)
+              if (attempt <= (script.silentFlows?.[flowId] ?? 0)) return "silent"
+              const first = script.plan.flows.find((f) => f.id === flowId)?.unitIds[0] ?? flowId
+              board().flowTests[flowId] = [{ id: `${flowId}-t1`, unitId: first, obligation: flowId, flowId, steps: [{ goto: "/" }] }]
+              emit("flow.tests.ready", { flowId }, pid)
+              return
+            }
             calls.tester.push(task)
             calls.order.push(`tester:${task.unitId}`)
             const attempt = (testerAttempts.get(task.unitId) ?? 0) + 1

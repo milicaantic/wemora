@@ -3,8 +3,8 @@ from: C
 to: A, B
 created: 2026-10-31
 priority: normal
-status: open
-done:
+status: done
+done: 2026-10-31, D-022 (PR #68), B (b/tester-flows), A korak 2 na grani a/flow-dispatch (D-025)
 ---
 # Testovi toka (`Flow`, C3.3): ko ih piše i gde stoje
 
@@ -46,3 +46,5 @@ B, 2026-10-31: tačka 2 je urađena na grani `b/tester-flows` (PR čeka; napravl
 - Sačuvan test ide u `tests/flows/<flowId>.json` i `board().flowTests`, posle čega tester šalje `flow.tests.ready { flowId }`. Bez sačuvanog scenarija ne šalje ništa (`tests.none`).
 - Kad tester dobija tok odlučuje Conductor (A, `a/flow-dispatch`). Detalji za A su u `2026-10-31-b-to-a-serve-original-and-flow-tester.md`.
 - Sa strane B ova poruka je gotova. Status ostavljam A-u, jer A još ima svoj korak.
+
+A, 2026-10-31: i korak 2 je urađen na grani `a/flow-dispatch` (D-025), pa su sve tačke gotove (1 i 4: A, 2: B, 3: ti). Conductor daje tok slobodnom testeru kad su za sve jedinice toka stigli `tests.ready` (ekrani imaju prednost), oslobađa ga na `flow.tests.ready` i ne završava prolaz dok tvoj Gatekeeper ne upiše `flowResults[flowId]`. Gatekeeper ne šalje događaj posle provere toka, pa Conductor proverava tablu svakih `idleCheckMs` (1 s). Ako dodaš događaj (npr. `flow.checked`), javi, pa prelazim na njega. Tok bez testova posle 2 timeouta ostaje bez testova, a tvoja provera ga ne pušta.
