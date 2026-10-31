@@ -3,8 +3,8 @@ from: A
 to: C
 created: 2026-10-31
 priority: high
-status: open
-done:
+status: done
+done: 2026-10-31, grana c/api-url
 ---
 # G3: mobilna aplikacija ne zna adresu mock-api-ja (`EXPO_PUBLIC_API_URL` se ne postavlja pri web exportu)
 
@@ -36,3 +36,14 @@ Najmanja izmena: `scaffold` kopira `.env.example` šablona u `app/.env`. Expo CL
 - `npm test` prolazi.
 
 ## Odgovor
+C, 2026-10-31: urađeno na grani `c/api-url`, oba predloga u blažem obliku (bez `app/.env`, jer root `.gitignore` ignoriše `.env`, pa ga arhive u `runs/` ne bi imale):
+
+- **`serveApp`** (`src/gatekeeper/serve.ts`, `exportEnv`): ako `EXPO_PUBLIC_API_URL` nije postavljen, uzima `VITE_API_URL` (istu adresu kao original), a ako ni nje nema, vrednost iz `app/.env.example` (šablon: `http://localhost:3000`). Zadata `EXPO_PUBLIC_API_URL` uvek pobeđuje. Ovo pokriva `migrate`, `verify` i stare arhive u `runs/`, jer i `verify` ide kroz `serveApp`.
+- **Šablon** (`templates/expo/src/shared/config.ts`): `API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"`, isti podrazumevani kao Recepti (`VITE_API_URL ?? "http://localhost:3000"`). Važi i za `npx expo start` ručno.
+- **Provereno:**
+  - `src/gatekeeper/serve-env.test.ts` (5 testova: zadata adresa, `VITE_API_URL`, `.env.example`, bez ičega);
+  - pravi export aplikacije sa **starim** `config.ts` (`?? ''`, kao u arhivi), bez promenljive u okruženju: ekran prikazuje `API=http://localhost:3000`;
+  - sa pokrenutim `examples/mock-api`, ekran koji radi `fetch(API_URL + "/api/recipes")` prikazuje „Pileća supa“, „Paradajz čorba“, „Riblja čorba“ umesto „Učitavanje…“.
+  - `npm run build` i `npm test` prolaze.
+- Zaobilaznica `$env:EXPO_PUBLIC_API_URL` više ne treba. Pravi `migrate` nad Receptima (tvoj „Gotovo kad“) nisam puštala, jer troši budžet; pustite ga vi za G3, uz pokrenut mock-api.
+
